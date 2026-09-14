@@ -4,10 +4,16 @@ Hackathon mini-app (La Suite numérique — Track 3): pick a Typst letterhead te
 
 Phase 1 (this codebase, as it stands): runs entirely on localhost with mock/fixture documents, no external API, no auth. See `/Users/ok/.claude/plans/track-3-eager-crystal.md` for the full plan (Phase 2: real Docs API integration + deploy).
 
+> **Mise en place complète (Docs en local + ce mini-site) : [SETUP-LOCAL.md](SETUP-LOCAL.md).**
+> `./dev/setup-local.sh` fait tout et vérifie derrière. Le guide documente les deux
+> pièges qui bloquent à coup sûr : le backend de Docs ne compile pas tel quel, et Docs
+> occupe le port 4000 — celui de notre backend.
+
 ## Requirements
 
 - Node.js 20+
 - [`typst`](https://typst.app) CLI on `PATH` (`brew install typst`)
+- Docker Desktop, pour l'instance Docs locale — voir [SETUP-LOCAL.md](SETUP-LOCAL.md)
 
 
 **##Subject :**
