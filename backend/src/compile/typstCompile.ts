@@ -24,7 +24,16 @@ export class TypstCompileError extends Error {
   }
 }
 
-export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
+/**
+ * Sets up a per-request sandbox (template + body + assets), shells out to
+ * `typst compile` with the given output filename and extra CLI flags, and
+ * returns the compiled bytes. Shared by PDF export and thumbnail export.
+ */
+async function runTypstCompile(
+  request: Pick<CompileRequest, "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages">,
+  outFileName: string,
+  extraArgs: string[] = [],
+): Promise<Buffer> {
   const dir = await mkdtemp(path.join(tmpdir(), "doc-pdf-"));
   try {
     const templateName = "template.typ";
@@ -43,12 +52,13 @@ export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
       }
     }
 
-    const outPath = path.join(dir, "out.pdf");
+    const outPath = path.join(dir, outFileName);
     try {
       await execFileAsync("typst", [
         "compile",
         "--root",
         dir,
+        ...extraArgs,
         path.join(dir, templateName),
         outPath,
       ]);
@@ -60,6 +70,37 @@ export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
+  return runTypstCompile(request, "out.pdf");
+}
+
+const THUMBNAIL_SWATCH_BODY = `= Titre de démonstration
+
+Ceci est un aperçu du gabarit appliqué à un contenu type, pour comparer les styles en un coup d'œil.
+
+- Premier point
+- Second point
+- Troisième point
+`;
+
+export interface ThumbnailRequest {
+  templateSource: string;
+  templateAssetsDir?: string;
+}
+
+export async function compileToThumbnail(request: ThumbnailRequest): Promise<Buffer> {
+  return runTypstCompile(
+    {
+      templateSource: request.templateSource,
+      templateAssetsDir: request.templateAssetsDir,
+      bodyTypst: THUMBNAIL_SWATCH_BODY,
+      bodyImages: [],
+    },
+    "thumbnail.png",
+    ["--format", "png", "--ppi", "72", "--pages", "1"],
+  );
 }
 
 async function copyDir(src: string, dest: string): Promise<void> {

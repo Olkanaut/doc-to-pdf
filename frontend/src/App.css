@@ -19,6 +19,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   margin-bottom: 24px;
 }
 
@@ -66,49 +68,100 @@ body {
   color: #666;
 }
 
-.template-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.template-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: white;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  padding: 16px;
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
 }
 
-.template-card-info h2 {
-  margin: 0 0 4px;
-  font-size: 16px;
+.template-tile {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.template-card-info p {
-  margin: 0;
-  color: #666;
-  font-size: 13px;
+.template-tile-thumb-link {
+  display: block;
+  line-height: 0;
 }
 
-.template-card-actions {
+.template-tile-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  object-fit: cover;
+  object-position: top;
+  background: #f9f9f9;
+  border-bottom: 1px solid #eee;
+}
+
+.template-tile-thumb-fallback {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #ccc;
 }
 
-.template-card-actions a {
+.template-tile-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.template-tile-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a1a1a;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-tile-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.template-tile-actions a {
   color: #002f6c;
   font-weight: 600;
   text-decoration: none;
+  font-size: 12px;
+}
+
+.template-tile-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 210 / 297;
+  padding: 0;
+  border: 2px dashed #ccc;
+  background: #fafafa;
+  color: #555;
   font-size: 13px;
+  font-weight: 600;
+}
+
+.template-tile-new:hover {
+  border-color: #002f6c;
+  color: #002f6c;
+}
+
+.template-tile-plus {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+  color: inherit;
 }
 
 .link-button {
