@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-header h1 {
+  margin: 0 0 4px;
+}
+
+.app-header p {
+  margin: 0 0 24px;
+  color: #555;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 800px) {
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 16px;
+  align-self: start;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field select {
+  font-weight: 400;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.field .hint {
+  font-weight: 400;
+  color: #666;
+  font-size: 12px;
+  margin: 0;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.typ-textarea {
+  width: 100%;
+  margin-top: 8px;
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: #002f6c;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.error {
+  background: #fdecea;
+  border: 1px solid #f5c2c0;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 13px;
+  color: #611a15;
+}
+
+.error pre {
+  white-space: pre-wrap;
+  font-size: 11px;
+  margin: 6px 0 0;
+}
+
+.preview {
+  min-height: 600px;
+}
+
+.pdf-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 600px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  color: #888;
+}
+
+.pdf-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.pdf-preview-toolbar {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.pdf-preview-toolbar a {
+  color: #002f6c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pdf-preview iframe {
+  flex: 1;
+  border: none;
+  min-height: 700px;
+}

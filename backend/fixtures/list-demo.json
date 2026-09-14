@@ -1,0 +1,27 @@
+{
+  "id": "list-demo",
+  "name": "List-heavy note",
+  "blocks": [
+    { "type": "heading", "props": { "level": 1 }, "content": [{ "type": "text", "text": "Plan d'action" }] },
+    { "type": "paragraph", "content": [{ "type": "text", "text": "Étapes du projet, par ordre de priorité :" }] },
+    {
+      "type": "numberedListItem",
+      "content": [{ "type": "text", "text": "Cadrage du besoin", "styles": { "bold": true } }],
+      "children": [
+        { "type": "bulletListItem", "content": [{ "type": "text", "text": "Entretiens avec les utilisateurs" }] },
+        { "type": "bulletListItem", "content": [{ "type": "text", "text": "Rédaction des spécifications" }] }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [{ "type": "text", "text": "Développement" }]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [{ "type": "text", "text": "Déploiement", "styles": { "italic": true } }]
+    },
+    { "type": "heading", "props": { "level": 2 }, "content": [{ "type": "text", "text": "Risques identifiés" }] },
+    { "type": "bulletListItem", "content": [{ "type": "text", "text": "Délai serré" }] },
+    { "type": "bulletListItem", "content": [{ "type": "text", "text": "Dépendance à l'API externe" }] }
+  ]
+}

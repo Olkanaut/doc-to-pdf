@@ -1,0 +1,23 @@
+{
+  "id": "simple-note",
+  "name": "Simple note",
+  "blocks": [
+    { "type": "heading", "props": { "level": 1 }, "content": [{ "type": "text", "text": "Compte rendu de réunion" }] },
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Réunion du " },
+      { "type": "text", "text": "12 septembre 2026", "styles": { "bold": true } },
+      { "type": "text", "text": " au sujet du déploiement de la nouvelle plateforme." }
+    ]},
+    { "type": "heading", "props": { "level": 2 }, "content": [{ "type": "text", "text": "Contexte" }] },
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Le projet est " },
+      { "type": "text", "text": "prioritaire", "styles": { "italic": true } },
+      { "type": "text", "text": " pour le prochain trimestre. Un budget de " },
+      { "type": "text", "text": "150 000 €", "styles": { "bold": true, "italic": true } },
+      { "type": "text", "text": " a été alloué." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Points de vigilance : caractères spéciaux à tester -> # * _ \\ [ ] @ $ < >" }
+    ]}
+  ]
+}

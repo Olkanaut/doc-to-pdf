@@ -1,0 +1,33 @@
+{
+  "id": "table-image-demo",
+  "name": "Table + image",
+  "blocks": [
+    { "type": "heading", "props": { "level": 1 }, "content": [{ "type": "text", "text": "Bilan trimestriel" }] },
+    { "type": "paragraph", "content": [{ "type": "text", "text": "Répartition du budget par poste :" }] },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          { "cells": [
+            { "content": [{ "type": "text", "text": "Poste", "styles": { "bold": true } }] },
+            { "content": [{ "type": "text", "text": "Montant", "styles": { "bold": true } }] }
+          ]},
+          { "cells": [
+            { "content": [{ "type": "text", "text": "Infrastructure" }] },
+            { "content": [{ "type": "text", "text": "45 000 €" }] }
+          ]},
+          { "cells": [
+            { "content": [{ "type": "text", "text": "Développement" }] },
+            { "content": [{ "type": "text", "text": "90 000 €" }] }
+          ]},
+          { "cells": [
+            { "content": [{ "type": "text", "text": "Formation" }] },
+            { "content": [{ "type": "text", "text": "15 000 €" }] }
+          ]}
+        ]
+      }
+    },
+    { "type": "heading", "props": { "level": 2 }, "content": [{ "type": "text", "text": "Illustration" }] },
+    { "type": "image", "props": { "url": "images/sample.png", "caption": "Schéma de l'architecture" } }
+  ]
+}
