@@ -1,0 +1,57 @@
+# Réglages locaux pour le clone de La Suite Docs.
+#
+# À copier dans la RACINE du clone `suitenumerique/docs`, sous le nom
+# `compose.override.yml`. docker compose le charge automatiquement.
+# Ce fichier est gitignoré côté Docs : il ne voyagera jamais avec le dépôt amont,
+# c'est pour ça qu'il vit ici.
+#
+# `dev/setup-local.sh` le pose tout seul.
+
+services:
+  # INDISPENSABLE, pour tout le monde.
+  # Docs publie `docspec` sur le port 4000 de l'hôte — exactement celui que prend
+  # le backend Fastify du mini-site. Sans ce bloc, le second démarré échoue sur
+  # EADDRINUSE. docspec reste joignable par son nom de service sur le réseau
+  # compose, donc retirer la publication ne change rien au fonctionnement de Docs.
+  docspec:
+    ports: !override []
+
+  # ------------------------------------------------------------------ optionnel
+  # À décommenter seulement si le port correspondant est déjà pris chez toi.
+  # Vérifie avec :  lsof -nP -iTCP:3000 -sTCP:LISTEN
+  #
+  # Si tu remappes le frontend, il FAUT aussi remapper les quatre réglages de
+  # redirection du bloc app-dev plus bas, sinon la connexion Keycloak se termine
+  # sur un port mort.
+  #
+  # frontend-development:
+  #   ports: !override
+  #     - "3011:3000"
+  # nginx-frontend:
+  #   ports: !override
+  #     - "3010:3000"
+  # kc_postgresql:
+  #   ports: !override []
+
+  # app-dev:
+  #   environment:
+  #     # Les quatre redirections, à aligner sur le port du frontend ci-dessus.
+  #     LOGIN_REDIRECT_URL: "http://localhost:3011"
+  #     LOGIN_REDIRECT_URL_FAILURE: "http://localhost:3011"
+  #     OIDC_REDIRECT_ALLOWED_HOSTS: "localhost:8083,localhost:3011"
+  #     COLLABORATION_SERVER_ORIGIN: "http://localhost:3011"
+  #
+  #     # Phase 2 seulement — ouvre la Resource Server API (/external_api/v1.0/).
+  #     # Inutile pour la Phase 1 : sur un document en lien public, /api/v1.0/
+  #     # répond déjà sans authentification.
+  #     # Attention : `environment:` bat `env_file:`, c'est pour ça que ça vit ici
+  #     # et pas dans env.d. Et EXTERNAL_API est lu par un parseur de littéral
+  #     # Python : True/False avec une majuscule, sinon le conteneur refuse de
+  #     # démarrer. Il manque encore OIDC_RS_ALLOWED_AUDIENCES, vide par défaut,
+  #     # ce qui fait répondre 403 à toutes les routes external_api.
+  #     OIDC_RESOURCE_SERVER_ENABLED: "True"
+  #     OIDC_OP_URL: "http://localhost:8083/realms/impress"
+  #     OIDC_RS_CLIENT_ID: "impress"
+  #     OIDC_RS_CLIENT_SECRET: "ThisIsAnExampleKeyForDevPurposeOnly"
+  #     OIDC_RS_SCOPES: "openid,profile,email"
+  #     EXTERNAL_API: "{'documents':{'enabled':True,'actions':['list','retrieve','create','children','search','formatted_content']},'users':{'enabled':True,'actions':['list','retrieve']}}"

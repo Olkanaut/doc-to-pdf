@@ -2,18 +2,26 @@
 
 Hackathon mini-app (La Suite numérique — Track 3): pick a Typst letterhead template, pick a document (mock blocks for now), and get a polished PDF in under a second.
 
-Phase 1 (this codebase, as it stands): runs entirely on localhost with mock/fixture documents, no external API, no auth. See `/Users/ok/.claude/plans/track-3-eager-crystal.md` for the full plan (Phase 2: real Docs API integration + deploy).
+Phase 1 (this codebase, as it stands): runs entirely on localhost with mock/fixture documents, no external API, no auth. See [CONTEXT.md](CONTEXT.md) for the decisions taken and what's left (Phase 2: real Docs API integration + deploy).
+
+> **Mise en place complète (Docs en local + ce mini-site) : [SETUP-LOCAL.md](SETUP-LOCAL.md).**
+> `./dev/setup-local.sh` fait tout et vérifie derrière. Le guide documente les deux
+> pièges qui bloquent à coup sûr : le backend de Docs ne compile pas tel quel, et Docs
+> occupe le port 4000 — celui de notre backend.
 
 ## Requirements
 
 - Node.js 20+
 - [`typst`](https://typst.app) CLI on `PATH` (`brew install typst`)
+- Un moteur Docker au choix (Docker Desktop, OrbStack, Colima, Rancher Desktop) —
+  **uniquement pour l'instance Docs locale**, pas pour « Run it » ci-dessous.
+  Voir [SETUP-LOCAL.md](SETUP-LOCAL.md).
 
 
 **##Subject :**
 Track 1. One doc, one PDF
 
-English translation of the La Suite Numérique × 42 Challenge subject, full version received on 14/09/2026. Original French in sujet-piste-1.md.
+English translation of the La Suite Numérique × 42 Challenge subject, full version received on 14/09/2026.
 
 A civil servant finishes a note in Docs. They need a good-looking PDF with their administration's letterhead and page numbers, not the browser's raw export. Today, they open Word/LibreOffice and retype everything. We can spare them that.
 
@@ -47,6 +55,8 @@ Fits in 48h: One template plus one route that calls the API and Typst are enough
 
 ## Run it
 
+L'app seule, sur les fixtures du dépôt — **ni Docker ni Docs nécessaires**.
+
 ```bash
 # terminal 1
 cd backend && npm install && npm run dev   # Fastify API on :4000
@@ -55,7 +65,12 @@ cd backend && npm install && npm run dev   # Fastify API on :4000
 cd frontend && npm install && npm run dev  # Vite dev server on :5173, proxies /api to :4000
 ```
 
-Open http://localhost:5173, pick a fixture and a template, click "Générer le PDF".
+<http://localhost:5173> s'ouvre sur la bibliothèque de gabarits. « Créer un document »,
+dans la barre de navigation, mène au choix d'une fixture et d'un gabarit, puis à
+« Générer le PDF ».
+
+Pour la chaîne complète — un vrai document écrit dans Docs qui ressort en PDF — il
+faut Docs en local : [SETUP-LOCAL.md](SETUP-LOCAL.md).
 
 ## Layout
 
