@@ -33,30 +33,53 @@ export function TemplatesListPage() {
     <div className="page">
       <div className="page-header">
         <h1>Gabarits</h1>
-        <button onClick={handleCreate}>Nouveau gabarit</button>
       </div>
 
       {loading ? (
         <div className="page-loading">Chargement…</div>
       ) : (
-        <ul className="template-list">
+        <div className="template-grid">
+          <button className="template-tile template-tile-new" onClick={handleCreate}>
+            <span className="template-tile-plus">+</span>
+            <span>Nouveau gabarit</span>
+          </button>
+
           {templates.map((t) => (
-            <li key={t.id} className="template-card">
-              <div className="template-card-info">
-                <h2>{t.name}</h2>
-                <p>{t.description || "Sans description"}</p>
+            <div key={t.id} className="template-tile">
+              <Link to={`/templates/${t.id}`} className="template-tile-thumb-link">
+                <ThumbnailImage template={t} />
+              </Link>
+              <div className="template-tile-body">
+                <Link to={`/templates/${t.id}`} className="template-tile-title">
+                  {t.name}
+                </Link>
+                <div className="template-tile-actions">
+                  <Link to={`/documents/new?template=${t.id}`}>Créer un document</Link>
+                  <button className="link-button" onClick={() => handleDelete(t.id, t.name)}>
+                    Supprimer
+                  </button>
+                </div>
               </div>
-              <div className="template-card-actions">
-                <Link to={`/templates/${t.id}`}>Modifier</Link>
-                <Link to={`/documents/new?template=${t.id}`}>Créer un document</Link>
-                <button className="link-button" onClick={() => handleDelete(t.id, t.name)}>
-                  Supprimer
-                </button>
-              </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
+  );
+}
+
+function ThumbnailImage({ template }: { template: TemplateSummary }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <div className="template-tile-thumb template-tile-thumb-fallback">{template.name.slice(0, 1)}</div>;
+  }
+  return (
+    <img
+      className="template-tile-thumb"
+      src={`/api/templates/${template.id}/thumbnail?v=${encodeURIComponent(template.updatedAt)}`}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }

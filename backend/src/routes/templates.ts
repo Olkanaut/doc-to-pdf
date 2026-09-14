@@ -6,6 +6,7 @@ import {
   createTemplate,
   updateTemplate,
   deleteTemplate,
+  getThumbnail,
 } from "../registry/templates.js";
 
 const DEFAULT_SOURCE = `#set page(
@@ -66,5 +67,13 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     const ok = await deleteTemplate(req.params.id);
     if (!ok) return reply.code(404).send({ error: "template not found" });
     return reply.code(204).send();
+  });
+
+  app.get<{ Params: { id: string } }>("/api/templates/:id/thumbnail", async (req, reply) => {
+    const png = await getThumbnail(req.params.id);
+    if (!png) return reply.code(404).send();
+    reply.header("Cache-Control", "public, max-age=31536000, immutable");
+    reply.header("Content-Type", "image/png");
+    return reply.send(png);
   });
 }

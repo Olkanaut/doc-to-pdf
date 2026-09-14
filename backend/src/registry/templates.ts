@@ -2,6 +2,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { mkdir, readdir, readFile, writeFile, rm, stat } from "node:fs/promises";
+import { compileToThumbnail, TypstCompileError } from "../compile/typstCompile.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -65,6 +66,7 @@ async function ensureSeeded(): Promise<void> {
       createdAt: now,
       updatedAt: now,
     }, source);
+    await regenerateThumbnail(seed.id, source);
   }
 }
 
@@ -77,6 +79,28 @@ async function writeTemplateDir(id: string, meta: TemplateMeta, source: string):
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2), "utf8");
   await writeFile(path.join(dir, "template.typ"), source, "utf8");
+}
+
+async function regenerateThumbnail(id: string, source: string): Promise<void> {
+  try {
+    const png = await compileToThumbnail({
+      templateSource: source,
+      templateAssetsDir: TEMPLATES_ASSETS_DIR,
+    });
+    await writeFile(path.join(templateDir(id), "thumbnail.png"), png);
+  } catch (err) {
+    const reason = err instanceof TypstCompileError ? err.stderr : String(err);
+    console.error(`[templates] thumbnail generation failed for "${id}": ${reason}`);
+  }
+}
+
+export async function getThumbnail(id: string): Promise<Buffer | undefined> {
+  await ensureSeeded();
+  try {
+    return await readFile(path.join(templateDir(id), "thumbnail.png"));
+  } catch {
+    return undefined;
+  }
 }
 
 export async function listTemplates(): Promise<TemplateMeta[]> {
@@ -134,6 +158,7 @@ export async function createTemplate(input: {
     updatedAt: now,
   };
   await writeTemplateDir(id, meta, input.source);
+  await regenerateThumbnail(id, input.source);
   return meta;
 }
 
@@ -152,6 +177,9 @@ export async function updateTemplate(
     updatedAt: new Date().toISOString(),
   };
   await writeTemplateDir(id, meta, source);
+  if (patch.source !== undefined) {
+    await regenerateThumbnail(id, source);
+  }
   return meta;
 }
 
