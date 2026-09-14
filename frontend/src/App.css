@@ -15,13 +15,145 @@ body {
   padding: 24px;
 }
 
-.app-header h1 {
-  margin: 0 0 4px;
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
-.app-header p {
-  margin: 0 0 24px;
-  color: #555;
+.app-header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.app-nav a {
+  color: #002f6c;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.app-nav a.active {
+  text-decoration: underline;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.page-loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.template-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.template-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 16px;
+  gap: 16px;
+}
+
+.template-card-info h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.template-card-info p {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.template-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.template-card-actions a {
+  color: #002f6c;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #611a15;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button.danger {
+  background: #a6231d;
+}
+
+.editor-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .editor-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.field input[type="text"],
+.field input:not([type]) {
+  font-weight: 400;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
 .app-body {
