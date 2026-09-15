@@ -290,8 +290,9 @@ describe("tableaux", () => {
     expect(readLayout(once).layout.table).toEqual(cfg.table);
     const twice = applyLayout(once, cfg);
     expect(twice).toBe(once);
-    expect(count(twice, "#set table(")).toBe(1);
-    expect(count(twice, "#show table.cell.where(y: 0)")).toBe(1);
+    // Dans le bloc seulement : les semis portent leur propre `#set table` avant le bloc.
+    expect(count(block, "#set table(")).toBe(1);
+    expect(count(block, "#show table.cell.where(y: 0)")).toBe(1);
   });
 
   it("deduceLayout : une source manuscrite garde les défauts pour table", () => {

@@ -1,4 +1,6 @@
-/* Écran « un document Docs → PDF » : en-tête, colonne gabarit 320 px, aperçu à droite. */
+/* Écran « un document Docs → PDF » : en-tête, colonne gabarit 320 px, aperçu à droite.
+   Les champs, boutons, avis et tuiles radio viennent du kit (Input, Button, Select,
+   Alert, Radio, Badge) ; ne restent ici que la structure et la vignette de gabarit. */
 
 .compose {
   flex: 1 1 auto;
@@ -28,15 +30,25 @@
 }
 .compose-url {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   max-width: 640px;
 }
-.compose-url .dots-field {
+.compose-url .c__field {
   flex: 1 1 auto;
 }
-.compose-notice code {
+.compose-header .c__alert code {
   font-family: var(--dots-mono);
+}
+.compose-header__meta a {
+  color: var(--dots-brand-600);
+}
+/* « Chargement… » du document Docs : spinner du kit et texte sur une ligne. */
+.compose-url__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
 }
 
 /* ── Corps : colonne gauche | aperçu ─────────────────────────────────────── */
@@ -87,36 +99,37 @@
 .compose-link:hover {
   text-decoration: underline;
 }
-/* Le bouton radio reste accessible au clavier mais c'est la tuile qui se voit. */
-.compose-tile__input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+/* Les Radio du kit, une par gabarit, empilées sur toute la largeur. */
+.compose-templates .c__checkbox__group__list {
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
 }
-.compose-tile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Tuile = <label class="c__checkbox c__radio"> du kit ; le kit fournit le bouton
+   radio et l'anneau de focus (:focus-within), ici la bordure et l'état coché. */
+.compose-tile.c__checkbox {
+  margin-left: 0;
   padding: 8px 10px;
-  border: 1px solid var(--dots-grey-100);
+  border-color: var(--dots-grey-100);
   border-radius: var(--dots-radius);
-  cursor: pointer;
 }
-.compose-tile:hover {
+.compose-tile.c__checkbox:hover {
   background: var(--dots-grey-025);
 }
-.compose-tile__input:checked + .compose-tile {
+.compose-tile.c__checkbox:has(input:checked) {
   border-color: var(--dots-brand-500);
   background: var(--dots-brand-050);
 }
-.compose-tile__input:focus-visible + .compose-tile {
-  box-shadow: 0 0 0 2px var(--dots-brand-500);
+.compose-tile .c__field,
+.compose-tile .c__checkbox__container {
+  width: 100%;
+}
+.compose-tile .c__checkbox__label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 .compose-tile__thumb {
   flex: 0 0 32px;
@@ -189,6 +202,7 @@
   border-color: var(--dots-grey-150);
 }
 .compose-error {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;

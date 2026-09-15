@@ -7,6 +7,7 @@ import { fixturesRoutes } from "./routes/fixtures.js";
 import { renderRoutes } from "./routes/render.js";
 import { sessionRoutes } from "./routes/session.js";
 import { aiRoutes } from "./routes/ai.js";
+import { docsRoutes } from "./routes/docs.js";
 
 // Clé de l'assistant IA (backend/.env, ignoré par git). Sans fichier : rien à charger, la route répond 503.
 try {
@@ -23,6 +24,7 @@ await app.register(fixturesRoutes);
 await app.register(renderRoutes);
 await app.register(sessionRoutes);
 await app.register(aiRoutes);
+await app.register(docsRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen({ port, host: "0.0.0.0" }).catch((err) => {

@@ -5,7 +5,7 @@ import { writeFileSync } from "node:fs";
 // bouton scindé « Nouveau gabarit » du panneau gauche).
 // Tourne contre les serveurs déjà lancés : Vite :5173 (UI), Fastify :4000 (API).
 
-const API = "http://localhost:4000/api";
+const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const TYP = "/Users/abel/Documents/doc-to-pdf/backend/templates/collectivite.typ";
 const IMPORTED_NAME = "collectivite"; // nom prérempli = nom du fichier sans .typ
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -49,7 +49,7 @@ test.describe("Import d'un gabarit .typ", () => {
   test("ouvre la modale depuis le menu du bouton scindé", async ({ page }) => {
     const dialog = await openImportModal(page);
     await expect(dialog.getByRole("heading", { name: "Importer un gabarit Typst" })).toBeVisible();
-    await expect(dialog.getByText("Déposez un fichier .typ ou cliquez pour parcourir")).toBeVisible();
+    await expect(dialog.getByText("Déposez un fichier .typ", { exact: true })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Importer", exact: true })).toBeDisabled();
     // Le menu s'est refermé derrière la modale.
     await expect(page.getByRole("menu")).toHaveCount(0);
@@ -61,8 +61,9 @@ test.describe("Import d'un gabarit .typ", () => {
   }) => {
     const dialog = await openImportModal(page);
 
-    // L'input file est masqué visuellement (clip) mais libellé par le <label> qui l'entoure.
-    await dialog.getByLabel("Déposez un fichier .typ").setInputFiles(TYP);
+    // FileUploader du kit : l'input file est masqué (display: none) et sans libellé,
+    // la zone de dépôt est un bouton ; setInputFiles atteint l'input caché.
+    await dialog.locator('input[type="file"]').setInputFiles(TYP);
 
     await expect(dialog.getByText("collectivite.typ")).toBeVisible();
     await expect(dialog.getByText("Compilation de test réussie")).toBeVisible();
@@ -108,7 +109,7 @@ test.describe("Import d'un gabarit .typ", () => {
     writeFileSync(broken, "#set page(\n");
 
     const dialog = await openImportModal(page);
-    await dialog.getByLabel("Déposez un fichier .typ").setInputFiles(broken);
+    await dialog.locator('input[type="file"]').setInputFiles(broken);
 
     await expect(dialog.getByText("casse.typ")).toBeVisible();
     const alert = dialog.getByRole("alert");

@@ -1,66 +1,11 @@
-/* Écrans « gabarits » (liste, import) et panneau gauche. Complète theme.css et
-   App.css : rien de ces deux fichiers n'est redéfini, seules des classes propres
-   ou des propriétés absentes sont ajoutées. Les sélecteurs sont préfixés par un
-   conteneur (.dots-page, .dots-modal, .dots-left-panel) pour gagner sur App.css
-   quelle que soit l'ordre d'injection des feuilles. */
-
-/* ── Panneau gauche ──────────────────────────────────────────────────────── */
-
-.dots-left-panel__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-}
-
-/* Bouton scindé : action principale à gauche, chevron à droite ouvrant un menu. */
-.dots-left-panel .dots-split {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.dots-left-panel .dots-split__main {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0 12px;
-  font-size: 0.875rem;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-.dots-left-panel .dots-split__more {
-  width: 36px;
-  padding: 0;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-left-color: rgba(255, 255, 255, 0.35);
-}
-.dots-left-panel .dots-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 20;
-  min-width: 200px;
-  padding: 4px;
-  border: 1px solid var(--dots-grey-100);
-  border-radius: var(--dots-radius);
-  background: var(--dots-grey-000);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-.dots-left-panel .dots-menu > button {
-  width: 100%;
-  height: 36px;
-  justify-content: flex-start;
-  padding: 0 10px;
-  border: 0;
-  font-size: 0.875rem;
-  font-weight: 400;
-}
-.dots-left-panel__footer > span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* Écrans « gabarits » (liste, import, code Typst) et panneau gauche. Complète
+   theme.css et App.css : rien de ces deux fichiers n'est redéfini, seules des
+   classes propres ou des propriétés absentes sont ajoutées. Les composants du kit
+   (@gouvfr-lasuite/ui-components : Modal, FileUploader, Alert, Input, Checkbox,
+   Button, Badge, TextArea) apportent leur propre style ; ne restent ici que la
+   structure autour d'eux. Les sélecteurs sont préfixés par un conteneur
+   (.dots-page, .c__modal) pour gagner sur App.css quel que soit l'ordre
+   d'injection des feuilles. Le panneau gauche est stylé par theme.css (coque). */
 
 /* ── Liste des gabarits ──────────────────────────────────────────────────── */
 
@@ -71,13 +16,16 @@
   margin: 0;
 }
 
-/* Badge « Par défaut » : posé sur la vignette en grille, entre le titre et les
-   actions en liste. `position: relative` est ajouté à .template-tile (App.css ne
-   le fixe pas) pour ancrer le badge. */
+/* Badge « Par défaut » (Badge du kit) : posé sur la vignette en grille, entre le
+   titre et les actions en liste. `position: relative` est ajouté à .template-tile
+   (App.css ne le fixe pas) pour ancrer le badge ; `isolation: isolate` garde le
+   z-index du badge dans la tuile, sous le voile de la modale d'import. */
 .dots-page .template-tile {
   position: relative;
+  isolation: isolate;
 }
 .dots-page .template-badge {
+  align-items: center;
   gap: 4px;
 }
 .dots-page .template-tile > .template-badge {
@@ -90,83 +38,94 @@
   flex: 0 0 auto;
 }
 
-/* Actions d'un gabarit : liens et boutons-liens alignés, avec retour à la ligne
-   dans les vignettes étroites. */
+/* Actions d'un gabarit : boutons tertiaires « small » du kit, avec retour à la
+   ligne dans les vignettes étroites. */
 .dots-page .template-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
+  gap: 4px 2px;
 }
-.dots-page .template-actions a,
-.dots-page .template-actions .link-button {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--dots-brand-600);
-  text-decoration: none;
-}
-.dots-page .template-actions .link-button--danger {
-  color: var(--dots-error-fg);
+.dots-page .template-actions .c__button {
+  padding-inline: 6px;
 }
 
-/* ── Modale d'import ─────────────────────────────────────────────────────── */
+/* ── Modale d'import (Modal + FileUploader du kit) ───────────────────────── */
 
-/* Champ fichier masqué mais focalisable : le label sert de zone de dépôt. */
-.dots-modal .import-input {
+/* Titre de la modale : un vrai <h2>, à la taille du titre du kit (qui pose la
+   police sur .c__modal__title). Le bouton Fermer est posé en absolu dans le
+   titre, comme dans Docs (ButtonCloseModal). */
+.c__modal .import-modal__title {
+  margin: 0;
+  font: inherit;
+}
+.c__modal .import-modal__close {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+  top: 4px;
+  right: 4px;
 }
-.dots-modal .dots-dropzone:focus-within {
-  box-shadow: 0 0 0 2px var(--dots-brand-500);
-}
-.dots-modal .import-file {
+.c__modal .import-modal__body {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 12px;
-  border: 1px solid var(--dots-grey-100);
-  border-radius: var(--dots-radius);
+  flex-direction: column;
+  gap: 16px;
 }
-.dots-modal .import-file__name {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
+.c__modal .import-modal__status {
+  margin: 0;
 }
-.dots-modal .import-result {
-  align-items: flex-start;
-}
-.dots-modal .import-result__body {
+.c__modal .import-result__body {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
-.dots-modal .import-result__line {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+.c__modal .import-result__note {
+  font-size: 0.8125rem;
+  opacity: 0.85;
 }
-.dots-modal .import-result__line svg {
-  flex: 0 0 auto;
-  color: var(--dots-warn-fg);
-}
-.dots-modal .import-result pre {
+.c__modal .import-result__body pre {
   margin: 0;
   max-height: 200px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
 }
-.dots-modal .import-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
+
+/* ── Éditeur « Code Typst » (Input, TextArea, Button, Alert du kit) ──────── */
+
+/* Commutateur « Mise en page | Code Typst » : deux Button du kit rendus en liens,
+   même pastille que .le-header__modes de l'éditeur de mise en page. */
+.dots-page .editor-modes {
+  display: inline-flex;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px;
+  border-radius: var(--c--components--button--border-radius);
+  background: var(--c--contextuals--background--semantic--neutral--tertiary);
+}
+.dots-page .editor-modes .c__button {
+  white-space: nowrap;
+}
+
+.dots-page .editor-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+/* La source est du code : police à chasse fixe, hauteur pilotée par `rows`. */
+.dots-page .typ-source .c__textarea {
+  font-family: var(--dots-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.dots-page .typ-error {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .dots-page .editor-fields {
+    grid-template-columns: 1fr;
+  }
 }

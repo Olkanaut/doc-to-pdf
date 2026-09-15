@@ -1,0 +1,728 @@
+{
+  "id": "reel-etat-circulaire-interieur",
+  "name": "Circulaire du 15 décembre 2024 — Ministère de l’Intérieur (extrait p. 1-4)",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "MINISTÈRE DE L'INTÉRIEUR",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sous-direction des services d’incendie et des acteurs du secours",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Circulaire du 15 décembre 2024 relative aux modalités d’élaboration et de délivrance des certificats de compétences et attestations relatifs aux unités d’enseignement de sécurité civile"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "NOR : INTE2411572C"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le ministre de l’intérieur"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "à"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. le préfet de police"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mmes et MM. les préfets de département"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Références :",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Titre II bis du livre VII (partie réglementaire) du code de la sécurité intérieure ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté du 15 juin 2024 relatif à la filière citoyenne de sécurité civile dans le domaine de la formation aux premiers secours ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté du 15 juin 2024 relatif à la filière opérationnelle de sécurité civile dans le domaine de la formation aux premiers secours ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté du 15 juin 2024 relatif à la filière aquatique de sécurité civile ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté du 15 juin 2024 relatif à la filière pédagogique de sécurité civile ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté du 17 juin 2024 relatif à l’habilitation pour la formation aux premiers secours ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Circulaire du Premier ministre n° 6144 du 17 février 2020 relative à la nouvelle stratégie de marque de l’Etat."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pièces jointes : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "4 annexes"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La présente circulaire a pour objet de préciser les modalités d’élaboration et de délivrance des certificats de compétences et attestations de formation délivrés par les organismes habilités à cette fin."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les dispositions de la présente circulaire sont applicables aux unités d’enseignement précisées dans les arrêtés de la 2e à la 5e référence."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sont définis en annexes :"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "les règles générales d’élaboration des certificats et attestations pour les unités d’enseignement des filières de sécurité civile ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "les dispositions particulières quant à la forme et aux éléments graphiques."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "les différents modèles en vigueur."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La direction générale de la sécurité civile et de la gestion des crises tient à disposition des destinataires, sur simple demande à l’adresse "
+        },
+        {
+          "type": "link",
+          "href": "mailto:dgscgc-secourisme@interieur.gouv.fr",
+          "content": [
+            {
+              "type": "text",
+              "text": "dgscgc-secourisme@interieur.gouv.fr"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", un guide de conception graphique des certificats et attestations mentionnés dans cette circulaire."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La présente circulaire abroge la circulaire du 31 août 2015 (INTE1520714C) relative aux modalités d’élaboration et de délivrance des certificats de compétences relatifs aux unités d’enseignement de sécurité civile."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Fait le 15 décembre 2024."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pour le ministre et par délégation :"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le sous-directeur des services d’incendie et des acteurs du secours,"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "B. Vidot",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "ANNEXE 1"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "REGLES GENERALES",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les certificats et attestations sanctionnant la réussite aux formations des unités d’enseignement de sécurité civile sont établis par une autorité habilitée, au regard d’un procès-verbal de formation."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.1 Le procès-verbal de formation"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le procès-verbal de formation est la pièce justificative essentielle de toute action de formation. Il est établi dans les meilleurs délais et au plus tard au dernier jour du 3e mois qui suit la fin de la formation. Bien que la forme soit laissée libre, il doit impérativement mentionner, a minima :"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "l’identification de l’organisme habilité, ayant dispensé la formation ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "une référence d’enregistrement et la date de signature du procès-verbal ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "l’unité d’enseignement, en précisant s’il s’agit d’une formation initiale ou continue ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "la ou les dates de la formation ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "le nombre total d’heures de formation réalisées ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "la commune (en précisant le code postal) où s’est déroulée la formation ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "les noms, prénoms, qualifications et signatures des membres de l’équipe pédagogique ayant encadré la formation. Au besoin, préciser les dates et heures de présence des encadrants n’ayant été présents qu’une partie de la formation. La signature atteste de l’avis porté sur chaque candidat ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "le nombre de candidats présents (du 1er au dernier jour de la formation) ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "le nombre de candidats ayant réussi la formation ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "pour chaque candidat présent :"
+        }
+      ],
+      "children": [
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "le nom ;"
+            }
+          ]
+        },
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "le prénom ;"
+            }
+          ]
+        },
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "le genre ou la civilité ;"
+            }
+          ]
+        },
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "la date de naissance ;"
+            }
+          ]
+        },
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "le lieu de naissance en précisant le département ;"
+            }
+          ]
+        },
+        {
+          "type": "bulletListItem",
+          "content": [
+            {
+              "type": "text",
+              "text": "l’avis de l’équipe pédagogique."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La signature de l’autorité habilitée, ou de son délégué suivant les dispositions de l’article R. 726-8 du code de la sécurité intérieure, entérine l’avis de l’équipe pédagogique et permet la délivrance des certificats ou des attestations."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.2 Etablissement du certificat ou de l’attestation"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les certificats ou attestations sont établis sur la base de l’arrêté d’habilitation de l’organisme ayant dispensé la formation, en vigueur au premier jour de la formation."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les certificats et attestations sont obligatoirement délivrés aux candidats dans les six mois après le dernier jour de la formation. Ils sont remis aux candidats ou envoyés par voie postale ou électronique. Passé ce délai, seuls des duplicatas peuvent être délivrés."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dans l’attente, et au plus tard trois semaines après le dernier jour de la formation, une attestation provisoire de réussite peut être remise aux candidats qui en font la demande. Cette attestation provisoire, établie par l’autorité habilitée, est valable six mois après la date de fin de formation et ne saurait remplacer le certificat ou l’attestation conforme aux présentes dispositions."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.3 Dénomination du diplôme"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dans le titre et dans le corps du diplôme, la dénomination doit correspondre aux dénominations réglementaires, telles qu’inscrites dans les arrêtés des 2e à 5e références, dans sa forme complète (exemple « certificat de compétences de secouriste » et non « certificat de compétences PSE1 »)."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.4 Visas"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les visas sont les références légales, codifiées ou réglementaires indiquant le fondement juridique des documents. Les certificats et attestations délivrés doivent comporter a minima les visas apparaissant dans les modèles en annexes 3 et 4 de la présente circulaire. L’organisme habilité peut y ajouter la référence réglementaire d’une délégation ou d’un règlement intérieur en respectant les règles de préséance légistique."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.5 Autorité délivrant le certificat ou une attestation."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Seul le représentant légal de l’organisme habilité peut attribuer un certificat ou une attestation prévu aux arrêtés de référence."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dans le cas d’un service public national, il peut toutefois déléguer la signature des procès-verbaux, certificats ou attestations dans les formes réglementaires suivant les dispositions de l’article R. 726-8 du code de la sécurité intérieure."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dans ce cas, les références de la délégation sont à ajouter dans les visas et seule l’attache de signature est adaptée en conséquence (exemple : « pour le directeur général, et par délégation, …. »)."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "L’usage de la signature numérisée peut être envisagé tant qu’elle est encadrée par une décision interne. La signature numérique des documents peut également être utilisée à condition de satisfaire aux exigences propres aux signatures électroniques avancées sur l’utilisation électronique et les services de confiance."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.6 Numérotation du diplôme"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Tout certificat ou attestation doit comporter une numérotation. Celle-ci s’articule de la façon suivante :"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "l’abrégé de l’unité d’enseignement précédé de la mention FC s’il s’agit d’une attestation de formation continue. Dans ce dernier cas, les abrégés des formations continues induites dans la même filière sont indiqués immédiatement à la suite ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "le code « orga », identifiant de l’organisme, attribué à l’organisme lors de l’habilitation. Ce code « orga », référencé auprès de la direction générale de la sécurité civile, est unique pour chaque organisme habilité. Il est composé de 8 caractères maximum qui peuvent être alphabétiques, numériques ou spéciaux. Pour les formations certifiées par un jury de préfecture, le code « orga » est « PREF » suivie du numéro du département (« HC » dans le cas d’un haut-commissariat dans certains territoires ultra-marins)."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "l’année d’établissement du procès-verbal de formation (4 chiffres), suivie de la lettre D dans le cas d’un duplicata ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "le numéro d’ordre du document dans cette même année. Ce numéro peut être complété d’éléments d’identification internes à l’organisme habilité (exemple : département de formation ou numéro, identification d’un service public délégué ou d’une association affiliée) et n’excédant pas 6 caractères."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Chaque organisme habilité tient un registre des numéros d’ordre des certificats et attestations qu’il a délivrés chaque année."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1.7 Duplicata"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Toute personne peut demander que soit établi un duplicata de son certificat de compétences ou de son attestation si le document original a été détruit, perdu ou volé. Quelles que soient la motivation de la demande et la raison de la disparition de l’original, l’intéressé doit fournir toutes les pièces justificatives utiles (copie de la carte d’identité ou du passeport, copie de procès-verbaux,"
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import { expect, test, type Page, type Response } from "@playwright/test";
 // Écran ⑤ — éditeur de mise en page (src/pages/LayoutEditorPage.tsx + components/layout/LayoutPanel.tsx).
 // Travaille sur le gabarit « minimal ». La section « Tableaux » n'est volontairement pas touchée.
 
-const API = "http://localhost:4000/api";
+const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const ID = "minimal";
 const LAYOUT_URL = `/templates/${ID}/layout`;
 

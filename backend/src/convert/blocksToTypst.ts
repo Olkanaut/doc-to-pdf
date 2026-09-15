@@ -1,5 +1,6 @@
 import type { Block, InlineContent } from "../types/blocks.js";
 import { escapeTypstString, escapeTypstText } from "./escapeTypst.js";
+import { tableToTypst } from "./tableToTypst.js";
 
 export interface ImageAsset {
   /** Absolute path on disk to the source image file. */
@@ -70,15 +71,9 @@ function blockToTypst(block: Block, images: ImageAsset[], depth = 0): string {
       return listItemToTypst("-", block.content, block.children, images, depth);
     case "numberedListItem":
       return listItemToTypst("+", block.content, block.children, images, depth);
-    case "table": {
-      const rows = block.content.rows;
-      const columns = rows[0]?.cells.length ?? 0;
-      const cells = rows
-        .flatMap((row) => row.cells)
-        .map((cell) => `[${inlinesToTypst(cell.content)}]`)
-        .join(", ");
-      return `#table(\n  columns: ${columns},\n  ${cells}\n)`;
-    }
+    case "table":
+      // Fusions, en-tête, couleurs et alignements de Docs ; le style vient du gabarit (#set table).
+      return tableToTypst(block, inlinesToTypst);
     case "image": {
       const dest = `assets/img-${images.length}${extensionOf(block.props.url)}`;
       images.push({ src: block.props.url, dest });

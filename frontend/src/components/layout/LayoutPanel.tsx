@@ -1,9 +1,25 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  Alert,
+  Button,
+  Input,
+  Label,
+  Radio,
+  RadioGroup,
+  Select,
+  Switch,
+  TextArea,
+  VariantType,
+} from "@gouvfr-lasuite/ui-components";
+import { ChevronDown, ChevronRight, Code } from "@gouvfr-lasuite/ui-components/icons";
 import type { Align, LayoutConfig, Numbering, PaperSize } from "../../api/client";
-import { IconChevronDown, IconChevronRight, IconCode } from "../shell/icons";
+
+type Option = { value: string; label: string };
 
 /** Même liste que backend/src/layout/layoutConfig.ts (FONTS) : hors liste, le backend retombe sur Marianne. */
-const FONTS = ["Marianne", "Arial", "Helvetica", "Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"];
+const FONTS: Option[] = ["Marianne", "Arial", "Helvetica", "Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"].map(
+  (f) => ({ value: f, label: f }),
+);
 const FONT_SIZES = [8, 9, 10, 11, 12, 13, 14, 15, 16];
 const LINE_HEIGHTS: [number, string][] = [
   [1, "1,0"],
@@ -12,37 +28,51 @@ const LINE_HEIGHTS: [number, string][] = [
   [1.5, "1,5"],
   [2, "2,0"],
 ];
-const PAPERS: [PaperSize, string][] = [
-  ["a4", "A4 — 210 × 297 mm"],
-  ["a5", "A5 — 148 × 210 mm"],
-  ["us-letter", "Lettre US — 216 × 279 mm"],
+const PAPERS: Option[] = [
+  { value: "a4", label: "A4 — 210 × 297 mm" },
+  { value: "a5", label: "A5 — 148 × 210 mm" },
+  { value: "us-letter", label: "Lettre US — 216 × 279 mm" },
 ];
 const ALIGNS: [Align, string][] = [
   ["left", "Gauche"],
   ["center", "Centre"],
   ["right", "Droite"],
 ];
-const NUMBERINGS: [Numbering, string][] = [
-  ["none", "Aucune"],
-  ["n", "1"],
-  ["n-of-total", "1 / N"],
-  ["page-n-of-total", "Page 1 / N"],
+const NUMBERINGS: Option[] = [
+  { value: "none", label: "Aucune" },
+  { value: "n", label: "1" },
+  { value: "n-of-total", label: "1 / N" },
+  { value: "page-n-of-total", label: "Page 1 / N" },
+];
+const HEADING_SCALES: Option[] = [
+  { value: "compact", label: "Compacte" },
+  { value: "normal", label: "Normale" },
+  { value: "large", label: "Grande" },
 ];
 /* Tableaux : mêmes listes que backend/src/layout/layoutConfig.ts (TABLE_*). */
-const TABLE_STROKES: [LayoutConfig["table"]["stroke"], string][] = [
-  ["none", "Aucun"],
-  ["light", "Fins"],
-  ["full", "Complets"],
+const TABLE_STROKES: Option[] = [
+  { value: "none", label: "Aucun" },
+  { value: "light", label: "Fins" },
+  { value: "full", label: "Complets" },
 ];
-const TABLE_HEADER_FILLS: [LayoutConfig["table"]["headerFill"], string][] = [
-  ["none", "Aucun"],
-  ["grey", "Gris"],
-  ["brand", "Couleur des titres"],
+const TABLE_HEADER_FILLS: Option[] = [
+  { value: "none", label: "Aucun" },
+  { value: "grey", label: "Gris" },
+  { value: "brand", label: "Couleur des titres" },
 ];
-const TABLE_FONT_SIZES: [LayoutConfig["table"]["fontSize"], string][] = [
-  ["inherit", "Normale"],
-  ["small", "Réduite"],
+const TABLE_FONT_SIZES: Option[] = [
+  { value: "inherit", label: "Normale" },
+  { value: "small", label: "Réduite" },
 ];
+const MARGIN_SIDES = [
+  ["top", "Haut"],
+  ["bottom", "Bas"],
+  ["left", "Gauche"],
+  ["right", "Droite"],
+] as const;
+
+/** Les Radio du kit alignés en ligne (le groupe est en colonne par défaut). */
+const RADIO_ROW = { flexDirection: "row", flexWrap: "wrap", gap: "0 0.75rem" } as const;
 
 interface Props {
   layout: LayoutConfig;
@@ -56,6 +86,7 @@ interface Props {
 }
 
 export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Props) {
+  const uid = useId();
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -74,237 +105,269 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
     if (hash) document.getElementById(hash)?.scrollIntoView();
   }, []);
 
+  // Valeur hors liste (écrite par l'assistant, ex. 10.5) : affichée plutôt qu'un Select vide.
+  const fontSizeOptions = useMemo<Option[]>(() => {
+    const list = FONT_SIZES.map((s) => ({ value: String(s), label: `${s} pt` }));
+    return FONT_SIZES.includes(layout.fontSize)
+      ? list
+      : [{ value: String(layout.fontSize), label: `${layout.fontSize} pt` }, ...list];
+  }, [layout.fontSize]);
+  const lineHeightOptions = useMemo<Option[]>(() => {
+    const list = LINE_HEIGHTS.map(([v, l]) => ({ value: String(v), label: l }));
+    return LINE_HEIGHTS.some(([v]) => v === layout.lineHeight)
+      ? list
+      : [{ value: String(layout.lineHeight), label: String(layout.lineHeight).replace(".", ",") }, ...list];
+  }, [layout.lineHeight]);
+  const logoOptions = useMemo<Option[]>(
+    () => [{ value: "", label: "Aucun" }, ...assets.map((f) => ({ value: f, label: f }))],
+    [assets],
+  );
+
   return (
     <aside className="le-panel" aria-label="Réglages de mise en page">
       {!managed && (
-        <div className="dots-notice le-panel__notice">
+        <Alert type={VariantType.INFO} className="le-panel__notice">
           <span>
             Ce gabarit n'a pas encore de bloc de mise en page : le premier réglage l'ajoute avant{" "}
             <code>#include "body.typ"</code>.
           </span>
-        </div>
+        </Alert>
       )}
       {disabled && (
-        <div className="dots-notice le-panel__notice">
-          Une proposition de l'assistant est en attente : appliquez-la ou ignorez-la pour reprendre les réglages.
-        </div>
+        <Alert type={VariantType.WARNING} className="le-panel__notice">
+          <span>
+            Une proposition de l'assistant est en attente : appliquez-la ou ignorez-la pour reprendre les réglages.
+          </span>
+        </Alert>
       )}
-      <fieldset disabled={disabled}>
+      <fieldset className="le-panel__fields" disabled={disabled}>
         <Section title="Page">
-          <label className="dots-field">
-            <span>Format</span>
-            <select value={layout.paper} onChange={(e) => set({ paper: e.target.value as PaperSize })}>
-              {PAPERS.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
-          <div className="dots-field">
-            <span>Orientation</span>
-            <Segmented
-              label="Orientation"
-              value={layout.orientation}
-              options={[["portrait", "Portrait"], ["landscape", "Paysage"]]}
-              onChange={(v) => set({ orientation: v })}
-            />
-          </div>
-          <div className="dots-field">
-            <span>Marges (mm)</span>
-            <div className="dots-grid-4">
+          <Select
+            label="Format"
+            fullWidth
+            clearable={false}
+            options={PAPERS}
+            value={layout.paper}
+            onChange={(e) => set({ paper: String(e.target.value) as PaperSize })}
+          />
+          <fieldset className="le-radios">
+            <legend>Orientation</legend>
+            <RadioGroup style={RADIO_ROW}>
               {(
                 [
-                  ["top", "Haut"],
-                  ["bottom", "Bas"],
-                  ["left", "Gauche"],
-                  ["right", "Droite"],
+                  ["portrait", "Portrait"],
+                  ["landscape", "Paysage"],
                 ] as const
-              ).map(([side, label]) => (
-                <label key={side} className="dots-field">
-                  <span>{label}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={80}
-                    value={layout.margins[side]}
-                    onChange={(e) => setMargin(side, e.target.value)}
-                  />
-                </label>
+              ).map(([v, l]) => (
+                <Radio
+                  key={v}
+                  name={`${uid}-orientation`}
+                  label={l}
+                  value={v}
+                  checked={layout.orientation === v}
+                  onChange={() => set({ orientation: v })}
+                />
+              ))}
+            </RadioGroup>
+          </fieldset>
+          <div className="le-group" role="group" aria-label="Marges (mm)">
+            <Label>Marges (mm)</Label>
+            <div className="le-grid-4">
+              {MARGIN_SIDES.map(([side, label]) => (
+                <Input
+                  key={side}
+                  type="number"
+                  min={0}
+                  max={80}
+                  label={label}
+                  fullWidth
+                  value={String(layout.margins[side])}
+                  onChange={(e) => setMargin(side, e.target.value)}
+                />
               ))}
             </div>
           </div>
         </Section>
 
         <Section title="Typographie">
-          <label className="dots-field">
-            <span>Police</span>
-            <select value={layout.font} onChange={(e) => set({ font: e.target.value })}>
-              {FONTS.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-            {/* Repli de layoutTypst.ts (FALLBACK_FONTS) : l'aperçu ne remonte pas les avertissements typst. */}
-            <span className="dots-muted">
-              Si la police n'est pas installée sur le serveur, Arial la remplace (Libertinus Serif à défaut).
-            </span>
-          </label>
-          <div className="dots-grid-2">
-            <label className="dots-field">
-              <span>Taille</span>
-              <select value={layout.fontSize} onChange={(e) => set({ fontSize: Number(e.target.value) })}>
-                {/* Valeur hors liste (écrite par l'assistant, ex. 10.5) : affichée plutôt qu'un select vide. */}
-                {!FONT_SIZES.includes(layout.fontSize) && <option value={layout.fontSize}>{layout.fontSize} pt</option>}
-                {FONT_SIZES.map((s) => (
-                  <option key={s} value={s}>{s} pt</option>
-                ))}
-              </select>
-            </label>
-            <label className="dots-field">
-              <span>Interligne</span>
-              <select value={layout.lineHeight} onChange={(e) => set({ lineHeight: Number(e.target.value) })}>
-                {!LINE_HEIGHTS.some(([v]) => v === layout.lineHeight) && (
-                  <option value={layout.lineHeight}>{String(layout.lineHeight).replace(".", ",")}</option>
-                )}
-                {LINE_HEIGHTS.map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </select>
-            </label>
+          <Select
+            label="Police"
+            fullWidth
+            clearable={false}
+            options={FONTS}
+            value={layout.font}
+            onChange={(e) => set({ font: String(e.target.value) })}
+            // Repli de layoutTypst.ts (FALLBACK_FONTS) : l'aperçu ne remonte pas les avertissements typst.
+            text="Si la police n'est pas installée sur le serveur, Arial la remplace (Libertinus Serif à défaut)."
+          />
+          <div className="le-grid-2">
+            <Select
+              label="Taille"
+              fullWidth
+              clearable={false}
+              options={fontSizeOptions}
+              value={String(layout.fontSize)}
+              onChange={(e) => set({ fontSize: Number(e.target.value) })}
+            />
+            <Select
+              label="Interligne"
+              fullWidth
+              clearable={false}
+              options={lineHeightOptions}
+              value={String(layout.lineHeight)}
+              onChange={(e) => set({ lineHeight: Number(e.target.value) })}
+            />
           </div>
         </Section>
 
         <Section title="En-tête">
-          <Switch label="Activer" checked={layout.header.enabled} onChange={(v) => setHeader({ enabled: v })} />
-          <label className="dots-field">
-            <span>Logo</span>
-            <select
-              value={layout.header.logo ?? ""}
-              onChange={(e) => setHeader({ logo: e.target.value || null })}
-            >
-              <option value="">Aucun</option>
-              {assets.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-          </label>
-          <label className="dots-field">
-            <span>Texte</span>
-            <textarea className="dots-textarea--text" rows={2} value={layout.header.text} onChange={(e) => setHeader({ text: e.target.value })} />
-          </label>
-          <div className="dots-field">
-            <span>Alignement</span>
-            <Segmented
-              label="Alignement de l'en-tête"
-              value={layout.header.align}
-              options={ALIGNS}
-              onChange={(v) => setHeader({ align: v })}
-            />
-          </div>
-          <Switch label="Filet" checked={layout.header.rule} onChange={(v) => setHeader({ rule: v })} />
+          <Switch
+            label="Activer"
+            role="switch"
+            fullWidth
+            checked={layout.header.enabled}
+            onChange={(e) => setHeader({ enabled: e.target.checked })}
+          />
+          <Select
+            label="Logo"
+            fullWidth
+            clearable={false}
+            options={logoOptions}
+            value={layout.header.logo ?? ""}
+            onChange={(e) => setHeader({ logo: String(e.target.value ?? "") || null })}
+          />
+          <TextArea
+            label="Texte"
+            fullWidth
+            rows={2}
+            value={layout.header.text}
+            onChange={(e) => setHeader({ text: e.target.value })}
+          />
+          <AlignRadios
+            name={`${uid}-header-align`}
+            groupLabel="Alignement de l'en-tête"
+            value={layout.header.align}
+            onChange={(v) => setHeader({ align: v })}
+          />
+          <Switch
+            label="Filet"
+            role="switch"
+            fullWidth
+            checked={layout.header.rule}
+            onChange={(e) => setHeader({ rule: e.target.checked })}
+          />
         </Section>
 
         <Section title="Pied de page">
-          <Switch label="Activer" checked={layout.footer.enabled} onChange={(v) => setFooter({ enabled: v })} />
-          <label className="dots-field">
-            <span>Texte</span>
-            <textarea className="dots-textarea--text" rows={2} value={layout.footer.text} onChange={(e) => setFooter({ text: e.target.value })} />
-          </label>
-          <label className="dots-field">
-            <span>Numérotation</span>
-            <select
-              value={layout.footer.numbering}
-              onChange={(e) => setFooter({ numbering: e.target.value as Numbering })}
-            >
-              {NUMBERINGS.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
-          <div className="dots-field">
-            <span>Alignement</span>
-            <Segmented
-              label="Alignement du pied de page"
-              value={layout.footer.align}
-              options={ALIGNS}
-              onChange={(v) => setFooter({ align: v })}
-            />
-          </div>
+          <Switch
+            label="Activer"
+            role="switch"
+            fullWidth
+            checked={layout.footer.enabled}
+            onChange={(e) => setFooter({ enabled: e.target.checked })}
+          />
+          <TextArea
+            label="Texte"
+            fullWidth
+            rows={2}
+            value={layout.footer.text}
+            onChange={(e) => setFooter({ text: e.target.value })}
+          />
+          <Select
+            label="Numérotation"
+            fullWidth
+            clearable={false}
+            options={NUMBERINGS}
+            value={layout.footer.numbering}
+            onChange={(e) => setFooter({ numbering: String(e.target.value) as Numbering })}
+          />
+          <AlignRadios
+            name={`${uid}-footer-align`}
+            groupLabel="Alignement du pied de page"
+            value={layout.footer.align}
+            onChange={(v) => setFooter({ align: v })}
+          />
           <Switch
             label="Numéroter la première page"
+            role="switch"
+            fullWidth
             checked={layout.footer.firstPage}
-            onChange={(v) => setFooter({ firstPage: v })}
+            onChange={(e) => setFooter({ firstPage: e.target.checked })}
           />
-          <Switch label="Filet" checked={layout.footer.rule} onChange={(v) => setFooter({ rule: v })} />
+          <Switch
+            label="Filet"
+            role="switch"
+            fullWidth
+            checked={layout.footer.rule}
+            onChange={(e) => setFooter({ rule: e.target.checked })}
+          />
         </Section>
 
         <Section title="Titres">
-          <label className="dots-field">
-            <span>Échelle</span>
-            <select
-              value={layout.headings.scale}
-              onChange={(e) =>
-                set({ headings: { ...layout.headings, scale: e.target.value as LayoutConfig["headings"]["scale"] } })
-              }
-            >
-              <option value="compact">Compacte</option>
-              <option value="normal">Normale</option>
-              <option value="large">Grande</option>
-            </select>
-          </label>
-          <label className="dots-field">
-            <span>Couleur</span>
-            <span className="le-color">
+          <Select
+            label="Échelle"
+            fullWidth
+            clearable={false}
+            options={HEADING_SCALES}
+            value={layout.headings.scale}
+            onChange={(e) =>
+              set({ headings: { ...layout.headings, scale: String(e.target.value) as LayoutConfig["headings"]["scale"] } })
+            }
+          />
+          {/* Pas de sélecteur de couleur dans le kit : champ natif, étiqueté par le Label du kit. */}
+          <div className="le-color">
+            <Label htmlFor={`${uid}-color`}>Couleur</Label>
+            <span className="le-color__control">
               <input
+                id={`${uid}-color`}
                 type="color"
                 value={layout.headings.color}
                 onChange={(e) => set({ headings: { ...layout.headings, color: e.target.value } })}
               />
-              <span className="dots-mono">{layout.headings.color}</span>
+              <span className="le-mono">{layout.headings.color}</span>
             </span>
-          </label>
+          </div>
         </Section>
 
         {/* Le gabarit règle l'allure des tableaux ; leurs colonnes et fusions viennent du document. */}
         <Section id="tableaux" title="Tableaux">
-          <label className="dots-field">
-            <span>Filets</span>
-            <select
-              value={layout.table.stroke}
-              onChange={(e) => setTable({ stroke: e.target.value as LayoutConfig["table"]["stroke"] })}
-            >
-              {TABLE_STROKES.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
-          <label className="dots-field">
-            <span>Fond de l'en-tête</span>
-            <select
-              value={layout.table.headerFill}
-              onChange={(e) => setTable({ headerFill: e.target.value as LayoutConfig["table"]["headerFill"] })}
-            >
-              {TABLE_HEADER_FILLS.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
-          <Switch label="Lignes alternées" checked={layout.table.zebra} onChange={(v) => setTable({ zebra: v })} />
-          <label className="dots-field">
-            <span>Taille du texte</span>
-            <select
-              value={layout.table.fontSize}
-              onChange={(e) => setTable({ fontSize: e.target.value as LayoutConfig["table"]["fontSize"] })}
-            >
-              {TABLE_FONT_SIZES.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="Filets"
+            fullWidth
+            clearable={false}
+            options={TABLE_STROKES}
+            value={layout.table.stroke}
+            onChange={(e) => setTable({ stroke: String(e.target.value) as LayoutConfig["table"]["stroke"] })}
+          />
+          <Select
+            label="Fond de l'en-tête"
+            fullWidth
+            clearable={false}
+            options={TABLE_HEADER_FILLS}
+            value={layout.table.headerFill}
+            onChange={(e) => setTable({ headerFill: String(e.target.value) as LayoutConfig["table"]["headerFill"] })}
+          />
+          <Switch
+            label="Lignes alternées"
+            role="switch"
+            fullWidth
+            checked={layout.table.zebra}
+            onChange={(e) => setTable({ zebra: e.target.checked })}
+          />
+          <Select
+            label="Taille du texte"
+            fullWidth
+            clearable={false}
+            options={TABLE_FONT_SIZES}
+            value={layout.table.fontSize}
+            onChange={(e) => setTable({ fontSize: String(e.target.value) as LayoutConfig["table"]["fontSize"] })}
+          />
         </Section>
       </fieldset>
 
       <div className="le-panel__foot">
-        <p className="dots-muted">
-          <IconCode size={16} />
+        <p className="le-hint">
+          <Code size={16} aria-hidden="true" />
           <span>
             Chaque réglage réécrit le bloc <code>// dots:layout</code> du .typ ; le reste du code reste à la main.
           </span>
@@ -319,62 +382,42 @@ function Section({ id, title, children }: { id?: string; title: string; children
   const [open, setOpen] = useState(true);
   return (
     <section id={id} className="le-section">
-      <button
-        type="button"
+      <Button
+        variant="tertiary"
+        color="neutral"
+        fullWidth
         className="le-section__toggle"
         aria-expanded={open}
+        icon={open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+        iconPosition="right"
         onClick={() => setOpen(!open)}
       >
         {title}
-        {open ? <IconChevronDown size={18} /> : <IconChevronRight size={18} />}
-      </button>
+      </Button>
       {open && <div className="le-section__body">{children}</div>}
     </section>
   );
 }
 
-function Segmented<T extends string>({
-  label,
+function AlignRadios({
+  name,
+  groupLabel,
   value,
-  options,
   onChange,
 }: {
-  label: string;
-  value: T;
-  options: readonly (readonly [T, string])[];
-  onChange: (v: T) => void;
+  name: string;
+  groupLabel: string;
+  value: Align;
+  onChange: (v: Align) => void;
 }) {
   return (
-    <div className="dots-segmented" role="group" aria-label={label}>
-      {options.map(([v, l]) => (
-        <button key={v} type="button" aria-pressed={v === value} onClick={() => onChange(v)}>
-          {l}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Switch({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="le-switch">
-      <span>{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        className="dots-toggle"
-        onClick={() => onChange(!checked)}
-      />
-    </div>
+    <fieldset className="le-radios" aria-label={groupLabel}>
+      <legend>Alignement</legend>
+      <RadioGroup style={RADIO_ROW}>
+        {ALIGNS.map(([v, l]) => (
+          <Radio key={v} name={name} label={l} value={v} checked={value === v} onChange={() => onChange(v)} />
+        ))}
+      </RadioGroup>
+    </fieldset>
   );
 }

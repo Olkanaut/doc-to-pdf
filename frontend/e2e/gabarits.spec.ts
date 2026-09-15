@@ -5,7 +5,7 @@ import { expect, test, type APIRequestContext, type Locator, type Page } from "@
 // components/templates/ViewSwitcher.tsx, components/shell/LeftPanel.tsx.
 // L'état partagé (gabarit par défaut, gabarit créé) est remis via l'API en afterEach.
 
-const API = "http://localhost:4000/api";
+const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface TemplateSummary {
@@ -33,9 +33,11 @@ function badge(scope: Page | Locator): Locator {
   return scope.getByText("Par défaut", { exact: true });
 }
 
-/** Une tuile (grille) ou une ligne (liste) : le <li> qui porte le nom du gabarit. */
-function itemOf(page: Page, name: string): Locator {
-  return page.getByRole("listitem").filter({ hasText: name });
+/** Une tuile (grille) ou une ligne (liste) : le <li> dont le lien d'ouverture vise
+ *  l'id du gabarit. Par id et non par nom : le backend partagé peut porter plusieurs
+ *  gabarits homonymes (« Nouveau gabarit »), et le nom seul viole le mode strict. */
+function itemOf(page: Page, t: Pick<TemplateSummary, "id">): Locator {
+  return page.getByRole("listitem").filter({ has: page.locator(`a[href="/templates/${t.id}/layout"]`) });
 }
 
 async function gotoTemplates(page: Page): Promise<void> {
@@ -82,15 +84,19 @@ test("/templates : coque, au moins trois gabarits, un seul badge « Par défaut 
   // Liste : autant d'entrées que l'API, chaque nom visible.
   await expect(page.getByRole("listitem")).toHaveCount(templates.length);
   for (const t of templates) {
-    await expect(itemOf(page, t.name)).toBeVisible();
+    await expect(itemOf(page, t)).toBeVisible();
+    await expect(itemOf(page, t)).toContainText(t.name);
   }
 
   // Exactement un badge, posé sur le gabarit que l'API dit par défaut.
   await expect(badge(page)).toHaveCount(1);
-  await expect(badge(itemOf(page, apiDefaults[0].name))).toBeVisible();
+  await expect(badge(itemOf(page, apiDefaults[0]))).toBeVisible();
   // Le gabarit par défaut n'offre pas « Définir par défaut » ; les autres oui.
+  // Le nom accessible de chaque action porte le nom du gabarit (« … le gabarit X »).
   await expect(
-    itemOf(page, apiDefaults[0].name).getByRole("button", { name: "Définir par défaut" }),
+    itemOf(page, apiDefaults[0]).getByRole("button", {
+      name: `Définir par défaut le gabarit ${apiDefaults[0].name}`,
+    }),
   ).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Définir par défaut" })).toHaveCount(
     templates.length - 1,
@@ -120,25 +126,31 @@ test.describe("gabarit par défaut", () => {
     initialDefaultId = current!.id;
 
     await gotoTemplates(page);
-    await expect(badge(itemOf(page, current!.name))).toBeVisible();
-    await expect(badge(itemOf(page, target!.name))).toHaveCount(0);
+    await expect(badge(itemOf(page, current!))).toBeVisible();
+    await expect(badge(itemOf(page, target!))).toHaveCount(0);
 
     const put = page.waitForResponse(
       (r) => r.url().endsWith("/api/templates/default") && r.request().method() === "PUT",
     );
-    await itemOf(page, target!.name).getByRole("button", { name: "Définir par défaut" }).click();
+    await itemOf(page, target!)
+      .getByRole("button", { name: `Définir par défaut le gabarit ${target!.name}` })
+      .click();
     const putRes = await put;
     expect(putRes.ok(), `PUT /api/templates/default → ${putRes.status()}`).toBe(true);
 
     // UI : le badge a changé de gabarit, il n'y en a toujours qu'un.
-    await expect(badge(itemOf(page, target!.name))).toBeVisible();
-    await expect(badge(itemOf(page, current!.name))).toHaveCount(0);
+    await expect(badge(itemOf(page, target!))).toBeVisible();
+    await expect(badge(itemOf(page, current!))).toHaveCount(0);
     await expect(badge(page)).toHaveCount(1);
     await expect(
-      itemOf(page, target!.name).getByRole("button", { name: "Définir par défaut" }),
+      itemOf(page, target!).getByRole("button", {
+        name: `Définir par défaut le gabarit ${target!.name}`,
+      }),
     ).toHaveCount(0);
     await expect(
-      itemOf(page, current!.name).getByRole("button", { name: "Définir par défaut" }),
+      itemOf(page, current!).getByRole("button", {
+        name: `Définir par défaut le gabarit ${current!.name}`,
+      }),
     ).toBeVisible();
     await expect(page.getByRole("alert")).toHaveCount(0);
 
@@ -219,11 +231,12 @@ test("basculer grille/liste conserve les gabarits", async ({ page, request }) =>
   await expect(page.locator("ul.template-rows")).toHaveCount(1);
   await expect(page.getByRole("listitem")).toHaveCount(templates.length);
   for (const t of templates) {
-    const row = itemOf(page, t.name);
+    const row = itemOf(page, t);
     await expect(row).toBeVisible();
+    await expect(row).toContainText(t.name);
     await expect(row).toContainText(t.description || "Sans description");
-    await expect(row.getByRole("link", { name: "Code Typst" })).toBeVisible();
-    await expect(row.getByRole("link", { name: "Utiliser" })).toBeVisible();
+    await expect(row.getByRole("link", { name: `Code Typst du gabarit ${t.name}` })).toBeVisible();
+    await expect(row.getByRole("link", { name: `Utiliser le gabarit ${t.name}` })).toBeVisible();
   }
   await expect(badge(page)).toHaveCount(1);
 
@@ -239,7 +252,7 @@ test("basculer grille/liste conserve les gabarits", async ({ page, request }) =>
   await expect(page.locator("ul.template-grid")).toHaveCount(1);
   await expect(page.getByRole("listitem")).toHaveCount(templates.length);
   for (const t of templates) {
-    await expect(itemOf(page, t.name)).toBeVisible();
+    await expect(itemOf(page, t)).toBeVisible();
   }
   await expect(badge(page)).toHaveCount(1);
 });

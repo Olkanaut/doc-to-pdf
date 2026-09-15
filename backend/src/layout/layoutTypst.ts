@@ -55,10 +55,7 @@ function text(raw: string): string {
   return raw
     .split(TYPST_NEWLINE)
     .map((line) =>
-      escapeTypstText(line)
-        .replace(/\//g, "\\/")
-        .replace(/^([=\-+])/, "\\$1")
-        .replace(/^(\d+)\./, "$1\\."),
+      escapeTypstText(line), // couvre aussi `/` et les marqueurs de début de ligne
     )
     .join(" \\ ");
 }

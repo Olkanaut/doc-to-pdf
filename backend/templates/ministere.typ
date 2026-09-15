@@ -23,4 +23,5 @@
 #set heading(numbering: none)
 #set text(fill: rgb("#1a1a1a"))
 
+#set table(stroke: 0.5pt + luma(200), inset: 6pt)
 #include "body.typ"

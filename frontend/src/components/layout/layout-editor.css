@@ -1,12 +1,47 @@
 /* Éditeur de mise en page : en-tête 64 px, panneau 320 px | aperçu | assistant 380 px.
-   La page ne défile pas ; chaque colonne défile pour elle-même. */
+   La page ne défile pas ; chaque colonne défile pour elle-même.
+
+   Les contrôles (boutons, champs, sélecteurs, interrupteurs, alertes, badges) sont ceux du
+   kit @gouvfr-lasuite/ui-components : cette feuille ne décrit que la structure des colonnes
+   et ce que le kit n'a pas (sélecteur de couleur natif, zone de dépôt, fil de discussion).
+   Couleurs et tailles : jetons du kit (--c--…), thème « default ». */
 
 .le {
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  background: var(--dots-grey-000);
+  background: var(--c--globals--colors--gray-000);
+  font-family: var(--c--globals--font--families--base);
+  color: var(--c--globals--colors--gray-950);
+}
+.le-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+}
+.le-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px 48px;
+}
+
+/* Aides de texte que le kit ne fournit pas comme composants */
+.le-hint {
+  color: var(--c--globals--colors--gray-500);
+  font-size: var(--c--globals--font--sizes--xs);
+  line-height: 1.4;
+}
+.le-mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--c--globals--font--sizes--s);
+  line-height: 1.5;
+}
+.le-ok {
+  color: var(--c--contextuals--content--semantic--success--primary);
 }
 
 /* ── En-tête ─────────────────────────────────────────────────────────────── */
@@ -18,33 +53,39 @@
   flex: 0 0 64px;
   height: 64px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--dots-grey-100);
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
 }
+/* Le nom du gabarit se modifie en place, comme un titre (pas un champ de formulaire). */
 .le-header__name {
   flex: 0 1 320px;
   min-width: 80px;
   height: 36px;
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: var(--dots-radius);
+  border-radius: var(--c--components--button--border-radius);
   background: transparent;
   font: inherit;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--dots-grey-900);
+  font-size: var(--c--globals--font--sizes--lg);
+  font-weight: var(--c--globals--font--weights--bold);
+  color: inherit;
 }
 .le-header__name:hover {
-  border-color: var(--dots-grey-100);
+  border-color: var(--c--globals--colors--gray-100);
 }
 .le-header__name:focus {
   outline: none;
-  border-color: var(--dots-brand-500);
-  box-shadow: 0 0 0 2px var(--dots-brand-100);
+  border-color: var(--c--contextuals--border--semantic--brand--primary);
+  box-shadow: 0 0 0 2px var(--c--globals--colors--brand-100);
 }
-.le-header .dots-segmented {
+.le-header__modes {
+  display: inline-flex;
+  gap: 4px;
   flex: 0 0 auto;
+  padding: 2px;
+  border-radius: var(--c--components--button--border-radius);
+  background: var(--c--contextuals--background--semantic--neutral--tertiary);
 }
-.le-header .dots-segmented > a {
+.le-header__modes .c__button {
   white-space: nowrap;
 }
 .le-header__spacer {
@@ -52,6 +93,11 @@
 }
 .le-header__status {
   white-space: nowrap;
+  color: var(--c--globals--colors--gray-500);
+  font-size: var(--c--globals--font--sizes--xs);
+}
+.le-header__status--error {
+  color: var(--c--contextuals--content--semantic--error--primary);
 }
 
 /* ── Corps ───────────────────────────────────────────────────────────────── */
@@ -69,41 +115,33 @@
   flex: 0 0 320px;
   width: 320px;
   overflow-y: auto;
-  border-right: 1px solid var(--dots-grey-100);
+  border-right: 1px solid var(--c--globals--colors--gray-100);
 }
-.le-panel fieldset {
+.le-panel__fields,
+.le-radios {
   margin: 0;
   padding: 0;
   border: 0;
   min-width: 0;
 }
-.le-panel fieldset:disabled {
+.le-panel__fields:disabled {
   opacity: 0.55;
 }
 .le-section {
-  border-bottom: 1px solid var(--dots-grey-100);
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
 }
-/* Sélecteurs à deux classes : cette feuille est injectée avant App.css et theme.css,
-   dont les règles `button:hover` / `button:disabled` gagneraient à spécificité égale. */
-.le-section > .le-section__toggle {
-  width: 100%;
+/* Bouton tertiaire du kit, mais titre à gauche et chevron à droite */
+.le-section__toggle.c__button {
+  justify-content: space-between;
   height: 44px;
   padding: 0 12px 0 16px;
-  justify-content: space-between;
-  border: 0;
   border-radius: 0;
-  background: transparent;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--c--globals--font--sizes--sm);
+  font-weight: var(--c--globals--font--weights--bold);
+  color: inherit;
 }
-.le-section > .le-section__toggle:hover {
-  background: var(--dots-grey-025);
-}
-.le-section > .le-section__toggle:disabled {
-  background: transparent;
-}
-.le-section__toggle svg {
-  color: var(--dots-grey-500);
+.le-section__toggle .c__button__icon {
+  color: var(--c--globals--colors--gray-500);
 }
 .le-section__body {
   display: flex;
@@ -111,49 +149,54 @@
   gap: 12px;
   padding: 4px 16px 16px;
 }
-.le-section__body .dots-field input,
-.le-section__body .dots-field select {
-  height: 36px;
-  font-size: 0.875rem;
+.le-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
-.le-section__body .dots-grid-4 .dots-field input {
-  padding: 0 8px;
+.le-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
 }
-.le-section__body .dots-segmented {
-  align-self: flex-start;
-}
-.le-section__body .dots-segmented > button {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 0.8125rem;
-}
-.le-switch {
+.le-group {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.875rem;
-  color: var(--dots-grey-900);
+  flex-direction: column;
+  gap: 6px;
 }
-/* theme.css donne un fond gris clair à tout bouton survolé : on garde l'interrupteur lisible */
-.le-switch .dots-toggle:hover {
-  background: var(--dots-grey-400);
+/* Libellés de groupe (Marges, Orientation, Alignement) : même allure que les libellés classiques du kit */
+.le-group .suite__label__container label,
+.le-radios > legend {
+  font-size: var(--c--components--forms-labelledbox--classic-label-font-size, var(--c--globals--font--sizes--sm));
+  font-weight: var(--c--components--forms-labelledbox--classic-label-font-weight, 500);
+  color: var(--c--components--forms-labelledbox--classic-label-color, var(--c--globals--colors--gray-950));
 }
-.le-switch .dots-toggle[aria-checked="true"]:hover {
-  background: var(--dots-brand-700);
+.le-radios > legend {
+  padding: 0;
+  margin-bottom: 4px;
 }
+/* Le champ couleur n'existe pas dans le kit : natif, à la taille des champs du kit */
 .le-color {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.le-color .suite__label__container label {
+  font-size: var(--c--components--forms-labelledbox--classic-label-font-size, var(--c--globals--font--sizes--sm));
+  font-weight: var(--c--components--forms-labelledbox--classic-label-font-weight, 500);
+}
+.le-color__control {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.le-color input[type="color"] {
+.le-color__control input[type="color"] {
   width: 44px;
   height: 36px;
   padding: 2px;
-  border: 1px solid var(--dots-grey-200);
-  border-radius: var(--dots-radius);
-  background: var(--dots-grey-000);
+  border: 1px solid var(--c--globals--colors--gray-200);
+  border-radius: var(--c--components--button--border-radius);
+  background: var(--c--globals--colors--gray-000);
   cursor: pointer;
 }
 .le-panel__foot {
@@ -163,10 +206,11 @@
   margin-top: auto;
   padding: 16px;
 }
-.le-panel__foot .dots-muted {
+.le-panel__foot .le-hint {
   display: flex;
   gap: 8px;
   align-items: flex-start;
+  margin: 0;
 }
 .le-panel__foot svg {
   flex: 0 0 auto;
@@ -175,6 +219,9 @@
 .le-panel__notice {
   margin: 12px 16px 0;
 }
+.le-panel__notice code {
+  font-size: var(--c--globals--font--sizes--s);
+}
 
 /* Aperçu */
 .le-preview {
@@ -182,43 +229,19 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-width: 0;
-  background: var(--dots-grey-050);
+  background: var(--c--globals--colors--gray-050);
 }
 .le-preview__bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--dots-grey-100);
-  background: var(--dots-grey-000);
-  font-size: 0.8125rem;
-  color: var(--dots-grey-500);
-}
-.le-preview__bar label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.le-preview__bar select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--dots-grey-200);
-  border-radius: var(--dots-radius);
-  background: var(--dots-grey-000);
-  color: var(--dots-grey-900);
-  font: inherit;
-  font-size: 0.8125rem;
-}
-.le-preview__bar .dots-badge::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  margin-right: 6px;
-  border-radius: 4px;
-  background: var(--dots-brand-600);
+  gap: 8px 12px;
+  min-height: 56px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+  background: var(--c--globals--colors--gray-000);
+  font-size: var(--c--globals--font--sizes--xs);
+  color: var(--c--globals--colors--gray-500);
 }
 .le-preview__doc {
   display: flex;
@@ -243,11 +266,13 @@
 .le-preview__doc .pdf-placeholder {
   flex: 1 1 auto;
   height: auto;
-  background: var(--dots-grey-000);
+  background: var(--c--globals--colors--gray-000);
 }
 .le-preview__error {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
 }
 .le-preview__error pre {
   margin: 0;
@@ -266,8 +291,8 @@
   flex-direction: column;
   flex: 0 0 380px;
   width: 380px;
-  border-left: 1px solid var(--dots-grey-100);
-  background: var(--dots-grey-000);
+  border-left: 1px solid var(--c--globals--colors--gray-100);
+  background: var(--c--globals--colors--gray-000);
 }
 /* Assistant ouvert sous 1600 px : 300 + 320 + 380 px de panneaux fixes ne laisseraient
    que ~420 px à l'aperçu. Le panneau de réglages s'efface (il est de toute façon
@@ -283,14 +308,14 @@
   gap: 8px;
   flex: 0 0 48px;
   padding: 0 8px 0 16px;
-  border-bottom: 1px solid var(--dots-grey-100);
-  font-size: 0.9375rem;
-  font-weight: 600;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+  font-size: var(--c--globals--font--sizes--ml);
+  font-weight: var(--c--globals--font--weights--bold);
 }
-.le-ai__header svg:first-child {
-  color: var(--dots-brand-600);
+.le-ai__header > svg:first-child {
+  color: var(--c--contextuals--content--semantic--brand--primary);
 }
-.le-ai__header .dots-btn--icon {
+.le-ai__header .c__button {
   margin-left: auto;
 }
 .le-ai__thread {
@@ -306,31 +331,41 @@
   margin: auto 0;
   text-align: center;
 }
+.le-ai__busy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
 .ai-msg--user {
   align-self: flex-end;
   max-width: 90%;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--dots-brand-050);
-  font-size: 0.875rem;
+  background: var(--c--contextuals--background--semantic--brand--tertiary);
+  font-size: var(--c--globals--font--sizes--sm);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .ai-card {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--dots-grey-100);
+  border: 1px solid var(--c--globals--colors--gray-100);
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: var(--c--globals--font--sizes--sm);
+}
+.ai-card > * {
+  max-width: 100%;
 }
 .ai-card__title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  color: var(--dots-brand-700);
+  font-weight: var(--c--globals--font--weights--bold);
+  color: var(--c--contextuals--content--semantic--brand--primary);
 }
 .ai-card ul {
   display: flex;
@@ -348,10 +383,14 @@
 .ai-card li svg {
   flex: 0 0 auto;
   margin-top: 2px;
-  color: var(--dots-ok-fg);
+  color: var(--c--contextuals--content--semantic--success--primary);
 }
-.ai-card .dots-notice {
-  padding: 8px 10px;
+.ai-card .c__alert {
+  width: 100%;
+}
+.ai-card pre {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
 }
 .ai-card__actions {
   display: flex;
@@ -360,7 +399,7 @@
 }
 .ai-card__summary {
   margin: 0;
-  color: var(--dots-grey-600);
+  color: var(--c--globals--colors--gray-600);
 }
 .le-ai__chips {
   display: flex;
@@ -368,20 +407,26 @@
   gap: 6px;
   padding: 0 16px 8px;
 }
-.le-ai__chips > button,
-.le-ai__chips > button:disabled {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 14px;
-  background: var(--dots-grey-000);
-  font-size: 0.8125rem;
-  font-weight: 400;
-}
+/* Zone de dépôt d'un PDF : le kit n'a pas de zone « un fichier, envoyé aussitôt » */
 .le-ai__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 0 16px 8px;
   min-height: 64px;
   padding: 10px 12px;
-  font-size: 0.8125rem;
+  border: 1px dashed var(--c--contextuals--border--semantic--brand--primary);
+  border-radius: var(--c--components--button--border-radius);
+  background: var(--c--contextuals--background--semantic--brand--tertiary);
+  color: var(--c--globals--colors--gray-500);
+  font-size: var(--c--globals--font--sizes--xs);
+  text-align: center;
+  cursor: pointer;
+}
+.le-ai__drop--active {
+  border-style: solid;
 }
 .le-ai__drop input {
   display: none;
@@ -392,14 +437,12 @@
 .le-ai__input {
   display: flex;
   gap: 8px;
+  align-items: flex-end;
   flex: 0 0 auto;
   padding: 12px 16px;
-  border-top: 1px solid var(--dots-grey-100);
+  border-top: 1px solid var(--c--globals--colors--gray-100);
 }
-.le-ai__input .dots-input {
+.le-ai__input .c__field {
   flex: 1 1 auto;
-  font-size: 0.875rem;
-}
-.le-ai__input .dots-btn--icon {
-  border-color: var(--dots-brand-600);
+  min-width: 0;
 }

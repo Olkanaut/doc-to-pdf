@@ -17,4 +17,5 @@
 )
 #set heading(numbering: none)
 
+#set table(stroke: 0.5pt + luma(200), inset: 6pt)
 #include "body.typ"

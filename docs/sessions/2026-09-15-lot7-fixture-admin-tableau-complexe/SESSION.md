@@ -222,3 +222,35 @@ coéquipier, diff de 3 lignes) ; extension de `types/blocks.ts` ; `#set table` p
 
 ## Confidentialite
 Contenu synthétique (Ministère de l'Exemple, Direction du numérique, Exempleville, personnes fictives). Aucune donnée client réelle. La fixture réelle `reel-roadmap.json` n'a été lue que pour la forme des blocs.
+
+
+## Branchement et échappement (2026-09-15, décisions « 1. corrige » et « 3. Brancher le module »)
+Décision humaine : corriger l'échappement des débuts de ligne et brancher `tableToTypst` dans le
+convertisseur (fichiers `backend/src/convert/`, périmètre d'un coéquipier, modifiés sur décision explicite).
+Fait :
+- `escapeTypst.ts` : `/` ajouté aux caractères échappés (deux barres ouvrent un commentaire même dans le
+  markup) ; `- `, `+ `, `= `, `1. ` échappés en début de ligne (début du texte ou après un retour).
+- `layoutTypst.ts` : son échappement propre des mêmes cas retiré (double échappement sinon).
+- `blocksToTypst.ts` : `case "table"` délègue à `tableToTypst(block, inlinesToTypst)` ; `types/blocks.ts`
+  inchangé (le type existant est structurellement compatible avec `TableBlockLike`).
+- Semis `templates/{minimal,ministere,collectivite}.typ` : `#set table(stroke: 0.5pt + luma(200), inset: 6pt)`
+  avant `#include "body.typ"` ; même ligne posée par `PUT /api/templates/<id>` sur les trois gabarits vivants
+  (absente chez tous, aucun bloc dots:layout) → 200, 200, 200.
+- Tests ajoutés : échappement (tiret, numéro, URL) et tableau fusionné via le convertisseur.
+
+Preuves brutes :
+```
+$ npx tsc --noEmit -p .        (backend)   -> tsc OK
+$ npx vitest run --root .
+ Test Files  4 passed (4)
+      Tests  78 passed (78)
+$ POST /api/render {fixtureId, templateId:"ministere"}  puis pdfinfo / pdftotext | grep -c '•'
+admin-tableau-complexe           HTTP/1.1 200 OK pages 2  puces 0
+reel-paris-arrete-voirie         HTTP/1.1 200 OK pages 17 puces 27      (57 avant : 30 cellules « - … » en puce)
+reel-paris-arrete-redevances     HTTP/1.1 200 OK pages 6  puces 24
+```
+Aperçus regardés : `branche-effectifs-1.png` (ligne « Total général » fusionnée sur 3 colonnes, en-tête gras,
+fonds jaune/gris, texte rouge, chiffres à droite) ; `branche-voirie-11.png` (« 410 - dans le tiers du
+trottoir » en texte, plus de puce).
+Écart vu : sur l'arrêté voirie, l'en-tête à deux lignes (« Mode de taxation » / « CATEGORIES » sur 5 colonnes)
+se chevauche : limite connue des en-têtes à deux rangs avec fusion, non corrigée.

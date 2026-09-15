@@ -9,7 +9,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
  * ne doit pas changer, mais on la sauvegarde/restaure quand même par l'API.
  */
 
-const API = "http://localhost:4000/api";
+const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const TEMPLATE_ID = "minimal";
 const AI_TIMEOUT_MS = 60_000;
 
@@ -81,7 +81,9 @@ test.describe("assistant IA — éditeur de mise en page", () => {
     await panel.getByRole("button", { name: "Envoyer" }).click();
 
     // Écho de la demande + état d'attente, puis verrouillage de la saisie.
-    await expect(panel.getByText("Réduis les marges à 2 cm")).toBeVisible();
+    // L'écho est ciblé par sa bulle : la TextArea du kit garde aussi le texte envoyé
+    // comme contenu du nœud <textarea>, ce qui rendrait getByText ambigu.
+    await expect(panel.locator(".ai-msg--user", { hasText: "Réduis les marges à 2 cm" })).toBeVisible();
     await expect(panel.getByRole("status").filter({ hasText: "L'assistant réfléchit…" })).toBeVisible();
     await expect(input).toBeDisabled();
 

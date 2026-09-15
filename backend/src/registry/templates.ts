@@ -13,7 +13,8 @@ export const TEMPLATES_ASSETS_DIR = path.resolve(__dirname, "../../templates/ass
 const SEED_DIR = path.resolve(__dirname, "../../templates");
 
 /** Where live template data (editable, deletable) is persisted. */
-const DATA_DIR = path.resolve(__dirname, "../../data/templates");
+// DOTS_DATA_DIR : jeu de données séparé (tests e2e sur un second backend) sans toucher aux données de travail.
+const DATA_DIR = process.env.DOTS_DATA_DIR ?? path.resolve(__dirname, "../../data/templates");
 
 /**
  * Gabarit appliqué par défaut : `{ "templateId": "…" }`, à côté des dossiers de
@@ -53,6 +54,18 @@ const SEEDS: { id: string; name: string; description: string; file: string }[] =
     name: "Collectivité",
     description: "En-tête avec logo et bandeau vert.",
     file: "collectivite.typ",
+  },
+  {
+    id: "republique-francaise",
+    name: "République française",
+    description: "Bloc Marianne officiel et nom du ministère en tête, filets bleu État.",
+    file: "republique-francaise.typ",
+  },
+  {
+    id: "ville-de-paris",
+    name: "Ville de Paris",
+    description: "Logo officiel de la Ville de Paris centré en tête, comme les arrêtés publiés.",
+    file: "ville-de-paris.typ",
   },
 ];
 

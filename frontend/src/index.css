@@ -1,3 +1,34 @@
+/* Feuille du kit d'abord (composants + jetons), puis les polices que le kit attend —
+   Roboto Flex Variable, Material Icons Outlined, Material Icons — chargées comme dans
+   Docs (pages/globals.css) par les paquets @fontsource (dépendances du kit, fichiers
+   woff2 servis à part), et non par `fonts/roboto` et `fonts/material-icons` du kit,
+   qui embarquent les mêmes polices en base64 dans le CSS (≈ 980 Ko). Puis les nôtres
+   (App.css et theme.css, importées par App.tsx). */
+@import url("@gouvfr-lasuite/ui-components/style");
+@import url("@fontsource-variable/roboto-flex");
+@import url("@fontsource/material-icons-outlined");
+@import url("@fontsource/material-icons");
+
+/* Classe des icônes Material du kit (<span class="material-icons">) : reprise de
+   dist/sass/material-icons.scss, que la feuille `fonts/material-icons` apportait. */
+.material-icons {
+  font-family: "Material Icons Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga";
+}
+
 :root {
   color-scheme: light;
 }

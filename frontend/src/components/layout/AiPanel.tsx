@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { Alert, Badge, Button, Spinner, TextArea, VariantType } from "@gouvfr-lasuite/ui-components";
+import { Checkmark, Send, Sparkle, XMark } from "@gouvfr-lasuite/ui-components/icons";
 import { aiEditTemplate, aiTemplateFromPdf, type AiResult } from "../../api/client";
-import { IconCheck, IconClose, IconSend, IconSparkle } from "../shell/icons";
 
 const SUGGESTIONS = ["Logo en en-tête", "Passer en Marianne", "En-tête à droite", "Pagination dès la page 2"];
 /** 4,5 Mo d'octets = 6 Mo de base64, la limite de backend/src/routes/ai.ts (MAX_PDF_BASE64). */
@@ -103,6 +104,14 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
     void run(instruction, () => aiEditTemplate({ source, instruction, fixtureId: fixtureId || undefined }));
   }
 
+  /** Le champ est une zone de texte : Entrée envoie, Maj+Entrée passe à la ligne. */
+  function onInputKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  }
+
   async function sendPdf(file: File | undefined) {
     if (!file || locked) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -134,16 +143,21 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
   return (
     <aside className="le-ai" aria-label="Assistant IA" hidden={!open}>
       <div className="le-ai__header">
-        <IconSparkle size={18} />
+        <Sparkle size={18} aria-hidden="true" />
         Assistant IA
-        <button type="button" className="dots-btn dots-btn--icon" aria-label="Fermer l'assistant" onClick={onClose}>
-          <IconClose size={18} />
-        </button>
+        <Button
+          variant="tertiary"
+          color="neutral"
+          size="small"
+          icon={<XMark aria-hidden="true" />}
+          aria-label="Fermer l'assistant"
+          onClick={onClose}
+        />
       </div>
 
       <div className="le-ai__thread" ref={threadRef}>
         {messages.length === 0 && !busy && (
-          <p className="dots-muted le-ai__empty">
+          <p className="le-hint le-ai__empty">
             Décrivez la modification souhaitée : l'assistant réécrit le gabarit et l'aperçu montre le résultat avant
             d'appliquer.
           </p>
@@ -152,30 +166,38 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
           if (m.kind === "user") return <div key={i} className="ai-msg--user">{m.text}</div>;
           if (m.kind === "error") {
             return (
-              <div key={i} className="dots-notice dots-notice--error" role="alert">{m.text}</div>
+              <div key={i} role="alert">
+                <Alert type={VariantType.ERROR}>{m.text}</Alert>
+              </div>
             );
           }
           return <ProposalCard key={i} message={m} onApply={() => settle(i, "applied")} onIgnore={() => settle(i, "ignored")} />;
         })}
-        {busy && <p className="dots-muted" role="status">L'assistant réfléchit…</p>}
+        {busy && (
+          <div className="le-hint le-ai__busy" role="status">
+            <Spinner size="sm" />
+            L'assistant réfléchit…
+          </div>
+        )}
       </div>
 
       {unavailable && (
-        <div className="dots-notice dots-notice--warn le-ai__notice" role="status">
-          Assistant indisponible : {unavailable}
+        <div className="le-ai__notice" role="status">
+          <Alert type={VariantType.WARNING}>Assistant indisponible : {unavailable}</Alert>
         </div>
       )}
 
       <div className="le-ai__chips">
         {SUGGESTIONS.map((s) => (
-          <button key={s} type="button" disabled={locked} onClick={() => setInput(s)}>
+          <Button key={s} variant="bordered" color="neutral" size="small" disabled={locked} onClick={() => setInput(s)}>
             {s}
-          </button>
+          </Button>
         ))}
       </div>
 
+      {/* Zone de dépôt maison : le FileUploader du kit gère une liste de fichiers, ici un seul PDF part aussitôt. */}
       <div
-        className={`dots-dropzone le-ai__drop${dragOver ? " dots-dropzone--active" : ""}`}
+        className={`le-ai__drop${dragOver ? " le-ai__drop--active" : ""}`}
         onDragOver={(e) => {
           e.preventDefault();
           if (!locked) setDragOver(true);
@@ -205,22 +227,25 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
           send();
         }}
       >
-        <input
-          className="dots-input"
-          aria-label="Demande à l'assistant"
+        <TextArea
+          variant="classic"
+          hideLabel
+          label="Demande à l'assistant"
           placeholder="Demandez une modification…"
+          rows={2}
+          fullWidth
           value={input}
           disabled={locked}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onInputKeyDown}
         />
-        <button
+        <Button
           type="submit"
-          className="dots-btn dots-btn--brand dots-btn--icon"
+          variant="primary"
+          icon={<Send aria-hidden="true" />}
           aria-label="Envoyer"
           disabled={locked || input.trim() === ""}
-        >
-          <IconSend size={18} />
-        </button>
+        />
       </form>
     </aside>
   );
@@ -241,7 +266,7 @@ function ProposalCard({
   return (
     <div className="ai-card">
       <div className="ai-card__title">
-        <IconSparkle size={16} />
+        <Sparkle size={16} aria-hidden="true" />
         {n} modification{n > 1 ? "s" : ""} proposée{n > 1 ? "s" : ""}
       </div>
       {result.summary && <p className="ai-card__summary">{result.summary}</p>}
@@ -249,19 +274,19 @@ function ProposalCard({
         <ul>
           {result.changes.map((c, i) => (
             <li key={i}>
-              <IconCheck size={14} />
+              <Checkmark size={14} aria-hidden="true" />
               <span>{c}</span>
             </li>
           ))}
         </ul>
       )}
       {result.check.ok ? (
-        <div className="dots-muted">
-          <span className="dots-ok">
+        <div className="le-hint">
+          <span className="le-ok">
             Compilé en {result.check.ms} ms · {result.check.pages} page{result.check.pages > 1 ? "s" : ""}
           </span>
           {result.check.warnings.length > 0 && (
-            <ul className="dots-mono">
+            <ul className="le-mono">
               {result.check.warnings.map((w, i) => (
                 <li key={i}>{w}</li>
               ))}
@@ -269,33 +294,32 @@ function ProposalCard({
           )}
         </div>
       ) : (
-        <div className="dots-notice dots-notice--error">
+        <Alert type={VariantType.ERROR}>
           <span>
             La proposition ne compile pas : {result.check.error}
-            {result.check.details && <pre className="dots-mono">{result.check.details}</pre>}
+            {result.check.details && <pre className="le-mono">{result.check.details}</pre>}
           </span>
-        </div>
+        </Alert>
       )}
-      <span className="dots-muted">
+      <span className="le-hint">
         +{diff.added} / −{diff.removed} ligne{diff.added + diff.removed > 1 ? "s" : ""}
       </span>
       {status === "pending" ? (
         <>
           <div className="ai-card__actions">
-            <button type="button" className="dots-btn dots-btn--brand dots-btn--small" onClick={onApply}>
-              <IconCheck size={16} />
+            <Button variant="primary" size="small" icon={<Checkmark aria-hidden="true" />} onClick={onApply}>
               Appliquer
-            </button>
-            <button type="button" className="dots-btn dots-btn--small" onClick={onIgnore}>
+            </Button>
+            <Button variant="secondary" color="neutral" size="small" onClick={onIgnore}>
               Ignorer
-            </button>
+            </Button>
           </div>
-          <span className="dots-muted">
+          <span className="le-hint">
             L'aperçu montre déjà la proposition. Rien n'est enregistré tant que vous n'appliquez pas.
           </span>
         </>
       ) : (
-        <span className="dots-badge dots-badge--grey">{status === "applied" ? "Appliquée" : "Ignorée"}</span>
+        <Badge type="neutral" className="ai-card__status">{status === "applied" ? "Appliquée" : "Ignorée"}</Badge>
       )}
     </div>
   );

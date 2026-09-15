@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState, type MouseEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Alert, Button, Input, TextArea, VariantType } from "@gouvfr-lasuite/ui-components";
+import { Download, Eye, Share, Trash } from "@gouvfr-lasuite/ui-components/icons";
 import {
   deleteTemplate,
   fetchFixtures,
@@ -8,6 +10,7 @@ import {
   updateTemplate,
 } from "../api/client";
 import { PdfPreview } from "../components/PdfPreview";
+import "../components/templates/templates-page.css";
 
 export function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -93,66 +96,95 @@ export function TemplateEditorPage() {
 
   const dirty = name !== saved.name || description !== saved.description || source !== saved.source;
 
+  /** Navigation interne sans rechargement (même motif que l'éditeur de mise en page). */
+  function follow(e: MouseEvent<HTMLElement>, to: string, guard = true) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (guard && dirty && !window.confirm("Modifications non enregistrées : continuer ?")) return;
+    navigate(to);
+  }
+
   return (
     <div className="dots-page">
       <div className="dots-page-header">
         <h1>Modifier le gabarit</h1>
-        <nav className="dots-segmented" aria-label="Mode d'édition">
-          <Link
-            to={`/templates/${id}/layout`}
-            onClick={(e) => {
-              if (dirty && !window.confirm("Modifications non enregistrées : continuer ?")) e.preventDefault();
-            }}
+        <nav className="editor-modes" aria-label="Mode d'édition">
+          <Button
+            href={`/templates/${id}/layout`}
+            variant="tertiary"
+            color="neutral"
+            size="small"
+            onClick={(e) => follow(e, `/templates/${id}/layout`)}
           >
             Mise en page
-          </Link>
-          <Link to={`/templates/${id}`} aria-current="page">Code Typst</Link>
+          </Button>
+          <Button
+            href={`/templates/${id}`}
+            variant="secondary"
+            color="neutral"
+            size="small"
+            aria-current="page"
+            onClick={(e) => follow(e, `/templates/${id}`, false)}
+          >
+            Code Typst
+          </Button>
         </nav>
         <div className="dots-actions">
-          <button type="button" onClick={handleDownload}>
+          <Button type="button" variant="secondary" icon={<Download aria-hidden="true" />} onClick={handleDownload}>
             Télécharger .typ
-          </button>
-          <button type="button" onClick={handleShare}>
+          </Button>
+          <Button type="button" variant="secondary" icon={<Share aria-hidden="true" />} onClick={handleShare}>
             Partager
-          </button>
-          <button type="button" className="danger" onClick={handleDelete}>
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            color="error"
+            icon={<Trash aria-hidden="true" />}
+            onClick={handleDelete}
+          >
             Supprimer
-          </button>
+          </Button>
         </div>
       </div>
 
-      <label className="field">
-        <span>Nom</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-      </label>
-      <label className="field">
-        <span>Description</span>
-        <input value={description} onChange={(e) => setDescription(e.target.value)} />
-      </label>
+      <div className="editor-fields">
+        <Input label="Nom" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label="Description" fullWidth value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
 
       <div className="editor-body">
         <div className="editor-column">
-          <label className="field">
-            <span>Source Typst (.typ)</span>
-            <textarea
-              className="typ-textarea"
-              rows={22}
-              spellCheck={false}
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-            />
-          </label>
+          <TextArea
+            label="Source Typst (.typ)"
+            variant="classic"
+            className="typ-source"
+            fullWidth
+            rows={22}
+            spellCheck={false}
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+          />
           <div className="editor-actions">
-            <button type="button" onClick={handleSave} disabled={saving}>
+            <Button type="button" disabled={saving} onClick={handleSave}>
               {saving ? "Enregistrement…" : "Enregistrer"}
-            </button>
-            <button type="button" onClick={handlePreview} disabled={previewLoading}>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              icon={<Eye aria-hidden="true" />}
+              disabled={previewLoading}
+              onClick={handlePreview}
+            >
               {previewLoading ? "Génération…" : "Prévisualiser"}
-            </button>
+            </Button>
           </div>
           {error && (
-            <div className="error" role="alert">
-              {error}
+            // Le kit ne pose pas de rôle sur Alert : l'enveloppe porte la zone vive.
+            <div role="alert">
+              <Alert type={VariantType.ERROR}>
+                <pre className="dots-mono typ-error">{error}</pre>
+              </Alert>
             </div>
           )}
         </div>

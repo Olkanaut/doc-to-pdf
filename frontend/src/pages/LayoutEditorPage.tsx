@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Alert, Badge, Button, Loader, Select, VariantType } from "@gouvfr-lasuite/ui-components";
+import { ArrowLeft, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
   fetchFixtures,
@@ -17,7 +19,6 @@ import {
 import { PdfPreview } from "../components/PdfPreview";
 import { LayoutPanel } from "../components/layout/LayoutPanel";
 import { AiPanel } from "../components/layout/AiPanel";
-import { IconBack, IconSparkle } from "../components/shell/icons";
 import "../components/layout/layout-editor.css";
 
 const COMPOSE_DEBOUNCE_MS = 400;
@@ -34,6 +35,7 @@ function message(e: unknown): string {
  */
 export function LayoutEditorPage() {
   const { id = "" } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -160,6 +162,8 @@ export function LayoutEditorPage() {
     );
   }, [renderSource, fixtureId]);
 
+  const fixtureOptions = useMemo(() => fixtures.map((f) => ({ value: f.id, label: f.name })), [fixtures]);
+
   // ── Actions ────────────────────────────────────────────────────────────────
   function handleLayoutChange(next: LayoutConfig) {
     composeWanted.current = true;
@@ -193,17 +197,32 @@ export function LayoutEditorPage() {
     }
   }
 
-  /** Les liens de l'en-tête quittent la page : on prévient si des modifications ne sont pas enregistrées. */
-  function confirmLeave(e: MouseEvent) {
-    if (dirty && !window.confirm("Modifications non enregistrées : continuer ?")) e.preventDefault();
+  /**
+   * Les liens de l'en-tête sont des Button du kit rendus en <a href> : on garde le href
+   * (nouvel onglet, lecteur d'écran) mais un clic simple navigue sans recharger la page,
+   * après avoir prévenu si des modifications ne sont pas enregistrées.
+   */
+  function follow(e: MouseEvent<HTMLElement>, to: string, guard = true) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (guard && dirty && !window.confirm("Modifications non enregistrées : continuer ?")) return;
+    navigate(to);
   }
 
-  if (loading) return <div className="page-loading" role="status">Chargement…</div>;
+  if (loading) {
+    return (
+      <div className="le-loading">
+        <Loader aria-label="Chargement…" />
+      </div>
+    );
+  }
   if (loadError) {
     return (
-      <div className="dots-page">
-        <div className="dots-notice dots-notice--error" role="alert">{loadError}</div>
-        <Link to="/templates">Retour aux gabarits</Link>
+      <div className="le-load-error" role="alert">
+        <Alert type={VariantType.ERROR}>{loadError}</Alert>
+        <Button href="/templates" variant="tertiary" onClick={(e) => follow(e, "/templates", false)}>
+          Retour aux gabarits
+        </Button>
       </div>
     );
   }
@@ -211,46 +230,62 @@ export function LayoutEditorPage() {
   return (
     <div className="le">
       <header className="le-header">
-        <Link to="/templates" className="dots-btn dots-btn--icon" aria-label="Retour aux gabarits" onClick={confirmLeave}>
-          <IconBack size={20} />
-        </Link>
+        <Button
+          href="/templates"
+          variant="tertiary"
+          color="neutral"
+          icon={<ArrowLeft aria-hidden="true" />}
+          aria-label="Retour aux gabarits"
+          onClick={(e) => follow(e, "/templates")}
+        />
         <input
           className="le-header__name"
           aria-label="Nom du gabarit"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        {isDefault && <span className="dots-badge">Par défaut</span>}
-        <nav className="dots-segmented" aria-label="Mode d'édition">
-          <Link to={`/templates/${id}/layout`} aria-current="page">Mise en page</Link>
-          <Link to={`/templates/${id}`} onClick={confirmLeave}>Code Typst</Link>
+        {isDefault && <Badge type="accent">Par défaut</Badge>}
+        <nav className="le-header__modes" aria-label="Mode d'édition">
+          <Button
+            href={`/templates/${id}/layout`}
+            variant="secondary"
+            color="neutral"
+            size="small"
+            aria-current="page"
+            onClick={(e) => follow(e, `/templates/${id}/layout`, false)}
+          >
+            Mise en page
+          </Button>
+          <Button
+            href={`/templates/${id}`}
+            variant="tertiary"
+            color="neutral"
+            size="small"
+            onClick={(e) => follow(e, `/templates/${id}`)}
+          >
+            Code Typst
+          </Button>
         </nav>
         <span className="le-header__spacer" />
         {saveError ? (
-          <span className="dots-notice dots-notice--error le-header__status" role="alert">{saveError}</span>
+          <span className="le-header__status le-header__status--error" role="alert">{saveError}</span>
         ) : (
-          <span className="dots-muted le-header__status">
+          <span className="le-header__status">
             {saving ? "Enregistrement…" : dirty ? "Modifications non enregistrées" : "Enregistré"}
           </span>
         )}
-        <button
-          type="button"
-          className={`dots-btn${aiOpen ? " dots-btn--brand" : ""}`}
+        <Button
+          variant={aiOpen ? "primary" : "secondary"}
+          icon={<Sparkle aria-hidden="true" />}
           aria-pressed={aiOpen}
           onClick={() => setAiOpen(!aiOpen)}
         >
-          <IconSparkle size={18} />
           Assistant IA
-        </button>
+        </Button>
         {/* Pendant une proposition, l'aperçu ne montre pas `source` : enregistrer serait trompeur. */}
-        <button
-          type="button"
-          className="dots-btn dots-btn--brand"
-          disabled={!dirty || saving || proposal !== null}
-          onClick={handleSave}
-        >
+        <Button variant="primary" disabled={!dirty || saving || proposal !== null} onClick={handleSave}>
           Enregistrer
-        </button>
+        </Button>
       </header>
 
       <div className={`le-body${aiOpen ? " le-body--ai" : ""}`}>
@@ -264,23 +299,23 @@ export function LayoutEditorPage() {
           />
         ) : (
           <aside className="le-panel" aria-label="Réglages de mise en page">
-            <div className="dots-notice dots-notice--error le-panel__notice" role="alert">
-              Réglages indisponibles : {layoutError ?? "chargement…"}
+            <div className="le-panel__notice" role="alert">
+              <Alert type={VariantType.ERROR}>Réglages indisponibles : {layoutError ?? "chargement…"}</Alert>
             </div>
           </aside>
         )}
 
         <section className="le-preview" aria-label="Aperçu">
           <div className="le-preview__bar">
-            <label>
-              Aperçu :
-              <select value={fixtureId} onChange={(e) => setFixtureId(e.target.value)} aria-label="Document d'exemple">
-                {fixtures.length === 0 && <option value="">aucun document d'exemple</option>}
-                {fixtures.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-            </label>
+            <Select
+              label="Document d'exemple"
+              variant="inline"
+              clearable={false}
+              placeholder="aucun document d'exemple"
+              options={fixtureOptions}
+              value={fixtureId}
+              onChange={(e) => setFixtureId(String(e.target.value ?? ""))}
+            />
             <span aria-live="polite">
               {rendering
                 ? "· recompilation…"
@@ -288,21 +323,27 @@ export function LayoutEditorPage() {
                   ? `· recompilé à chaque réglage (${renderMs} ms)`
                   : "· recompilé à chaque réglage"}
             </span>
-            {proposal && <span className="dots-badge">Proposition — non enregistrée</span>}
+            {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
           </div>
           <div className="le-preview__doc">
             {layout && layoutError && (
-              <div className="dots-notice dots-notice--error" role="alert">{layoutError}</div>
+              <div role="alert">
+                <Alert type={VariantType.ERROR}>{layoutError}</Alert>
+              </div>
             )}
             {renderError && (
-              <div className="dots-notice dots-notice--error le-preview__error" role="alert">
-                <strong>Le gabarit ne compile pas : {renderError.error}</strong>
-                {renderError.details && (
-                  <details>
-                    <summary>Sortie de typst</summary>
-                    <pre className="dots-mono">{renderError.details}</pre>
-                  </details>
-                )}
+              <div role="alert">
+                <Alert type={VariantType.ERROR}>
+                  <div className="le-preview__error">
+                    <strong>Le gabarit ne compile pas : {renderError.error}</strong>
+                    {renderError.details && (
+                      <details>
+                        <summary>Sortie de typst</summary>
+                        <pre className="le-mono">{renderError.details}</pre>
+                      </details>
+                    )}
+                  </div>
+                </Alert>
               </div>
             )}
             <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />

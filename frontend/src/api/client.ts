@@ -83,7 +83,10 @@ export async function fetchFixtures(): Promise<FixtureSummary[]> {
 }
 
 export interface RenderRequest {
-  fixtureId: string;
+  /** Document d'exemple embarqué (`backend/fixtures`). `fixtureId` ou `docId`, l'un des deux. */
+  fixtureId?: string;
+  /** Document Docs (uuid), lu par le backend via DOCS_API_URL, à la place de `fixtureId`. */
+  docId?: string;
   templateId?: string;
   templateSource?: string;
 }
@@ -315,4 +318,23 @@ export async function renderPdfWithInfo(
   }
   const blockCount = Number(res.headers.get("X-Dots-Block-Count") ?? 0);
   return { ok: true, blob: await res.blob(), info: { blockCount, unsupported } };
+}
+
+// ── Documents Docs (La Suite) ─────────────────────────────────────────────────
+
+export interface DocsDocument {
+  id: string;
+  /** Titre du document dans Docs. */
+  name: string;
+  /** Blocs BlockNote, même forme que les fixtures. */
+  blocks: unknown[];
+  blockCount: number;
+}
+
+/**
+ * GET /api/docs/:id. Lève une Error portant le message `error` du serveur : 403 (document
+ * non accessible), 404 (introuvable), 422 (jamais ouvert dans l'éditeur), 502 (Docs injoignable).
+ */
+export async function fetchDocsDocument(id: string): Promise<DocsDocument> {
+  return asJson(await fetch(`/api/docs/${encodeURIComponent(id)}`));
 }

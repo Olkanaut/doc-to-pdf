@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, type MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { Alert, Badge, Button, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
+import { Code, Play, Plus, Star, StarFilled, Trash } from "@gouvfr-lasuite/ui-components/icons";
 import {
   deleteTemplate,
   fetchDefaultTemplate,
@@ -9,7 +11,6 @@ import {
 } from "../api/client";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
-import { IconStar } from "../components/shell/icons";
 import "../components/templates/templates-page.css";
 
 const VIEW_STORAGE_KEY = "doc-pdf:templates-view";
@@ -22,12 +23,31 @@ function loadStoredView(): TemplateView {
   }
 }
 
+/** `Button` du kit rendu en lien (`href`), navigation interne sans rechargement. */
+function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
+  const navigate = useNavigate();
+  return (
+    <Button
+      {...props}
+      href={to}
+      onClick={(e: MouseEvent<HTMLAnchorElement & HTMLButtonElement>) => {
+        onClick?.(e);
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        navigate(to);
+      }}
+    />
+  );
+}
+
 /** Liste des gabarits. Création et import vivent dans le panneau gauche (LeftPanel). */
 export function TemplatesListPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
+  // ponytail: bouton d'entrée seulement ; la déduction depuis un PDF sera branchée ensuite.
+  const [fromPdfSoon, setFromPdfSoon] = useState(false);
 
   function reload() {
     setLoading(true);
@@ -77,13 +97,31 @@ export function TemplatesListPage() {
           <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination.</p>
         </div>
         <div className="dots-actions">
+          <Button
+            color="brand"
+            icon={<Plus aria-hidden="true" />}
+            aria-expanded={fromPdfSoon}
+            aria-controls="from-pdf-soon"
+            onClick={() => setFromPdfSoon((v) => !v)}
+          >
+            Déduire un gabarit d'un PDF
+          </Button>
           <ViewSwitcher view={view} onChange={handleViewChange} />
         </div>
       </div>
 
+      {fromPdfSoon && (
+        <div id="from-pdf-soon" role="status">
+          <Alert type={VariantType.INFO}>
+            À venir : déposez un PDF existant, dots en déduira un gabarit (marges, en-tête, polices,
+            pagination) que vous pourrez ajuster dans l'éditeur de mise en page.
+          </Alert>
+        </div>
+      )}
+
       {error && (
-        <div className="dots-notice dots-notice--error" role="alert">
-          {error}
+        <div role="alert">
+          <Alert type={VariantType.ERROR}>{error}</Alert>
         </div>
       )}
 
@@ -100,36 +138,67 @@ export function TemplatesListPage() {
           getOpenHref={(id) => `/templates/${id}/layout`}
           renderBadge={(t) =>
             t.isDefault ? (
-              <span className="dots-badge template-badge">
-                <IconStar filled size={14} />
+              <Badge type="accent" className="template-badge">
+                <StarFilled size={12} aria-hidden="true" />
                 Par défaut
-              </span>
+              </Badge>
             ) : null
           }
+          // Chaque nom accessible porte le nom du gabarit : quatre actions par tuile,
+          // un lecteur d'écran ne doit pas entendre quatre « Supprimer » identiques.
+          // En grille (tuile ~176 px), les quatre actions sont des icônes seules
+          // (nom accessible + title) pour tenir sur une ligne ; en liste, le texte reste.
           renderActions={(t) => (
             <span className="template-actions">
-              <Link to={`/templates/${t.id}`}>Code Typst</Link>
-              <Link to={`/documents/new?template=${t.id}`}>Utiliser</Link>
-              {!t.isDefault && (
-                <button type="button" className="link-button" onClick={() => handleSetDefault(t.id)}>
-                  Définir par défaut
-                </button>
-              )}
-              <button
-                type="button"
-                className="link-button link-button--danger"
-                aria-label={`Supprimer le gabarit ${t.name}`}
-                onClick={() => handleDelete(t.id, t.name)}
+              <LinkButton
+                to={`/templates/${t.id}`}
+                size="small"
+                variant="tertiary"
+                icon={<Code aria-hidden="true" />}
+                aria-label={`Code Typst du gabarit ${t.name}`}
+                title={view === "grid" ? "Code Typst" : undefined}
               >
-                Supprimer
-              </button>
+                {view === "grid" ? undefined : "Code Typst"}
+              </LinkButton>
+              <LinkButton
+                to={`/documents/new?template=${t.id}`}
+                size="small"
+                variant="tertiary"
+                icon={<Play aria-hidden="true" />}
+                aria-label={`Utiliser le gabarit ${t.name}`}
+                title={view === "grid" ? "Utiliser" : undefined}
+              >
+                {view === "grid" ? undefined : "Utiliser"}
+              </LinkButton>
+              {!t.isDefault && (
+                <Button
+                  type="button"
+                  size="small"
+                  variant="tertiary"
+                  color="neutral"
+                  icon={<Star aria-hidden="true" />}
+                  aria-label={`Définir par défaut le gabarit ${t.name}`}
+                  title="Définir par défaut"
+                  onClick={() => handleSetDefault(t.id)}
+                />
+              )}
+              <Button
+                type="button"
+                size="small"
+                variant="tertiary"
+                color="error"
+                icon={<Trash aria-hidden="true" />}
+                aria-label={`Supprimer le gabarit ${t.name}`}
+                title="Supprimer"
+                onClick={() => handleDelete(t.id, t.name)}
+              />
             </span>
           )}
         />
       )}
 
       <p className="dots-muted templates-note">
-        <IconStar size={14} />
+        <Star size={14} aria-hidden="true" />
         Le gabarit par défaut s'applique à tout document ouvert tant qu'un autre n'est pas choisi.
       </p>
     </div>

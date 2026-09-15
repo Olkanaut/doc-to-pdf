@@ -1,52 +1,58 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Button, DropdownMenu, type ButtonElement, type DropdownMenuItem } from "@gouvfr-lasuite/ui-components";
+import { ArrowDropDown, Doc, House, Plus, StackTemplate, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { useRef, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { createTemplate } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { ImportTemplateModal } from "../templates/ImportTemplateModal";
-import { IconChevronDown, IconDoc, IconHome, IconLayout, IconUser } from "./icons";
-import "../templates/templates-page.css";
 
-/** Panneau gauche façon Docs : marque, création, navigation, utilisateur. */
+/**
+ * Contenu du panneau gauche (MainLayout du kit) : création (bouton scindé), accueil,
+ * navigation. Sur /login (non authentifié) : rien — seule la marque de l'en-tête reste.
+ * La modale d'import est ouverte par l'état `importOpen`, comme avant le recâblage.
+ */
 export function LeftPanel() {
-  const { authenticated, user } = useAuth();
+  const { authenticated } = useAuth();
+  const navigate = useNavigate();
+  const [importOpen, setImportOpen] = useState(false);
+
+  if (!authenticated) return null;
+
+  return (
+    <>
+      <div className="dots-panel__actions">
+        <NewTemplateButton onImport={() => setImportOpen(true)} />
+        <Button
+          variant="tertiary"
+          color="brand"
+          aria-label="Accueil"
+          icon={<House aria-hidden="true" />}
+          onClick={() => navigate("/templates")}
+        />
+      </div>
+
+      <nav className="dots-panel__nav" aria-label="Navigation principale">
+        <NavLink to="/templates" className="dots-nav-item">
+          <StackTemplate aria-hidden="true" size={20} />
+          Gabarits
+        </NavLink>
+        <NavLink to="/documents/new" className="dots-nav-item">
+          <Doc aria-hidden="true" size={20} />
+          Documents
+        </NavLink>
+      </nav>
+
+      {importOpen && <ImportTemplateModal onClose={() => setImportOpen(false)} />}
+    </>
+  );
+}
+
+/** Bouton scindé façon NewDocButton de Docs : action principale + menu (kit DropdownMenu). */
+function NewTemplateButton({ onImport }: { onImport: () => void }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const splitRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Menu du bouton scindé : focus sur la première entrée à l'ouverture, flèches
-  // entre les entrées ; fermé au clic ailleurs, à Tab, et à Échap (qui rend le
-  // focus au chevron).
-  useEffect(() => {
-    if (!menuOpen) return;
-    const items = () => [...(menuRef.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? [])];
-    items()[0]?.focus();
-    function onDown(e: MouseEvent) {
-      if (!splitRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Tab") setMenuOpen(false);
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-        moreRef.current?.focus();
-      }
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        const list = items();
-        const i = list.indexOf(document.activeElement as HTMLElement);
-        list[(i + (e.key === "ArrowDown" ? 1 : list.length - 1)) % list.length]?.focus();
-        e.preventDefault();
-      }
-    }
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
+  const moreRef = useRef<ButtonElement>(null);
 
   async function handleCreate() {
     setBusy(true);
@@ -60,85 +66,44 @@ export function LeftPanel() {
     }
   }
 
+  const options: DropdownMenuItem[] = [
+    {
+      label: "Importer un .typ",
+      icon: <Upload aria-hidden="true" />,
+      callback: () => {
+        // Une fois le menu refermé, le chevron reprend le focus : c'est lui que la modale
+        // refocalisera à sa fermeture (ImportTemplateModal lit document.activeElement).
+        requestAnimationFrame(() => {
+          moreRef.current?.focus();
+          onImport();
+        });
+      },
+    },
+  ];
+
   return (
-    <aside className="dots-left-panel">
-      <div className="dots-left-panel__header">
-        <Link to="/templates" className="dots-left-panel__brand">
-          <span className="dots-left-panel__logo" aria-hidden="true">
-            dt
-          </span>
-          <span className="dots-left-panel__title">dots</span>
-        </Link>
-      </div>
-
-      {/* Sur /login (non authentifié) : ni création ni navigation, seule la marque. */}
-      {authenticated && (
-        <>
-          <div className="dots-left-panel__actions">
-            <Link to="/templates" className="dots-btn dots-btn--icon" aria-label="Accueil">
-              <IconHome />
-            </Link>
-            <div className="dots-split" ref={splitRef}>
-              <button
-                type="button"
-                className="dots-btn dots-btn--brand dots-split__main"
-                disabled={busy}
-                onClick={handleCreate}
-              >
-                Nouveau gabarit
-              </button>
-              <button
-                type="button"
-                className="dots-btn dots-btn--brand dots-split__more"
-                aria-label="Autres façons de créer un gabarit"
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                ref={moreRef}
-                onClick={() => setMenuOpen((v) => !v)}
-              >
-                <IconChevronDown size={18} />
-              </button>
-              {menuOpen && (
-                <div className="dots-menu" role="menu" ref={menuRef}>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      // Le chevron reprend le focus avant l'ouverture : c'est lui que
-                      // la modale refocalisera à sa fermeture.
-                      moreRef.current?.focus();
-                      setMenuOpen(false);
-                      setImportOpen(true);
-                    }}
-                  >
-                    Importer un .typ
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <nav className="dots-left-panel__nav" aria-label="Navigation principale">
-            <NavLink to="/templates" className="dots-nav-item">
-              <IconLayout size={18} />
-              Gabarits
-            </NavLink>
-            <NavLink to="/documents/new" className="dots-nav-item">
-              <IconDoc size={18} />
-              Documents
-            </NavLink>
-          </nav>
-        </>
-      )}
-
-      <div className="dots-left-panel__footer">
-        <span className="dots-avatar" aria-hidden="true">
-          <IconUser size={18} />
-        </span>
-        <span>{user?.name ?? "Invité"}</span>
-      </div>
-
-      {importOpen && <ImportTemplateModal onClose={() => setImportOpen(false)} />}
-    </aside>
+    <div className="dots-split">
+      <Button
+        color="brand"
+        className="dots-split__main"
+        disabled={busy}
+        onClick={handleCreate}
+        icon={<Plus aria-hidden="true" />}
+      >
+        Nouveau gabarit
+      </Button>
+      <DropdownMenu options={options} isOpen={menuOpen} onOpenChange={setMenuOpen}>
+        <Button
+          ref={moreRef}
+          color="brand"
+          className="dots-split__more"
+          aria-label="Autres façons de créer un gabarit"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          icon={<ArrowDropDown aria-hidden="true" />}
+          onClick={() => setMenuOpen((v) => !v)}
+        />
+      </DropdownMenu>
+    </div>
   );
 }

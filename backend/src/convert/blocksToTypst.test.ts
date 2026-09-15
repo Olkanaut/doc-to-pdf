@@ -108,3 +108,21 @@ describe("contenu réel de Docs", () => {
     expect(() => blocksToTypst(blocks)).not.toThrow();
   });
 });
+
+describe("échappement des débuts de ligne et des barres", () => {
+  const para = (text: string) => ({ type: "paragraph" as const, content: [{ type: "text" as const, text, styles: {} }] });
+  it("un tiret, un numéro ou une URL en début de texte restent du texte", () => {
+    const { typst } = blocksToTypst([para("- dans le tiers du trottoir"), para("1. Objet"), para("https://example.fr")] as never);
+    expect(typst).toContain("\\- dans le tiers du trottoir");
+    expect(typst).toContain("1\\. Objet");
+    expect(typst).toContain("https:\\/\\/example.fr");
+  });
+  it("un tableau Docs fusionné passe par tableToTypst", () => {
+    const cell = (text: string, colspan = 1) => ({ type: "tableCell", content: [{ type: "text", text, styles: {} }], props: { colspan, rowspan: 1, backgroundColor: "default", textColor: "default", textAlignment: "left" } });
+    const block = { type: "table", content: { type: "tableContent", columnWidths: [100, 100], headerRows: 1, rows: [{ cells: [cell("A"), cell("B")] }, { cells: [cell("total", 2)] }] } };
+    const { typst } = blocksToTypst([block] as never);
+    expect(typst).toContain("table.header(");
+    expect(typst).toContain("table.cell(colspan: 2");
+    expect(typst).not.toMatch(/^\s*stroke:/m);
+  });
+});

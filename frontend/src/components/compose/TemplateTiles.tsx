@@ -1,5 +1,6 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Badge, Radio, RadioGroup } from "@gouvfr-lasuite/ui-components";
 import type { TemplateSummary } from "../../api/client";
 
 interface Props {
@@ -17,13 +18,20 @@ function Thumb({ template }: { template: TemplateSummary }) {
       {failed ? (
         template.name.charAt(0).toUpperCase()
       ) : (
-        <img src={`/api/templates/${template.id}/thumbnail?v=${encodeURIComponent(template.updatedAt)}`} alt="" onError={() => setFailed(true)} />
+        <img
+          src={`/api/templates/${template.id}/thumbnail?v=${encodeURIComponent(template.updatedAt)}`}
+          alt=""
+          onError={() => setFailed(true)}
+        />
       )}
     </span>
   );
 }
 
-/** Tuiles radio : la miniature, le nom et le badge « Par défaut ». */
+/**
+ * Tuiles radio (Radio/RadioGroup du kit) : la miniature, le nom et le badge « Par défaut ».
+ * Le fieldset reste : RadioGroup ne pose ni rôle de groupe ni légende.
+ */
 export function TemplateTiles({ templates, selectedId, defaultId, onSelect }: Props) {
   return (
     <fieldset className="compose-templates">
@@ -31,24 +39,26 @@ export function TemplateTiles({ templates, selectedId, defaultId, onSelect }: Pr
         <span>Gabarit</span>
         <Link to="/templates">Gérer</Link>
       </legend>
-      {templates.map((t) => (
-        <Fragment key={t.id}>
-          <input
-            type="radio"
+      <RadioGroup fullWidth>
+        {templates.map((t) => (
+          <Radio
+            key={t.id}
             name="template"
-            id={`compose-tpl-${t.id}`}
-            className="compose-tile__input"
             value={t.id}
+            fullWidth
+            className="compose-tile"
             checked={t.id === selectedId}
             onChange={() => onSelect(t.id)}
+            label={
+              <>
+                <Thumb template={t} />
+                <span className="compose-tile__name">{t.name}</span>
+                {(t.isDefault || t.id === defaultId) && <Badge type="accent">Par défaut</Badge>}
+              </>
+            }
           />
-          <label htmlFor={`compose-tpl-${t.id}`} className="compose-tile">
-            <Thumb template={t} />
-            <span className="compose-tile__name">{t.name}</span>
-            {(t.isDefault || t.id === defaultId) && <span className="dots-badge">Par défaut</span>}
-          </label>
-        </Fragment>
-      ))}
+        ))}
+      </RadioGroup>
     </fieldset>
   );
 }
