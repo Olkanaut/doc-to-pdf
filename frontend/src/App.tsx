@@ -1,50 +1,39 @@
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import type { ReactElement } from "react";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { LeftPanel } from "./components/shell/LeftPanel";
 import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
+import { LayoutEditorPage } from "./pages/LayoutEditorPage";
 import { ComposePage } from "./pages/ComposePage";
 import "./App.css";
+import "./theme.css";
+
+/** `/template/editor?id=…` (nom retenu dans CLAUDE.md) → `/templates/:id/layout`. */
+function LegacyEditorRedirect() {
+  const [params] = useSearchParams();
+  const id = params.get("id");
+  return <Navigate to={id ? `/templates/${id}/layout` : "/templates"} replace />;
+}
+
+function guarded(element: ReactElement) {
+  return <ProtectedRoute>{element}</ProtectedRoute>;
+}
 
 export default function App() {
   return (
-    <div className="app">
-      <header className="app-header">
-        <p className="app-title">Un doc, un PDF</p>
-        <nav className="app-nav">
-          <NavLink to="/templates">Gabarits</NavLink>
-          <NavLink to="/documents/new">Créer un document</NavLink>
-        </nav>
-      </header>
-
-      <main>
+    <div className="dots-shell">
+      <LeftPanel />
+      <main className="dots-main">
         <Routes>
           <Route path="/" element={<Navigate to="/templates" replace />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/templates"
-            element={
-              <ProtectedRoute>
-                <TemplatesListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/templates/:id"
-            element={
-              <ProtectedRoute>
-                <TemplateEditorPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/documents/new"
-            element={
-              <ProtectedRoute>
-                <ComposePage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/templates" element={guarded(<TemplatesListPage />)} />
+          <Route path="/templates/:id" element={guarded(<TemplateEditorPage />)} />
+          <Route path="/templates/:id/layout" element={guarded(<LayoutEditorPage />)} />
+          <Route path="/template/editor" element={<LegacyEditorRedirect />} />
+          <Route path="/documents/new" element={guarded(<ComposePage />)} />
         </Routes>
       </main>
     </div>

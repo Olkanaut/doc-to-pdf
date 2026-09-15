@@ -1,0 +1,405 @@
+/* Éditeur de mise en page : en-tête 64 px, panneau 320 px | aperçu | assistant 380 px.
+   La page ne défile pas ; chaque colonne défile pour elle-même. */
+
+.le {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--dots-grey-000);
+}
+
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+
+.le-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 64px;
+  height: 64px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--dots-grey-100);
+}
+.le-header__name {
+  flex: 0 1 320px;
+  min-width: 80px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--dots-radius);
+  background: transparent;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--dots-grey-900);
+}
+.le-header__name:hover {
+  border-color: var(--dots-grey-100);
+}
+.le-header__name:focus {
+  outline: none;
+  border-color: var(--dots-brand-500);
+  box-shadow: 0 0 0 2px var(--dots-brand-100);
+}
+.le-header .dots-segmented {
+  flex: 0 0 auto;
+}
+.le-header .dots-segmented > a {
+  white-space: nowrap;
+}
+.le-header__spacer {
+  flex: 1 1 auto;
+}
+.le-header__status {
+  white-space: nowrap;
+}
+
+/* ── Corps ───────────────────────────────────────────────────────────────── */
+
+.le-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Panneau de réglages */
+.le-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 320px;
+  width: 320px;
+  overflow-y: auto;
+  border-right: 1px solid var(--dots-grey-100);
+}
+.le-panel fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.le-panel fieldset:disabled {
+  opacity: 0.55;
+}
+.le-section {
+  border-bottom: 1px solid var(--dots-grey-100);
+}
+/* Sélecteurs à deux classes : cette feuille est injectée avant App.css et theme.css,
+   dont les règles `button:hover` / `button:disabled` gagneraient à spécificité égale. */
+.le-section > .le-section__toggle {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px 0 16px;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.le-section > .le-section__toggle:hover {
+  background: var(--dots-grey-025);
+}
+.le-section > .le-section__toggle:disabled {
+  background: transparent;
+}
+.le-section__toggle svg {
+  color: var(--dots-grey-500);
+}
+.le-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 16px 16px;
+}
+.le-section__body .dots-field input,
+.le-section__body .dots-field select {
+  height: 36px;
+  font-size: 0.875rem;
+}
+.le-section__body .dots-grid-4 .dots-field input {
+  padding: 0 8px;
+}
+.le-section__body .dots-segmented {
+  align-self: flex-start;
+}
+.le-section__body .dots-segmented > button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.8125rem;
+}
+.le-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: var(--dots-grey-900);
+}
+/* theme.css donne un fond gris clair à tout bouton survolé : on garde l'interrupteur lisible */
+.le-switch .dots-toggle:hover {
+  background: var(--dots-grey-400);
+}
+.le-switch .dots-toggle[aria-checked="true"]:hover {
+  background: var(--dots-brand-700);
+}
+.le-color {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.le-color input[type="color"] {
+  width: 44px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--dots-grey-200);
+  border-radius: var(--dots-radius);
+  background: var(--dots-grey-000);
+  cursor: pointer;
+}
+.le-panel__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding: 16px;
+}
+.le-panel__foot .dots-muted {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.le-panel__foot svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.le-panel__notice {
+  margin: 12px 16px 0;
+}
+
+/* Aperçu */
+.le-preview {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--dots-grey-050);
+}
+.le-preview__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--dots-grey-100);
+  background: var(--dots-grey-000);
+  font-size: 0.8125rem;
+  color: var(--dots-grey-500);
+}
+.le-preview__bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.le-preview__bar select {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--dots-grey-200);
+  border-radius: var(--dots-radius);
+  background: var(--dots-grey-000);
+  color: var(--dots-grey-900);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+.le-preview__bar .dots-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 4px;
+  background: var(--dots-brand-600);
+}
+.le-preview__doc {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  gap: 12px;
+}
+/* PdfPreview (App.css) est prévu pour une page qui défile : ici il remplit la colonne */
+.le-preview__doc .pdf-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+.le-preview__doc .pdf-preview iframe {
+  min-height: 0;
+}
+.le-preview__doc .pdf-placeholder {
+  flex: 1 1 auto;
+  height: auto;
+  background: var(--dots-grey-000);
+}
+.le-preview__error {
+  flex-direction: column;
+  align-items: stretch;
+}
+.le-preview__error pre {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+/* ── Assistant IA ────────────────────────────────────────────────────────── */
+
+.le-ai[hidden] {
+  display: none;
+}
+.le-ai {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 380px;
+  width: 380px;
+  border-left: 1px solid var(--dots-grey-100);
+  background: var(--dots-grey-000);
+}
+/* Assistant ouvert sous 1600 px : 300 + 320 + 380 px de panneaux fixes ne laisseraient
+   que ~420 px à l'aperçu. Le panneau de réglages s'efface (il est de toute façon
+   verrouillé pendant une proposition) et revient à la fermeture de l'assistant. */
+@media (max-width: 1599px) {
+  .le-body--ai .le-panel {
+    display: none;
+  }
+}
+.le-ai__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 48px;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--dots-grey-100);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.le-ai__header svg:first-child {
+  color: var(--dots-brand-600);
+}
+.le-ai__header .dots-btn--icon {
+  margin-left: auto;
+}
+.le-ai__thread {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+.le-ai__empty {
+  margin: auto 0;
+  text-align: center;
+}
+.ai-msg--user {
+  align-self: flex-end;
+  max-width: 90%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--dots-brand-050);
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ai-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--dots-grey-100);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+.ai-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--dots-brand-700);
+}
+.ai-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ai-card li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.ai-card li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--dots-ok-fg);
+}
+.ai-card .dots-notice {
+  padding: 8px 10px;
+}
+.ai-card__actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+.ai-card__summary {
+  margin: 0;
+  color: var(--dots-grey-600);
+}
+.le-ai__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 8px;
+}
+.le-ai__chips > button,
+.le-ai__chips > button:disabled {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: var(--dots-grey-000);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+.le-ai__drop {
+  margin: 0 16px 8px;
+  min-height: 64px;
+  padding: 10px 12px;
+  font-size: 0.8125rem;
+}
+.le-ai__drop input {
+  display: none;
+}
+.le-ai__notice {
+  margin: 0 16px 8px;
+}
+.le-ai__input {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--dots-grey-100);
+}
+.le-ai__input .dots-input {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+}
+.le-ai__input .dots-btn--icon {
+  border-color: var(--dots-brand-600);
+}

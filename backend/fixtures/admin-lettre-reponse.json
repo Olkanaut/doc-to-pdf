@@ -1,0 +1,110 @@
+{
+  "id": "admin-lettre-reponse",
+  "name": "Exemple — Lettre de réponse à un usager (associations)",
+  "blocks": [
+    { "type": "heading", "props": { "level": 1 }, "content": [
+      { "type": "text", "text": "Réponse à votre demande de récépissé de déclaration d’association" }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Préfecture de la Vallée-d’Exemple — Direction de la citoyenneté et de la légalité", "styles": { "bold": true } }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Bureau des associations et des élections, 12 place de la Préfecture, 00042 Exemple-sur-Loire" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Affaire suivie par : Claire Fixture, tél. 02 61 91 00 42, courriel : claire.fixture@exemple.gouv.fr" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Dossier n° 2026-042 — réf. interne #A-42" }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Exemple-sur-Loire, le 14 septembre 2026" }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Monsieur Jean Fixture" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Président de l’association « Les Amis de la Vallée-d’Exemple »" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "12 rue de l’Exemple, 00042 Saint-Fixture" }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Objet :", "styles": { "bold": true } },
+      { "type": "text", "text": " demande de récépissé de déclaration de création d’association — dossier n° 2026-042" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Réf. :", "styles": { "bold": true } },
+      { "type": "text", "text": " votre courrier du 2 septembre 2026, reçu le 4 septembre 2026" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "P.J. :", "styles": { "bold": true } },
+      { "type": "text", "text": " 2 — notice explicative (fichier notice_pieces.pdf) et formulaire de déclaration (réf. #A-42)" }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Monsieur le Président," }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "J’ai l’honneur d’accuser réception de votre courrier cité en référence, par lequel vous sollicitez la délivrance d’un récépissé de déclaration de création de l’association « Les Amis de la Vallée-d’Exemple », dont le siège est fixé 12 rue de l’Exemple à Saint-Fixture. Ce courrier a été enregistré par mes services sous le « n° 2026-042 »." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "En application de l’article R. 123-4 du code de l’exemple, la déclaration de création d’une association doit être accompagnée des statuts datés et signés par au moins deux dirigeants, du procès-verbal de l’assemblée constitutive et de la liste des personnes chargées de son administration. Le délai de cinq jours prévu à l’article R. 123-5 du même code pour la délivrance du récépissé ne court qu’à compter de la réception d’un dossier complet." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Après examen, je constate que votre dossier ne peut être instruit en l’état. Le fichier statuts_signes.pdf transmis par courriel est illisible au-delà de l’article 3. Par ailleurs, le budget prévisionnel joint, qui fait apparaître des recettes de 1 200,50 € dont 12,5 % de dons, mentionne des objets promotionnels achetés à l’étranger au prix de 3 $ par unité, sans conversion en euros. Les pièces suivantes manquent en outre à votre envoi :" }
+    ]},
+    { "type": "bulletListItem", "content": [
+      { "type": "text", "text": "les statuts complets, datés et signés par au moins deux dirigeants, sur papier ou en fichier lisible ;" }
+    ]},
+    { "type": "bulletListItem", "content": [
+      { "type": "text", "text": "le procès-verbal de l’assemblée constitutive du 28 août 2026 ;" }
+    ]},
+    { "type": "bulletListItem", "content": [
+      { "type": "text", "text": "la liste des dirigeants indiquant, pour chacun, nom, prénom, profession, domicile et nationalité [à compléter sur le formulaire joint] ;" }
+    ]},
+    { "type": "bulletListItem", "content": [
+      { "type": "text", "text": "l’attestation de domiciliation du siège social, établie par le propriétaire du local." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Je vous invite à me faire parvenir ces pièces dans un délai d’un mois à compter de la réception de la présente, par courrier ou par courriel à l’adresse indiquée en en-tête. J’attire votre attention sur la note *importante* figurant en tête du formulaire joint, qui précise les mentions obligatoires de la liste des dirigeants. Passé ce délai, et sans réponse de votre part, votre demande sera classée sans suite et une nouvelle déclaration devra être déposée." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Mes services se tiennent à votre disposition pour tout renseignement complémentaire, aux jours et heures d’ouverture au public — du lundi au vendredi, de 9 h à 12 h et de 14 h à 16 h 30 — ou sur le " },
+      { "type": "link", "href": "https://www.exemple.gouv.fr/demarches/associations", "content": [
+        { "type": "text", "text": "portail des démarches de la préfecture" }
+      ]},
+      { "type": "text", "text": "." }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Je vous prie d’agréer, Monsieur le Président, l’expression de ma considération distinguée." }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Pour le préfet et par délégation," }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Le chef du bureau des associations et des élections," }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Paul Modèle", "styles": { "bold": true } }
+    ]},
+
+    { "type": "heading", "props": { "level": 2 }, "content": [
+      { "type": "text", "text": "Voies et délais de recours" }
+    ]},
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "La présente lettre ne constitue pas une décision de refus. Si toutefois vous entendez la contester, vous pouvez former, dans un délai de deux mois à compter de sa réception, un recours gracieux auprès du préfet de la Vallée-d’Exemple ou un recours contentieux devant le tribunal administratif d’Exemple-sur-Loire (3 allée du Contentieux, 00042 Exemple-sur-Loire). Le recours gracieux interrompt le délai du recours contentieux, qui recommence à courir à compter de la réponse de l’administration ou, à défaut, au terme d’un silence de deux mois.", "styles": { "italic": true } }
+    ]},
+
+    { "type": "paragraph", "content": [
+      { "type": "text", "text": "Copie à :", "styles": { "bold": true } },
+      { "type": "text", "text": " Mairie de Saint-Fixture, service de la vie associative ; Sous-préfecture de l’Exemple-Nord." }
+    ]}
+  ]
+}

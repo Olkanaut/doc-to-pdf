@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { TemplateSummary } from "../../api/client";
 import { OpenTarget } from "./OpenTarget";
 import type { TemplateViewProps } from "./types";
@@ -8,6 +8,8 @@ export type { TemplateView } from "./ViewSwitcher";
 
 export interface TemplateBrowserProps extends TemplateViewProps {
   view: TemplateView;
+  /** Marque facultative (ex. « Par défaut »), rendue entre le titre et les actions. */
+  renderBadge?: (template: TemplateSummary) => ReactNode;
 }
 
 /**
@@ -23,6 +25,7 @@ export function TemplateBrowser({
   view,
   getOpenHref,
   onOpen,
+  renderBadge,
   renderActions,
   onCreateNew,
   createNewLabel = "Nouveau gabarit",
@@ -63,6 +66,7 @@ export function TemplateBrowser({
               <span className="template-row-description">{t.description || "Sans description"}</span>
             )}
           </OpenTarget>
+          {renderBadge?.(t)}
           {renderActions && (
             <div className={isGrid ? "template-tile-actions" : "template-row-actions"}>
               {renderActions(t)}

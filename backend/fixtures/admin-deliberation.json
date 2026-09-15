@@ -1,0 +1,665 @@
+{
+  "id": "admin-deliberation",
+  "name": "Exemple — Délibération du conseil municipal",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Commune de Saint-Fixture",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Département de l’Exemple — Arrondissement de la Vallée-d’Exemple"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Extrait du registre des délibérations du conseil municipal"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Séance du 10 septembre 2026"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Délibération n° 2026-058",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Objet :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " Attribution d’une subvention à l’association « Les Amis de la Fixture »"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "L’an deux mille vingt-six, le dix septembre à dix-huit heures trente, le conseil municipal de la commune de Saint-Fixture, légalement convoqué le 3 septembre 2026, s’est réuni en session ordinaire, en mairie, salle du conseil, sous la présidence de Madame Hélène Fixturel, maire."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Présents :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " Mme Hélène Fixturel, maire ; M. Paul Exemplaire, premier adjoint ; Mme Odile Gabarit et M. Jean-Marc Modèle, adjoints ; Mme Sabine Cadratin, M. Louis Fleuron, Mme Nadia Vignette, M. Étienne Bandeau, Mme Claire Marge, Mme Inès Puce et M. Thomas Interligne, conseillers municipaux."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Absents excusés :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " M. Rémi Colonne, Mme Léa Filigrane, M. Karim Lettrine et Mme Agnès Pagination."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pouvoirs :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " M. Rémi Colonne à Mme Hélène Fixturel ; Mme Léa Filigrane à M. Paul Exemplaire ; M. Karim Lettrine à Mme Odile Gabarit."
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Secrétaire de séance :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " Mme Sabine Cadratin, désignée à l’unanimité."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Exposé des motifs"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Madame le maire expose que l’association « Les Amis de la Fixture », régie par la loi du 1er juillet 1901, a déposé le 15 juin 2026 une demande de subvention de 2 500,00 € (réf. #A-42) pour son programme 2026-2027 : fête de la Fixture du 17 octobre 2026 et échange avec la commune jumelle de Sainte-Fixture-du-Lac (Québec), dont le partenaire canadien facture le matériel pédagogique 3 $ par unité, à la charge de l’association."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le budget prévisionnel de l’association s’établit à 20 000,00 € ; la subvention sollicitée en représente 12,5 %. Le solde de la subvention 2025, soit 1 200,50 €, a été versé le 12 février 2026 au vu du compte rendu financier (fichier bilan_2025_amis-fixture.pdf), sans observation du service de gestion comptable."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Note *importante* du service juridique : le montant est inférieur au seuil de 23 000 € au-delà duquel une convention d’objectifs est obligatoire (décret n° 2001-495 du 6 juin 2001) ; il est néanmoins proposé d’en conclure une."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu le code général des collectivités territoriales, notamment ses articles L. 1611-4, L. 2121-29, L. 2131-11 et L. 2311-7 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu la loi n° 2000-321 du 12 avril 2000 relative aux droits des citoyens dans leurs relations avec les administrations, notamment son article 10 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu la délibération n° 2026-042 du 11 juin 2026 approuvant le budget supplémentaire de l’exercice 2026 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu la demande de subvention présentée le 15 juin 2026 par l’association « Les Amis de la Fixture », enregistrée sous la réf. #A-42, et les pièces jointes ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Considérant l’intérêt public local du programme d’activités 2026-2027 de l’association ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Considérant que Madame Inès Puce, présidente de l’association, ne prend part ni au débat ni au vote et quitte la salle, en application de l’article L. 2131-11 du code général des collectivités territoriales ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le conseil municipal, après en avoir délibéré,",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 1 :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": " décide d’attribuer à l’association « Les Amis de la Fixture » une subvention de fonctionnement de 2 500,00 € (deux mille cinq cents euros) au titre de l’exercice 2026 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 2 :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": " autorise le maire, ou l’adjoint délégué, à signer la convention d’objectifs annexée à la présente délibération (fichier convention_amis-fixture_2026.pdf) ; le versement interviendra en une seule fois après signature ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 3 :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": " dit que la dépense est inscrite au budget 2026, chapitre 65 « Autres charges de gestion courante », article 6574 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 4 :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": " dit que la présente délibération peut faire l’objet d’un recours devant le tribunal administratif de la Vallée-d’Exemple dans un délai de deux mois à compter de sa publication et de sa transmission au représentant de l’État, y compris par l’application "
+        },
+        {
+          "type": "text",
+          "text": "Télérecours citoyens",
+          "styles": {
+            "italic": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Résultat du vote"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Suffrages",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Nombre",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Détail",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Votants"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "13"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "10 présents et 3 pouvoirs"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Pour"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "11"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "—"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Contre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "M. Étienne Bandeau"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Abstentions"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mme Claire Marge"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Ne prend pas part au vote"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mme Inès Puce (article L. 2131-11 du CGCT)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La délibération est "
+        },
+        {
+          "type": "text",
+          "text": "adoptée à la majorité des suffrages exprimés",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Publication et transmission"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ainsi fait et délibéré les jour, mois et an que dessus."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Transmise au représentant de l’État (Préfecture de la Vallée-d’Exemple, bureau du contrôle de légalité) le 14 septembre 2026 par voie dématérialisée ; numéro d’accusé de réception ACTES : [à compléter]."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Publiée sous forme électronique sur le "
+        },
+        {
+          "type": "link",
+          "href": "https://www.saint-fixture.exemple.fr/deliberations",
+          "content": [
+            {
+              "type": "text",
+              "text": "site internet de la commune"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " le 15 septembre 2026 et affichée en mairie du 15 septembre au 15 novembre 2026 (article L. 2131-1 du CGCT)."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "P.J. :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " projet de convention d’objectifs 2026 (fichier convention_amis-fixture_2026.pdf, 4 pages)."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Copie à :",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " Mme la présidente de l’association « Les Amis de la Fixture » ; M. Bruno Cartouche, directeur général des services — bruno.cartouche@exemple.gouv.fr."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pour extrait conforme, le maire,"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Hélène Fixturel",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    }
+  ]
+}

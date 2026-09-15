@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { createTemplate, deleteTemplate, fetchTemplates, type TemplateSummary } from "../api/client";
+import { Link } from "react-router-dom";
+import {
+  deleteTemplate,
+  fetchDefaultTemplate,
+  fetchTemplates,
+  setDefaultTemplate,
+  type TemplateSummary,
+} from "../api/client";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
+import { IconStar } from "../components/shell/icons";
+import "../components/templates/templates-page.css";
 
 const VIEW_STORAGE_KEY = "doc-pdf:templates-view";
 
@@ -14,16 +22,23 @@ function loadStoredView(): TemplateView {
   }
 }
 
+/** Liste des gabarits. Création et import vivent dans le panneau gauche (LeftPanel). */
 export function TemplatesListPage() {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
-  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   function reload() {
     setLoading(true);
-    fetchTemplates()
-      .then(setTemplates)
+    setError(null);
+    // Le gabarit par défaut arrive par `isDefault` dans la liste ou par
+    // /templates/default (null tant que la route manque ou qu'aucun n'est défini).
+    Promise.all([fetchTemplates(), fetchDefaultTemplate().catch(() => null)])
+      .then(([list, def]) =>
+        setTemplates(list.map((t) => ({ ...t, isDefault: t.isDefault ?? t.id === def?.id }))),
+      )
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }
 
@@ -38,11 +53,14 @@ export function TemplatesListPage() {
     }
   }
 
-  async function handleCreate() {
-    const name = window.prompt("Nom du nouveau gabarit ?", "Nouveau gabarit");
-    if (!name) return;
-    const created = await createTemplate({ name, description: "" });
-    navigate(`/templates/${created.id}`);
+  async function handleSetDefault(id: string) {
+    setError(null);
+    try {
+      await setDefaultTemplate(id);
+      reload();
+    } catch (e) {
+      setError(`Impossible de définir le gabarit par défaut : ${(e as Error).message}`);
+    }
   }
 
   async function handleDelete(id: string, name: string) {
@@ -52,35 +70,68 @@ export function TemplatesListPage() {
   }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>Gabarits</h1>
-        <ViewSwitcher view={view} onChange={handleViewChange} />
+    <div className="dots-page">
+      <div className="dots-page-header">
+        <div>
+          <h1>Gabarits</h1>
+          <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination.</p>
+        </div>
+        <div className="dots-actions">
+          <ViewSwitcher view={view} onChange={handleViewChange} />
+        </div>
       </div>
 
+      {error && (
+        <div className="dots-notice dots-notice--error" role="alert">
+          {error}
+        </div>
+      )}
+
       {loading ? (
-        <div className="page-loading" role="status">Chargement…</div>
+        <div className="page-loading" role="status">
+          Chargement…
+        </div>
       ) : (
         <TemplateBrowser
           templates={templates}
           view={view}
-          getOpenHref={(id) => `/templates/${id}`}
-          onCreateNew={handleCreate}
+          // La tuile ouvre l'éditeur de mise en page (cible produit) ; le code Typst
+          // reste accessible par l'action secondaire.
+          getOpenHref={(id) => `/templates/${id}/layout`}
+          renderBadge={(t) =>
+            t.isDefault ? (
+              <span className="dots-badge template-badge">
+                <IconStar filled size={14} />
+                Par défaut
+              </span>
+            ) : null
+          }
           renderActions={(t) => (
-            <>
+            <span className="template-actions">
+              <Link to={`/templates/${t.id}`}>Code Typst</Link>
               <Link to={`/documents/new?template=${t.id}`}>Utiliser</Link>
+              {!t.isDefault && (
+                <button type="button" className="link-button" onClick={() => handleSetDefault(t.id)}>
+                  Définir par défaut
+                </button>
+              )}
               <button
                 type="button"
-                className="link-button"
+                className="link-button link-button--danger"
                 aria-label={`Supprimer le gabarit ${t.name}`}
                 onClick={() => handleDelete(t.id, t.name)}
               >
                 Supprimer
               </button>
-            </>
+            </span>
           )}
         />
       )}
+
+      <p className="dots-muted templates-note">
+        <IconStar size={14} />
+        Le gabarit par défaut s'applique à tout document ouvert tant qu'un autre n'est pas choisi.
+      </p>
     </div>
   );
 }

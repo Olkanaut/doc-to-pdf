@@ -24,6 +24,12 @@ export class TypstCompileError extends Error {
   }
 }
 
+export interface CompileOutput {
+  bytes: Buffer;
+  /** stderr de typst sur succès : y figurent les `warning:` (police absente, etc.). */
+  stderr: string;
+}
+
 /**
  * Sets up a per-request sandbox (template + body + assets), shells out to
  * `typst compile` with the given output filename and extra CLI flags, and
@@ -34,6 +40,14 @@ async function runTypstCompile(
   outFileName: string,
   extraArgs: string[] = [],
 ): Promise<Buffer> {
+  return (await runTypstCompileDetailed(request, outFileName, extraArgs)).bytes;
+}
+
+async function runTypstCompileDetailed(
+  request: Pick<CompileRequest, "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages">,
+  outFileName: string,
+  extraArgs: string[] = [],
+): Promise<CompileOutput> {
   const dir = await mkdtemp(path.join(tmpdir(), "doc-pdf-"));
   try {
     const templateName = "template.typ";
@@ -53,20 +67,21 @@ async function runTypstCompile(
     }
 
     const outPath = path.join(dir, outFileName);
+    let stderr = "";
     try {
-      await execFileAsync("typst", [
+      ({ stderr } = await execFileAsync("typst", [
         "compile",
         "--root",
         dir,
         ...extraArgs,
         path.join(dir, templateName),
         outPath,
-      ]);
+      ]));
     } catch (err: any) {
       throw new TypstCompileError(err.stderr ?? String(err));
     }
 
-    return await readFile(outPath);
+    return { bytes: await readFile(outPath), stderr: stderr ?? "" };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -74,6 +89,11 @@ async function runTypstCompile(
 
 export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
   return runTypstCompile(request, "out.pdf");
+}
+
+/** Comme compileToPdf, avec le stderr de typst (avertissements) en plus. */
+export async function compileToPdfDetailed(request: CompileRequest): Promise<CompileOutput> {
+  return runTypstCompileDetailed(request, "out.pdf");
 }
 
 const THUMBNAIL_SWATCH_BODY = `= Titre de démonstration
