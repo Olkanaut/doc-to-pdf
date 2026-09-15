@@ -10,7 +10,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Un doc, un PDF</h1>
+        <p className="app-title">Un doc, un PDF</p>
         <nav className="app-nav">
           <NavLink to="/templates">Gabarits</NavLink>
           <NavLink to="/documents/new">Créer un document</NavLink>

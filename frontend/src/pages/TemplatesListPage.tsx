@@ -59,7 +59,7 @@ export function TemplatesListPage() {
       </div>
 
       {loading ? (
-        <div className="page-loading">Chargement…</div>
+        <div className="page-loading" role="status">Chargement…</div>
       ) : (
         <TemplateBrowser
           templates={templates}

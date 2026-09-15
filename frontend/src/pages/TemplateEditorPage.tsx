@@ -86,16 +86,20 @@ export function TemplateEditorPage() {
     }
   }
 
-  if (loading) return <div className="page-loading">Chargement…</div>;
+  if (loading) return <div className="page-loading" role="status">Chargement…</div>;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Modifier le gabarit</h1>
         <div className="page-header-actions">
-          <button onClick={handleDownload}>Télécharger .typ</button>
-          <button onClick={handleShare}>Partager</button>
-          <button className="danger" onClick={handleDelete}>
+          <button type="button" onClick={handleDownload}>
+            Télécharger .typ
+          </button>
+          <button type="button" onClick={handleShare}>
+            Partager
+          </button>
+          <button type="button" className="danger" onClick={handleDelete}>
             Supprimer
           </button>
         </div>
@@ -123,14 +127,18 @@ export function TemplateEditorPage() {
             />
           </label>
           <div className="editor-actions">
-            <button onClick={handleSave} disabled={saving}>
+            <button type="button" onClick={handleSave} disabled={saving}>
               {saving ? "Enregistrement…" : "Enregistrer"}
             </button>
-            <button onClick={handlePreview} disabled={previewLoading}>
+            <button type="button" onClick={handlePreview} disabled={previewLoading}>
               {previewLoading ? "Génération…" : "Prévisualiser"}
             </button>
           </div>
-          {error && <div className="error">{error}</div>}
+          {error && (
+            <div className="error" role="alert">
+              {error}
+            </div>
+          )}
         </div>
         <div className="editor-column">
           <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />
