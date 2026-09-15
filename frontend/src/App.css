@@ -506,6 +506,12 @@ button {
   text-decoration: none;
 }
 
+.secondary-link {
+  border: 1px solid #c7ccd4;
+  background: white;
+  color: #1a1a1a;
+}
+
 .secondary-button {
   border: 1px solid #c7ccd4;
   background: white;
@@ -571,4 +577,82 @@ button:disabled {
   flex: 1;
   border: none;
   min-height: 700px;
+}
+
+.doc-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+  max-width: 720px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
+.doc-entry input {
+  width: 100%;
+}
+
+.doc-entry-error {
+  max-width: 720px;
+  margin-top: 12px;
+}
+
+.doc-panel {
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
+.doc-panel-label {
+  margin: 0 0 6px;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.doc-id {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: 14px;
+}
+
+.doc-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.doc-action {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 92px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.doc-action strong {
+  color: #002f6c;
+}
+
+.doc-action span {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .doc-entry {
+    grid-template-columns: 1fr;
+  }
 }
