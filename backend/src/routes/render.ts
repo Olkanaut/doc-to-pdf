@@ -1,8 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import path from "node:path";
-import { readFile } from "node:fs/promises";
 import { getFixture, FIXTURES_DIR } from "../registry/fixtures.js";
-import { getTemplate, templatePath, TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { getTemplateSource, TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import { blocksToTypst } from "../convert/blocksToTypst.js";
 import { compileToPdf, TypstCompileError } from "../compile/typstCompile.js";
 
@@ -32,11 +31,11 @@ export async function renderRoutes(app: FastifyInstance): Promise<void> {
     if (templateSource) {
       resolvedTemplateSource = templateSource;
     } else {
-      const template = getTemplate(templateId!);
-      if (!template) {
+      const source = await getTemplateSource(templateId!);
+      if (!source) {
         return reply.code(404).send({ error: `template "${templateId}" not found` });
       }
-      resolvedTemplateSource = await readFile(templatePath(template), "utf8");
+      resolvedTemplateSource = source;
     }
 
     const { typst, images } = blocksToTypst(fixture.blocks);

@@ -46,7 +46,7 @@ interface UserInfoResponse {
   family_name?: string;
 }
 
-interface AuthSession {
+export interface AuthSession {
   accessToken: string;
   refreshToken?: string;
   expiresAt: number;
@@ -243,7 +243,7 @@ function getFlow(req: FastifyRequest, reply: FastifyReply): OidcFlowCookie | nul
   return flow;
 }
 
-function getSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
+export function getAuthSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
   const sessionId = parseCookies(req)[SESSION_COOKIE];
   if (!sessionId) return null;
 
@@ -305,7 +305,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/api/auth/me", async (req, reply) => {
-    const session = getSession(req, reply);
+    const session = getAuthSession(req, reply);
     if (!session) {
       return reply.send({ authenticated: false });
     }

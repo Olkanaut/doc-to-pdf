@@ -2,6 +2,12 @@ export interface TemplateSummary {
   id: string;
   name: string;
   description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateDetail extends TemplateSummary {
+  source: string;
 }
 
 export interface FixtureSummary {
@@ -18,9 +24,10 @@ export interface AuthUser {
   familyName?: string;
 }
 
-export type AuthState =
-  | { authenticated: false }
-  | { authenticated: true; user: AuthUser };
+export interface SessionInfo {
+  authenticated: boolean;
+  user: AuthUser | null;
+}
 
 export interface AuthCallbackResult {
   authenticated: true;
@@ -28,56 +35,93 @@ export interface AuthCallbackResult {
   returnTo: string;
 }
 
-export async function fetchAuthMe(): Promise<AuthState> {
-  const res = await fetch("/api/auth/me", { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to load authenticated user");
+async function asJson<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(data.error ?? `Request failed (${res.status})`);
+  }
   return res.json();
+}
+
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  return fetch(input, {
+    ...init,
+    credentials: "include",
+  });
+}
+
+export async function fetchSession(): Promise<SessionInfo> {
+  const res = await apiFetch("/api/auth/me");
+  const data = await asJson<SessionInfo>(res);
+  return {
+    authenticated: data.authenticated,
+    user: data.authenticated ? data.user : null,
+  };
 }
 
 export async function completeLogin(
   code: string,
   state: string,
 ): Promise<AuthCallbackResult> {
-  const res = await fetch("/api/auth/callback", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, state }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ error: "OIDC callback failed" }));
-    throw new Error(data.error ?? "OIDC callback failed");
-  }
-
-  return res.json();
+  return asJson(
+    await apiFetch("/api/auth/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state }),
+    }),
+  );
 }
 
 export async function logout(): Promise<void> {
-  const res = await fetch("/api/auth/logout", {
-    method: "POST",
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/auth/logout", { method: "POST" });
   if (!res.ok) throw new Error("Failed to logout");
 }
 
 export async function fetchTemplates(): Promise<TemplateSummary[]> {
-  const res = await fetch("/api/templates", { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to load templates");
-  return res.json();
+  return asJson(await apiFetch("/api/templates"));
+}
+
+export async function fetchTemplateDetail(id: string): Promise<TemplateDetail> {
+  return asJson(await apiFetch(`/api/templates/${id}`));
+}
+
+export async function createTemplate(input: {
+  name: string;
+  description: string;
+  source?: string;
+}): Promise<TemplateSummary> {
+  return asJson(
+    await apiFetch("/api/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+export async function updateTemplate(
+  id: string,
+  patch: { name?: string; description?: string; source?: string },
+): Promise<TemplateSummary> {
+  return asJson(
+    await apiFetch(`/api/templates/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
+  );
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const res = await apiFetch(`/api/templates/${id}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(data.error ?? `Request failed (${res.status})`);
+  }
 }
 
 export async function fetchFixtures(): Promise<FixtureSummary[]> {
-  const res = await fetch("/api/fixtures", { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to load fixtures");
-  return res.json();
-}
-
-export async function fetchTemplateSource(id: string): Promise<string> {
-  const res = await fetch(`/api/templates/${id}/source`, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to load template source");
-  const data = await res.json();
-  return data.source;
+  return asJson(await apiFetch("/api/fixtures"));
 }
 
 export interface RenderRequest {
@@ -98,9 +142,8 @@ export interface RenderError {
 }
 
 export async function renderPdf(req: RenderRequest): Promise<RenderResult | RenderError> {
-  const res = await fetch("/api/render", {
+  const res = await apiFetch("/api/render", {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
   });

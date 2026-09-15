@@ -20,6 +20,12 @@ A public servant finishes a note in **Docs** (La Suite's collaborative editor). 
 
 4. **Phase 2 will target a self-hosted Docs instance** (Docker Compose + its bundled Keycloak as the OIDC provider), not the real `docs.numerique.gouv.fr` + ProConnect. Research found no realistic path to real ProConnect OAuth-client approval for an outside team within a 48h hackathon (no self-serve registration found; partner onboarding is a multi-day approval process). Self-hosting exercises the *same* Resource Server API contract while keeping the demo fully within our control.
 
+5. **The app is multiple pages, not one screen** — `/templates` (library), `/templates/:id` (editor), `/documents/new` (compose: pick content + template → generate PDF). The `docs.→dots.` URL-swap gimmick targets the compose page specifically (it becomes `/d/:docId` in Phase 2, pre-filled with a real document) — template management is a separate "prepare your gabarits ahead of time" area, not something the gimmick opens.
+
+6. **Auth is architected now, wired for real later.** The frontend has a real `AuthProvider`/`ProtectedRoute`/`useAuth()` seam, and the backend has a real `GET /api/session` endpoint — but today `/api/session` is a stub that always returns "authenticated" (see `backend/src/routes/session.ts`). Phase 2 replaces only that one endpoint's implementation (real check against the Keycloak session cookie); no page or routing code needs to change.
+
+7. **Templates are stored as files, not a database**, seeded once from the original 3 presets: `backend/data/templates/<id>/{meta.json,template.typ}` (gitignored — this is runtime state, not source). Full CRUD lives in `backend/src/registry/templates.ts`. **Important open point for the team**: this storage is only "shared" if everyone points at the *same running backend instance* — if each teammate runs `npm run dev` locally, you each get your own empty template store and won't see each other's work, and the live demo won't show anything prepared in advance. Fix: deploy one shared backend instance (even a bare-bones one, e.g. via a quick Fly.io/Render deploy or a tunnel like ngrok from one machine) *before* everyone starts creating templates, and have all frontends (local `npm run dev` is fine) point at that one shared backend via `vite.config.ts`'s proxy target — not yet done, needs a decision on where to host it.
+
 ## Research findings worth knowing (condensed)
 
 **La Suite Docs** (`github.com/suitenumerique/docs`, MIT license, Django+DRF backend / Next.js+React frontend):
@@ -33,7 +39,7 @@ A public servant finishes a note in **Docs** (La Suite's collaborative editor). 
 
 Full plan document (analysis, requirements, both system-design diagrams, folder structure) lives at `/Users/ok/.claude/plans/track-3-eager-crystal.md` on the machine this was built on — copy it into the repo if you want it versioned; it's not currently tracked in git.
 
-## Current state: Phase 1 is implemented and verified
+## Current state: multi-page app with template CRUD, implemented and verified
 
 Repo layout:
 ```
@@ -44,25 +50,34 @@ doc-pdf/
 │   ├── src/convert/blocksToTypst.ts   # our hand-rolled JSON → Typst converter
 │   ├── src/convert/escapeTypst.ts     # escapes \ * _ ` # < > @ $ [ ] in literal text
 │   ├── src/compile/typstCompile.ts    # per-request temp dir + `typst compile` subprocess
-│   ├── src/routes/{templates,fixtures,render}.ts
+│   ├── src/registry/templates.ts      # file-backed template CRUD (seeds 3 presets on first run)
+│   ├── src/registry/fixtures.ts       # reads mock documents from fixtures/*.json
+│   ├── src/routes/{templates,fixtures,render,session}.ts
 │   ├── fixtures/*.json                # 3 mock documents (BlockNote-shaped)
-│   └── templates/*.typ + assets/      # 3 letterhead presets: minimal, ministere, collectivite
-└── frontend/            # Vite + React
-    └── src/App.tsx + components/      # fixture/template pickers, live .typ editor, PDF preview
+│   ├── templates/*.typ + assets/      # seed source for the 3 presets: minimal, ministere, collectivite
+│   └── data/templates/<id>/           # live template storage (gitignored, runtime state)
+└── frontend/            # Vite + React + react-router-dom
+    └── src/
+        ├── auth/{AuthContext,ProtectedRoute}.tsx   # auth seam, see decision #6 above
+        ├── pages/{TemplatesListPage,TemplateEditorPage,ComposePage,LoginPage}.tsx
+        └── components/                              # shared pickers, PDF preview
 ```
 
-**Verified working** (this session):
-- 5 backend unit tests pass (escaping + conversion correctness, including a test that literal `*`/`_`/`#` in document text render as plain text, not markup).
-- All 9 fixture × template combinations render successfully via `POST /api/render` (checked via curl, and visually via PDF→PNG conversion — logo, header banner, pagination, bold/italic, tables, and images all render correctly).
-- Full browser flow driven with Playwright: dropdowns populate from the backend, "Générer le PDF" returns a real `200 application/pdf`, the PDF loads into the preview iframe as a blob URL, and the "edit template" toggle correctly loads real `.typ` source into a textarea and regenerates from edited source.
+Routes: `/templates` (library — list/create/delete), `/templates/:id` (editor — edit/save/preview/download/share/delete), `/documents/new?template=:id` (compose — pick content, generate, preview, download). All three are wrapped in `<ProtectedRoute>`; `/login` is a placeholder for the real Keycloak redirect.
 
-**Not yet built** (Phase 2, per the plan):
-- Self-hosted Docs + Keycloak instance.
-- `/auth/login` + `/auth/callback` (OIDC Authorization Code flow via `openid-client`).
-- `/api/doc/:id` — proxies to Docs' `formatted-content` endpoint with a Bearer token.
-- Frontend: "paste a Docs URL/ID" input + `/d/:id` route replacing the fixture picker; the `docs.*`/`dots.*` local-hostname URL-swap demo.
+**Verified working** (across sessions):
+- Backend unit tests pass (escaping + conversion correctness, including a test that literal `*`/`_`/`#` in document text render as plain text, not markup).
+- All fixture × template combinations render successfully via `POST /api/render`, visually confirmed via PDF→PNG (logo, header banner, pagination, bold/italic, tables, images all correct).
+- Full template CRUD lifecycle exercised via curl (create/read/update/delete, plus confirming seeded presets survive and render still works afterward).
+- Full multi-page browser flow driven with Playwright: root redirects to `/templates`, seeded templates list correctly, editor loads/edits/saves/previews real `.typ` source, creating a new template and deleting one both work, and navigating from a template card's "Créer un document" link correctly pre-selects that template on the compose page.
+
+**Not yet built** (Phase 2, per the plan, plus new items from this session):
+- **Decide where to host one shared backend instance** so the team's template library (and the demo) reflects everyone's work rather than N empty local stores — see decision #7 above. Blocking for effective teamwork on templates, not blocking for solo frontend/backend code changes.
+- Self-hosted Docs + Keycloak instance; wiring `/api/session` to a real session check; `/auth/login` + `/auth/callback` (OIDC Authorization Code flow via `openid-client`).
+- `/api/doc/:id` — proxies to Docs' `formatted-content` endpoint with a Bearer token; compose page's fixture picker gets a "paste a Docs URL/ID" alternative; `/d/:id` route for the URL-swap demo.
 - Docker packaging + deploy alongside the self-hosted Docs stack.
-- Stretch/polish items (explicitly lowest priority): template gallery + default template, AI-assisted template editing, AI-generated templates from a branded PDF exemplar.
+- Asset upload (custom logo/fonts per user-created template) — deliberately deferred; new templates today can only reference the existing shared `templates/assets/*` logos.
+- Stretch/polish, in priority order per the team's latest call: (1) `/templates` page — done; (2) explore PDF→Typst-template AI generation next (flagged as the highest-value bonus if it works — "parse every PDF to a Typst template" as a live demo moment); (3) template gallery/default-template niceties are lower priority than that.
 
 ## How to run it right now
 
