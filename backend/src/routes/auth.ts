@@ -11,6 +11,7 @@ interface AuthConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  postLogoutRedirectUri: string;
   scope: string;
 }
 
@@ -24,6 +25,7 @@ interface OidcFlowCookie {
 
 interface TokenResponse {
   access_token: string;
+  id_token?: string;
   refresh_token?: string;
   expires_in?: number;
 }
@@ -48,6 +50,7 @@ interface UserInfoResponse {
 
 export interface AuthSession {
   accessToken: string;
+  idToken?: string;
   refreshToken?: string;
   expiresAt: number;
   user: AuthUser;
@@ -71,6 +74,8 @@ function authConfig(): AuthConfig {
     clientSecret:
       process.env.OIDC_CLIENT_SECRET ?? "ThisIsAnExampleKeyForDevPurposeOnly",
     redirectUri: process.env.OIDC_REDIRECT_URI ?? `${appOrigin}/auth/callback`,
+    postLogoutRedirectUri:
+      process.env.OIDC_POST_LOGOUT_REDIRECT_URI ?? `${appOrigin}/login`,
     scope: process.env.OIDC_SCOPE ?? "openid email profile",
   };
 }
@@ -159,6 +164,16 @@ function authUrl(config: AuthConfig, flow: OidcFlowCookie): string {
   return url.toString();
 }
 
+function logoutUrl(config: AuthConfig, idToken: string): string {
+  const url = new URL(`${config.issuerUrl}/protocol/openid-connect/logout`);
+  url.search = new URLSearchParams({
+    client_id: config.clientId,
+    id_token_hint: idToken,
+    post_logout_redirect_uri: config.postLogoutRedirectUri,
+  }).toString();
+  return url.toString();
+}
+
 async function exchangeCodeForToken(
   config: AuthConfig,
   code: string,
@@ -210,6 +225,7 @@ function createSession(reply: FastifyReply, token: TokenResponse, user: AuthUser
 
   sessions.set(sessionId, {
     accessToken: token.access_token,
+    idToken: token.id_token,
     refreshToken: token.refresh_token,
     expiresAt: Date.now() + expiresIn * 1000,
     user,
@@ -259,6 +275,14 @@ export function getAuthSession(req: FastifyRequest, reply: FastifyReply): AuthSe
     return null;
   }
 
+  return session;
+}
+
+function clearLocalSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
+  const sessionId = parseCookies(req)[SESSION_COOKIE];
+  const session = sessionId ? sessions.get(sessionId) ?? null : null;
+  if (sessionId) sessions.delete(sessionId);
+  clearCookie(reply, SESSION_COOKIE);
   return session;
 }
 
@@ -314,9 +338,18 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post("/api/auth/logout", async (req, reply) => {
-    const sessionId = parseCookies(req)[SESSION_COOKIE];
-    if (sessionId) sessions.delete(sessionId);
-    clearCookie(reply, SESSION_COOKIE);
+    clearLocalSession(req, reply);
     return reply.send({ ok: true });
+  });
+
+  app.get("/api/auth/logout/sso", async (req, reply) => {
+    const session = clearLocalSession(req, reply);
+    const config = authConfig();
+
+    if (!session?.idToken) {
+      return reply.status(302).header("Location", config.postLogoutRedirectUri).send();
+    }
+
+    return reply.status(302).header("Location", logoutUrl(config, session.idToken)).send();
   });
 }

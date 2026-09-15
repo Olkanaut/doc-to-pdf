@@ -251,6 +251,7 @@ OIDC_ISSUER=http://localhost:8083/realms/lasuite
 OIDC_CLIENT_ID=interop-app
 OIDC_CLIENT_SECRET=ThisIsAnExampleKeyForDevPurposeOnly
 OIDC_REDIRECT_URI=http://localhost:3002/auth/callback
+OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
 ```
 
 ## Nettoyage

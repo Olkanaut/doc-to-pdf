@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { fetchSession, logout as logoutRequest, type SessionInfo } from "../api/client";
+import { fetchSession, type SessionInfo } from "../api/client";
 
 interface AuthState extends SessionInfo {
   loading: boolean;
@@ -34,9 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function logout() {
-    await logoutRequest();
-    setState({ loading: false, authenticated: false, user: null });
+  function logout(): Promise<void> {
+    window.location.assign("/api/auth/logout/sso");
+    return Promise.resolve();
   }
 
   useEffect(() => {
