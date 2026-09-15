@@ -1,0 +1,66 @@
+# Local Demo Scripts
+
+This folder contains the local orchestration layer for the workspace.
+
+Use only two profiles from the repository root:
+
+```bash
+./lasuite-dev.sh docs-solo bootstrap
+./lasuite-dev.sh suite bootstrap
+```
+
+## Profiles
+
+`docs-solo` is the main development profile for the PDF app:
+
+```text
+auth: shared Keycloak
+docs: postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx
+```
+
+Its bootstrap prepares the local Docs directories/env files expected by the
+upstream Makefile, and generates `OIDC_STORE_REFRESH_TOKEN_KEY` only when it is
+missing.
+
+`suite` is the minimal Docs + Drive profile:
+
+```text
+auth:  shared Keycloak
+docs:  postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx
+drive: postgresql, redis, minio, createbuckets, app-dev, frontend-dev, nginx
+```
+
+Skipped services:
+
+```text
+docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery, y-provider
+drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
+```
+
+## URLs
+
+| Service | URL |
+| --- | --- |
+| Keycloak | http://localhost:8083 |
+| Docs frontend | http://localhost:3000 |
+| Docs backend | http://localhost:8071 |
+| Docs external API | http://localhost:8071/external_api/v1.0/... |
+| Drive frontend | http://localhost:3001 |
+| Drive backend | http://localhost:8072 |
+
+## Users
+
+| Username | Password | Email |
+| --- | --- | --- |
+| `ismael` | `ismael` | `ismael@lasuite.local` |
+| `demo` | `demo` | `demo@lasuite.local` |
+
+## Direct Scripts
+
+The root wrapper is preferred, but direct scripts are available:
+
+```bash
+./demo/docs-solo.sh <check|bootstrap|up|down|status|verify|users|clean>
+./demo/suite.sh <check|bootstrap|up|down|status|verify|users|clean>
+./demo/users.sh <docs|drive|all>
+```

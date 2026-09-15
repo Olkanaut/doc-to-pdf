@@ -1,0 +1,117 @@
+{
+  "realm": "lasuite",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "requiredCredentials": ["password"],
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Default local demo user role"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "ismael",
+      "email": "ismael@lasuite.local",
+      "firstName": "Ismael",
+      "lastName": "Demo",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ismael",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "demo",
+      "email": "demo@lasuite.local",
+      "firstName": "Demo",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "impress",
+      "name": "La Suite Docs local demo",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "ThisIsAnExampleKeyForDevPurposeOnly",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "https://localhost:3000/*",
+        "http://localhost:8071/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "https://localhost:3000",
+        "http://localhost:8071"
+      ]
+    },
+    {
+      "clientId": "drive",
+      "name": "La Suite Drive local demo",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "ThisIsAnExampleKeyForDevPurposeOnly",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3001/*",
+        "https://localhost:3001/*",
+        "http://localhost:8072/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001",
+        "https://localhost:3001",
+        "http://localhost:8072"
+      ]
+    },
+    {
+      "clientId": "interop-app",
+      "name": "Interop local demo app",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "ThisIsAnExampleKeyForDevPurposeOnly",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3010/*",
+        "http://localhost:8010/*",
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3010",
+        "http://localhost:8010",
+        "http://localhost:3002"
+      ]
+    }
+  ]
+}
