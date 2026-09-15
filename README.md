@@ -124,14 +124,14 @@ Pour verifier les users locaux :
 
 ```text
 auth: Keycloak commun + base Keycloak
-docs: postgres, redis, minio, createbuckets, backend, frontend, nginx media
+docs: postgres, redis, minio, createbuckets, backend, frontend, nginx media, y-provider
 ```
 
 `suite` lance :
 
 ```text
 auth:  Keycloak commun + base Keycloak
-docs:  postgres, redis, minio, createbuckets, backend, frontend, nginx media
+docs:  postgres, redis, minio, createbuckets, backend, frontend, nginx media, y-provider
 drive: postgres, redis, minio, createbuckets, backend, frontend, nginx media
 ```
 
@@ -141,7 +141,7 @@ dossiers locaux attendus par Drive.
 Services volontairement exclus :
 
 ```text
-docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery, y-provider
+docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery
 drive: keycloak local, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 
@@ -155,7 +155,7 @@ make run
 ```
 
 Mais ces commandes lancent les stacks de dev completes de chaque produit. Pour
-Docs, cela tire aussi le y-provider, `docspec`, `celery` et le Keycloak local.
+Docs, cela tire aussi `docspec`, `celery` et le Keycloak local.
 Pour Drive, cela tire les services d'edition type WOPI/OnlyOffice/Collabora.
 
 Ici, les profils locaux gardent seulement ce qui est utile au POC :
@@ -166,6 +166,7 @@ frontend
 backend/API
 base de donnees
 stockage local
+y-provider pour convertir le contenu Yjs en blocs JSON
 Resource Server API
 ```
 
@@ -255,7 +256,13 @@ OIDC_CLIENT_ID=interop-app
 OIDC_CLIENT_SECRET=ThisIsAnExampleKeyForDevPurposeOnly
 OIDC_REDIRECT_URI=http://localhost:3002/auth/callback
 OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
+DOCS_API_BASE_URL=http://localhost:8071/external_api/v1.0/
+DOCS_API_TIMEOUT_MS=10000
+DOCS_API_MAX_RESPONSE_BYTES=5242880
 ```
+
+Le backend expose `GET /api/documents/{id}/content`. Il transmet le token
+Keycloak de la session a Docs et renvoie le contenu structure dans `blocks`.
 
 Variables frontend optionnelles pour le menu apps :
 

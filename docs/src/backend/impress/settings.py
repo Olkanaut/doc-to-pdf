@@ -839,6 +839,7 @@ class Base(Configuration):
                     "retrieve",
                     "create",
                     "children",
+                    "formatted_content",
                 ],
             },
             "document_access": {

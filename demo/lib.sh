@@ -405,9 +405,7 @@ stop_docs_excluded() {
     kc_postgresql \
     mailcatcher \
     docspec \
-    celery-dev \
-    y-provider-development \
-    y-provider-development-converter >/dev/null 2>&1 || true
+    celery-dev >/dev/null 2>&1 || true
 }
 
 stop_drive_excluded() {
@@ -443,7 +441,9 @@ docs_minimal_up() {
   stop_docs_excluded
   docs_infra_up
   bold "Starting Docs app"
-  run_docs docker compose up -d --no-deps app-dev frontend-development nginx
+  run_docs docker compose up -d --no-deps \
+    app-dev frontend-development nginx \
+    y-provider-development y-provider-development-converter
   stop_docs_excluded
 }
 
@@ -462,12 +462,14 @@ docs_minimal_bootstrap() {
   apply_docs_shared_auth_env
   stop_docs_excluded
   bold "Building Docs images"
-  run_docs docker compose build app-dev frontend-development
+  run_docs docker compose build app-dev frontend-development y-provider-development
   docs_infra_up
   bold "Migrating Docs database"
   run_docs docker compose run --rm --no-deps app-dev python manage.py migrate
   bold "Starting Docs app"
-  run_docs docker compose up -d --no-deps app-dev frontend-development nginx
+  run_docs docker compose up -d --no-deps \
+    app-dev frontend-development nginx \
+    y-provider-development y-provider-development-converter
   stop_docs_excluded
 }
 
@@ -594,8 +596,7 @@ verify_excluded_services() {
 docs_minimal_verify_exclusions() {
   bold "Docs exclusions"
   verify_excluded_services run_docs Docs \
-    keycloak kc_postgresql mailcatcher docspec celery-dev \
-    y-provider-development y-provider-development-converter
+    keycloak kc_postgresql mailcatcher docspec celery-dev
 }
 
 drive_minimal_verify_exclusions() {

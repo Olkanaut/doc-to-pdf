@@ -23,7 +23,7 @@ make dev
 
 ```text
 auth: shared Keycloak
-docs: postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx
+docs: postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx, y-provider
 ```
 
 Its bootstrap prepares the local Docs directories/env files expected by the
@@ -34,14 +34,14 @@ missing.
 
 ```text
 auth:  shared Keycloak
-docs:  postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx
+docs:  postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx, y-provider
 drive: postgresql, redis, minio, createbuckets, app-dev, frontend-dev, nginx
 ```
 
 Skipped services:
 
 ```text
-docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery, y-provider
+docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery
 drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 

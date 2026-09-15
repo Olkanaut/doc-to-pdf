@@ -583,6 +583,29 @@ button:disabled {
   font-size: 14px;
 }
 
+.doc-load-status,
+.doc-block-count {
+  margin: 0;
+}
+
+.doc-load-status {
+  color: #666;
+  font-size: 14px;
+}
+
+.doc-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.doc-block-count {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .doc-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -616,5 +639,10 @@ button:disabled {
 @media (max-width: 640px) {
   .doc-entry {
     grid-template-columns: 1fr;
+  }
+
+  .doc-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }

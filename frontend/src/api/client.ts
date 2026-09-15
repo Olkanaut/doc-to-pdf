@@ -29,6 +29,14 @@ export interface SessionInfo {
   user: AuthUser | null;
 }
 
+export interface DocsDocumentContent {
+  id: string;
+  title: string;
+  blocks: Record<string, unknown>[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthCallbackResult {
   authenticated: true;
   user: AuthUser;
@@ -122,6 +130,12 @@ export async function deleteTemplate(id: string): Promise<void> {
 
 export async function fetchFixtures(): Promise<FixtureSummary[]> {
   return asJson(await apiFetch("/api/fixtures"));
+}
+
+export async function fetchDocumentContent(documentId: string): Promise<DocsDocumentContent> {
+  return asJson(
+    await apiFetch(`/api/documents/${encodeURIComponent(documentId)}/content`),
+  );
 }
 
 export interface RenderRequest {
