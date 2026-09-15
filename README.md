@@ -212,6 +212,9 @@ Endpoint principal pour le POC PDF :
 http://localhost:8071/external_api/v1.0/documents/
 ```
 
+La documentation du contrat d'API externe pour les templates Typst est
+disponible dans [README-EXTERNAL-API.md](./README-EXTERNAL-API.md).
+
 ## App PDF Locale
 
 La mini-app du repo tourne hors Docker :
