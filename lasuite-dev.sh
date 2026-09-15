@@ -9,20 +9,20 @@ fail() { printf 'FAIL %s\n' "$*"; }
 usage() {
   cat <<'EOF'
 Usage:
-  ./lasuite-dev.sh check
-  ./lasuite-dev.sh suite <check|bootstrap|up|down|status|verify|users|clean>
-  ./lasuite-dev.sh docs-solo <check|bootstrap|up|down|status|verify|users|clean>
+  ./setup.sh check
+  ./setup.sh suite <check|bootstrap|up|down|status|verify|users|clean>
+  ./setup.sh docs-solo <check|bootstrap|up|down|status|verify|users|clean>
 
 Profils:
   suite      Docs + Drive + Keycloak commun, en version minimale.
   docs-solo  Docs + Keycloak commun, pour developper l'app PDF.
 
 Commandes typiques:
-  ./lasuite-dev.sh docs-solo bootstrap
-  ./lasuite-dev.sh docs-solo verify
+  ./setup.sh docs-solo bootstrap
+  ./setup.sh docs-solo verify
 
-  ./lasuite-dev.sh suite bootstrap
-  ./lasuite-dev.sh suite verify
+  ./setup.sh suite bootstrap
+  ./setup.sh suite verify
 EOF
 }
 

@@ -15,19 +15,19 @@ Le profil principal pour l'app PDF est `docs-solo` :
 Docs -> Docs API -> app dots/pdf -> Typst -> PDF
 ```
 
-## Commandes
+## Commandes Stack
 
 Check general :
 
 ```bash
-./lasuite-dev.sh check
+./setup.sh check
 ```
 
 Dev principal, Docs seul :
 
 ```bash
-./lasuite-dev.sh docs-solo bootstrap
-./lasuite-dev.sh docs-solo verify
+./setup.sh docs-solo bootstrap
+./setup.sh docs-solo verify
 ```
 
 `bootstrap` prepare les dossiers/fichiers locaux manquants avant de build :
@@ -42,43 +42,71 @@ OIDC_STORE_REFRESH_TOKEN_KEY si absente
 Relancer sans rebuild :
 
 ```bash
-./lasuite-dev.sh docs-solo up
+./setup.sh docs-solo up
 ```
 
 Stopper :
 
 ```bash
-./lasuite-dev.sh docs-solo down
+./setup.sh docs-solo down
 ```
 
 Demo Docs + Drive :
 
 ```bash
-./lasuite-dev.sh suite bootstrap
-./lasuite-dev.sh suite verify
-./lasuite-dev.sh suite users
-./lasuite-dev.sh suite down
+./setup.sh suite bootstrap
+./setup.sh suite verify
+./setup.sh suite users
+./setup.sh suite down
 ```
+
+## Commandes App PDF
+
+Installer les dependances de la mini-app :
+
+```bash
+make install
+```
+
+Lancer backend et frontend ensemble :
+
+```bash
+make dev
+```
+
+Commandes separees si besoin :
+
+```bash
+make backend
+make frontend
+make build
+make lint
+```
+
+Le Makefile concerne uniquement l'app PDF locale. Le script `setup.sh`
+continue de gerer la stack La Suite locale.
 
 ## URLs
 
-| Service | URL |
-| --- | --- |
-| Keycloak commun | http://localhost:8083 |
-| Docs frontend | http://localhost:3000 |
-| Docs backend/API | http://localhost:8071 |
+| Service           | URL                                         |
+| ----------------- | ------------------------------------------- |
+| Keycloak commun   | http://localhost:8083                       |
+| Docs frontend     | http://localhost:3000                       |
+| Docs backend/API  | http://localhost:8071                       |
 | Docs external API | http://localhost:8071/external_api/v1.0/... |
-| Drive frontend | http://localhost:3001 |
-| Drive backend/API | http://localhost:8072 |
+| App PDF locale    | http://localhost:3002                       |
+| App PDF backend   | http://localhost:4000                       |
+| Drive frontend    | http://localhost:3001                       |
+| Drive backend/API | http://localhost:8072                       |
 
 ## Users
 
 Le realm Keycloak commun `lasuite` contient :
 
-| Username | Password | Email |
-| --- | --- | --- |
+| Username | Password | Email                  |
+| -------- | -------- | ---------------------- |
 | `ismael` | `ismael` | `ismael@lasuite.local` |
-| `demo` | `demo` | `demo@lasuite.local` |
+| `demo`   | `demo`   | `demo@lasuite.local`   |
 
 Docs et Drive ne partagent pas leur table `user`. Ils creent chacun un user
 local, mais avec le meme `sub` OIDC emis par Keycloak.
@@ -86,8 +114,8 @@ local, mais avec le meme `sub` OIDC emis par Keycloak.
 Pour verifier les users locaux :
 
 ```bash
-./lasuite-dev.sh docs-solo users
-./lasuite-dev.sh suite users
+./setup.sh docs-solo users
+./setup.sh suite users
 ```
 
 ## Profils
@@ -184,13 +212,54 @@ Endpoint principal pour le POC PDF :
 http://localhost:8071/external_api/v1.0/documents/
 ```
 
+## App PDF Locale
+
+La mini-app du repo tourne hors Docker :
+
+```bash
+make install
+make dev
+```
+
+Elle est servie sur :
+
+```text
+http://localhost:3002
+```
+
+Le frontend Vite proxifie `/api` vers le backend Node en `localhost:4000`.
+L'auth utilise le client Keycloak confidentiel `interop-app` du realm `lasuite`.
+Le secret reste cote backend.
+
+Avant de lancer l'app, demarrer la stack Docs locale :
+
+```bash
+./setup.sh docs-solo up
+```
+
+Puis :
+
+```bash
+make dev
+```
+
+Variables override possibles :
+
+```bash
+APP_ORIGIN=http://localhost:3002
+OIDC_ISSUER=http://localhost:8083/realms/lasuite
+OIDC_CLIENT_ID=interop-app
+OIDC_CLIENT_SECRET=ThisIsAnExampleKeyForDevPurposeOnly
+OIDC_REDIRECT_URI=http://localhost:3002/auth/callback
+```
+
 ## Nettoyage
 
 Nettoyer les caches frontend locaux :
 
 ```bash
-./lasuite-dev.sh docs-solo clean
-./lasuite-dev.sh suite clean
+./setup.sh docs-solo clean
+./setup.sh suite clean
 ```
 
 Voir l'espace Docker :

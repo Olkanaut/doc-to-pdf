@@ -6,14 +6,14 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  ./lasuite-dev.sh docs-solo <check|bootstrap|up|down|status|verify|users|clean>
+  ./setup.sh docs-solo <check|bootstrap|up|down|status|verify|users|clean>
   ./demo/docs-solo.sh <check|bootstrap|up|down|status|verify|users|clean>
 
 Examples:
-  ./lasuite-dev.sh docs-solo bootstrap
-  ./lasuite-dev.sh docs-solo up
-  ./lasuite-dev.sh docs-solo verify
-  ./lasuite-dev.sh docs-solo down
+  ./setup.sh docs-solo bootstrap
+  ./setup.sh docs-solo up
+  ./setup.sh docs-solo verify
+  ./setup.sh docs-solo down
 EOF
 }
 

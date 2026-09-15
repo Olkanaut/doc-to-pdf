@@ -5,8 +5,16 @@ This folder contains the local orchestration layer for the workspace.
 Use only two profiles from the repository root:
 
 ```bash
-./lasuite-dev.sh docs-solo bootstrap
-./lasuite-dev.sh suite bootstrap
+./setup.sh docs-solo bootstrap
+./setup.sh suite bootstrap
+```
+
+The root `setup.sh` script manages the La Suite services only. The local PDF
+app is started from the root Makefile:
+
+```bash
+make install
+make dev
 ```
 
 ## Profiles
@@ -39,21 +47,23 @@ drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, 
 
 ## URLs
 
-| Service | URL |
-| --- | --- |
-| Keycloak | http://localhost:8083 |
-| Docs frontend | http://localhost:3000 |
-| Docs backend | http://localhost:8071 |
+| Service           | URL                                         |
+| ----------------- | ------------------------------------------- |
+| Keycloak          | http://localhost:8083                       |
+| Docs frontend     | http://localhost:3000                       |
+| Docs backend      | http://localhost:8071                       |
 | Docs external API | http://localhost:8071/external_api/v1.0/... |
-| Drive frontend | http://localhost:3001 |
-| Drive backend | http://localhost:8072 |
+| PDF app frontend  | http://localhost:3002                       |
+| PDF app backend   | http://localhost:4000                       |
+| Drive frontend    | http://localhost:3001                       |
+| Drive backend     | http://localhost:8072                       |
 
 ## Users
 
-| Username | Password | Email |
-| --- | --- | --- |
+| Username | Password | Email                  |
+| -------- | -------- | ---------------------- |
 | `ismael` | `ismael` | `ismael@lasuite.local` |
-| `demo` | `demo` | `demo@lasuite.local` |
+| `demo`   | `demo`   | `demo@lasuite.local`   |
 
 ## Direct Scripts
 

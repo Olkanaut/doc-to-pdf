@@ -46,7 +46,7 @@ assert_port_free() {
 
       fail "$label port $port is already allocated by Docker container(s):"
       printf '%s\n' "$docker_holders"
-      info "Run ./lasuite-dev.sh suite down, or stop the older Docs/Drive stack using that port."
+      info "Run ./setup.sh suite down, or stop the older Docs/Drive stack using that port."
       exit 1
     fi
   fi
@@ -54,7 +54,7 @@ assert_port_free() {
   owner="$(port_listener "$port" || true)"
   if [ -n "$owner" ]; then
     fail "$label port $port is already allocated by $owner"
-    info "Run ./lasuite-dev.sh suite down, or stop the older Docs/Drive stack using that port."
+    info "Run ./setup.sh suite down, or stop the older Docs/Drive stack using that port."
     exit 1
   fi
 }
