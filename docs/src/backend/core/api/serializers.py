@@ -77,6 +77,40 @@ class UserLightSerializer(UserSerializer):
         read_only_fields = ["full_name", "short_name"]
 
 
+class TypstTemplateSerializer(serializers.ModelSerializer):
+    """Serialize a user-owned Typst template."""
+
+    source = serializers.CharField(trim_whitespace=False)
+
+    class Meta:
+        model = models.TypstTemplate
+        fields = [
+            "id",
+            "name",
+            "description",
+            "source",
+            "creator",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "creator", "created_at", "updated_at"]
+
+    def validate_source(self, value):
+        """Validate source content while preserving its original formatting."""
+        if not value.strip():
+            raise serializers.ValidationError("This field may not be blank.")
+
+        source_size = len(value.encode("utf-8"))
+        max_size = settings.TYPST_TEMPLATE_SOURCE_MAX_SIZE
+        if source_size > max_size:
+            raise serializers.ValidationError(
+                _("Typst source exceeds the maximum size of %(max_size)d bytes.")
+                % {"max_size": max_size}
+            )
+
+        return value
+
+
 class ListDocumentSerializer(serializers.ModelSerializer):
     """Serialize documents with limited fields for display in lists."""
 

@@ -208,6 +208,12 @@ class Base(Configuration):
 
     DATA_UPLOAD_MAX_MEMORY_SIZE = values.IntegerValue(20 * MB)  # 20 MB
 
+    TYPST_TEMPLATE_SOURCE_MAX_SIZE = values.IntegerValue(
+        default=1 * MB,
+        environ_name="TYPST_TEMPLATE_SOURCE_MAX_SIZE",
+        environ_prefix=None,
+    )
+
     REACTIONS_MAX_PER_COMMENT = values.IntegerValue(
         15,
         environ_name="REACTIONS_MAX_PER_COMMENT",

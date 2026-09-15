@@ -54,6 +54,18 @@ class UserFactory(factory.django.DjangoModelFactory):
             UserDocumentAccessFactory(user=self, role="owner")
 
 
+class TypstTemplateFactory(factory.django.DjangoModelFactory):
+    """A factory to create Typst templates."""
+
+    class Meta:
+        model = models.TypstTemplate
+
+    creator = factory.SubFactory(UserFactory)
+    name = factory.Sequence(lambda n: f"Typst template {n}")
+    description = factory.Faker("sentence")
+    source = "#set page(width: 210mm, height: 297mm)"
+
+
 class ParentNodeFactory(factory.declarations.ParameteredAttribute):
     """Custom factory attribute for setting the parent node."""
 

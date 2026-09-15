@@ -415,6 +415,28 @@ class User(AbstractBaseUser, BaseModel, auth_models.PermissionsMixin):
         return []
 
 
+class TypstTemplate(BaseModel):
+    """A reusable Typst template owned by a user."""
+
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="typst_templates_created",
+    )
+    name = models.CharField(_("name"), max_length=255)
+    description = models.TextField(_("description"), blank=True, default="")
+    source = models.TextField(_("Typst source"))
+
+    class Meta:
+        db_table = "impress_typst_template"
+        ordering = ("-updated_at",)
+        verbose_name = _("Typst template")
+        verbose_name_plural = _("Typst templates")
+
+    def __str__(self):
+        return self.name
+
+
 class UserReconciliation(BaseModel):
     """Model to run batch jobs to replace an active user by another one"""
 

@@ -418,6 +418,25 @@ class ResourceAccessViewsetMixin:
         return context
 
 
+class TypstTemplateViewSet(viewsets.ModelViewSet):
+    """CRUD API for the current user's Typst templates."""
+
+    permission_classes = [drf.permissions.IsAuthenticated]
+    pagination_class = Pagination
+    serializer_class = serializers.TypstTemplateSerializer
+    queryset = models.TypstTemplate.objects.select_related("creator").all()
+
+    def get_queryset(self):
+        """Only expose templates owned by the authenticated user."""
+        if not self.request.user.is_authenticated:
+            return self.queryset.none()
+        return self.queryset.filter(creator=self.request.user)
+
+    def perform_create(self, serializer):
+        """Assign ownership from the authenticated session."""
+        serializer.save(creator=self.request.user)
+
+
 class DocumentMetadata(drf.metadata.SimpleMetadata):
     """Custom metadata class to add information"""
 

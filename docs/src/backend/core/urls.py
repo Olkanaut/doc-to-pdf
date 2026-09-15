@@ -13,6 +13,9 @@ from core.external_api import viewsets as external_api_viewsets
 # - Main endpoints
 router = DefaultRouter()
 router.register("documents", viewsets.DocumentViewSet, basename="documents")
+router.register(
+    "typst-templates", viewsets.TypstTemplateViewSet, basename="typst_templates"
+)
 router.register("users", viewsets.UserViewSet, basename="users")
 
 # - Routes nested under a document
