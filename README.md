@@ -254,6 +254,17 @@ OIDC_REDIRECT_URI=http://localhost:3002/auth/callback
 OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
 ```
 
+Variables frontend optionnelles pour le menu apps :
+
+```bash
+VITE_DOCS_URL=http://localhost:3000
+VITE_DRIVE_URL=http://localhost:3001
+```
+
+Par defaut, Dots affiche seulement Dots et Docs dans le menu apps. Drive
+n'apparait que si `VITE_DRIVE_URL` est defini, pour garder le mode
+`docs-solo` independant de Drive.
+
 ## Nettoyage
 
 Nettoyer les caches frontend locaux :

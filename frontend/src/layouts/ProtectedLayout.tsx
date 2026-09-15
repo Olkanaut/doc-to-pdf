@@ -1,15 +1,23 @@
-import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../auth/AuthContext";
+import { AppLayout } from "./AppLayout";
 
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+export function ProtectedLayout() {
   const { loading, authenticated } = useAuth();
   const location = useLocation();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
-  if (loading) return <div className="page-loading" role="status">Chargement…</div>;
+  if (loading) {
+    return (
+      <main className="page-loading" role="status">
+        Chargement...
+      </main>
+    );
+  }
+
   if (!authenticated) {
     return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
-  return <>{children}</>;
+
+  return <AppLayout />;
 }
