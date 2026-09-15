@@ -92,11 +92,11 @@ export function ComposePage() {
             onToggle={setEditorEnabled}
             onChange={setTemplateSource}
           />
-          <button onClick={handleGenerate} disabled={loading || !fixtureId}>
+          <button type="button" onClick={handleGenerate} disabled={loading || !fixtureId}>
             {loading ? "Génération…" : "Générer le PDF"}
           </button>
           {error && (
-            <div className="error">
+            <div className="error" role="alert">
               <strong>{error.error}</strong>
               {error.details && <pre>{error.details}</pre>}
             </div>
