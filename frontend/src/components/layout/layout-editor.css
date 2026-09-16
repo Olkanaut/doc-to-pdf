@@ -488,3 +488,77 @@
 .le-preview__spacer {
   flex: 1 1 auto;
 }
+
+/* ── Galerie de visuels (en-tête, pied de page) ───────────────────────────── */
+
+/* Les logos livrés et les fragments découpés dans un document importé, en
+   vignettes : le panneau fait 320 px, deux colonnes y tiennent. */
+.le-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.le-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.le-gallery__name {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--c--globals--font--sizes--t);
+  color: var(--c--globals--colors--gray-550);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.le-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Container block for the .le-sr element it contains: without it, this absolutely
+     positioned text would anchor to the initial block, fail to scroll with the panel,
+     and stretch the entire page down to its position. */
+  position: relative;
+  height: 44px;
+  padding: 2px;
+  box-sizing: border-box;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  overflow: hidden;
+}
+.le-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.le-thumb--on {
+  border: 2px solid var(--c--contextuals--border--semantic--brand--primary);
+  box-shadow: 0 0 0 2px var(--c--globals--colors--brand-100);
+}
+.le-thumb--none {
+  font-size: var(--c--globals--font--sizes--xs);
+  color: var(--c--globals--colors--gray-550);
+}
+.le-thumb--add {
+  border-style: dashed;
+  border-color: var(--c--globals--colors--brand-150);
+  color: var(--c--globals--colors--brand-550);
+}
+.le-thumb:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 4px var(--c--contextuals--border--semantic--brand--primary);
+}
+
+/* Nom accessible d'un bouton qui n'affiche qu'une icône. */
+.le-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

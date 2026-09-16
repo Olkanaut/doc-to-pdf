@@ -300,6 +300,12 @@ export function LayoutEditorPage() {
               assets={assets}
               disabled={proposal !== null}
               onChange={handleLayoutChange}
+              // Un visuel importé depuis le panneau s'ajoute aux assets : la liste est relue.
+              onAssetsChanged={() => {
+                fetchTemplateAssets()
+                  .then((a) => setAssets(a.map((x) => x.file)))
+                  .catch(() => {});
+              }}
             />
           ) : (
             <aside className="le-panel" aria-label="Réglages de mise en page">

@@ -10,3 +10,11 @@ backend/data/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+
+# Extraction PDF/DOCX
+backend/ingest/.venv/
+backend/ingest/__pycache__/
+# Fragments découpés à l'import (nommés par le serveur), à côté des logos livrés
+backend/templates/assets/en-tete-*
+backend/templates/assets/pied-de-page-*
+backend/templates/assets/fragment-*

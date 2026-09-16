@@ -60,6 +60,9 @@ doc-pdf/
 │   ├── src/routes/templates.ts        # Dots template API, backed by Docs typst-templates
 │   ├── src/routes/render.ts           # fixture/local rendering route
 │   ├── src/routes/ai.ts               # optional AI template assistant
+│   ├── src/routes/ingest.ts           # PDF/DOCX -> template (upload, crop, create)
+│   ├── src/ingest/                    # sidecar call, job dirs, analysis -> LayoutConfig
+│   ├── ingest/extract.py              # PyMuPDF extractor (see ingest/README.md)
 │   ├── src/registry/fixtures.ts       # reads mock documents from fixtures/*.json
 │   ├── src/registry/templates.ts      # file-backed templates for fixture/local path
 │   ├── fixtures/*.json                # mock documents (BlockNote-shaped)
@@ -82,6 +85,18 @@ Real Docs render:
 4. `POST /api/documents/:documentId/render` fetches the Docs document and the selected Typst template in parallel, converts `blocks` to Typst, compiles with `typst`, and returns `application/pdf`.
 5. Response headers include `X-Dots-Block-Count` and `X-Dots-Unsupported-Blocks` so the UI can explain what was omitted.
 
+PDF/DOCX import (a template deduced from an existing document):
+1. `POST /api/ingest` takes the file as base64, writes it to a per-import folder under `backend/data/ingest/<uuid>/`, and runs `backend/ingest/extract.py analyze`.
+2. The extractor renders page 1, measures paper size, margins, dominant font, line height and heading colour, and proposes header/footer bands. Everything it returns has passed an occlusion check: content painted over by a later opaque shape is never reused, so a document "redacted" that way cannot be reconstructed through the import.
+3. `POST /api/ingest/:id/fragment` crops one region (real SVG paths when the source is vector, a 4× PNG otherwise) and files it in `backend/templates/assets`, which `typstCompile` already copies next to every compile — so the fragment is referenced by a bare filename, which is the only form Typst's path sandbox accepts.
+4. `POST /api/ingest/:id/template` does both and creates the template in Docs. A header fragment becomes a full-bleed band (`place(top + left, dx: -margin, image(width: 100% + 2 × margin))`) and the top margin is widened to the image's rendered height — below that, Typst silently clips it.
+
+The same modal is the only import entry point: a `.typ` goes straight through the existing test-compile and opens the editor. In the layout editor, the En-tête and Pied de page sections reuse it to pull in a single visual.
+
+**Python is required for this path only.** PyMuPDF gives the real vector geometry and paint order that a JS PDF library does not; `backend/ingest/README.md` covers installation and the AGPL question. Without Python the ingest routes return 422 and nothing else is affected.
+
+A `.docx` takes a shorter route: `backend/ingest/docx.py` reads the zip, so paper size, margins, default font and the embedded images come out exactly, without composing anything, and the original image file is reused rather than a crop of a rendered page. There is then no page image, so the modal skips the crop step and offers the visuals it found. LibreOffice enters only for a letterhead drawn as DrawingML shapes, where no file exists to extract.
+
 Template management:
 - Frontend calls Dots `/api/templates`.
 - Dots requires the session cookie, reads the server-side access token, and proxies to Docs `/external_api/v1.0/typst-templates/`.
@@ -102,7 +117,9 @@ AI assistant:
 
 - Sessions are in memory. A backend restart logs users out; production needs persistent/session-store strategy or a stateless encrypted session design.
 - Remote Docs images are not downloaded yet. Real Docs documents containing body images return `422` during render.
-- User asset upload is not implemented. Templates can reference existing shared assets from `backend/templates/assets`.
+- Import fragments land in the shared `backend/templates/assets` folder rather than being scoped per template, so every user's gallery shows every fragment. Fine for a demo, wrong for more than one administration.
+- Import reads the first page only, by design. Header/footer text is rasterised with its band rather than reconstructed as Typst text — doable via `get_text("dict")`, but font substitution then shifts the metrics, so the image is the faithful option.
+- `.docx` import reads the zip directly — page geometry from `sectPr`, fonts from `styles.xml`/`theme1.xml`, and the images from `word/media/` byte for byte (a real embedded SVG wins over its mandatory PNG fallback). No rendering, so no crop step either: the modal offers the visuals it found. LibreOffice is needed **only** when the letterhead is drawn in the XML and there is no file to take, which is the one case a zip cannot serve.
 - Docker/deploy packaging still needs a final decision, especially Typst binary and fonts (`--font-path` / `TYPST_FONT_PATHS` in containers).
 - Docs' Resource Server API is still treated as beta/evolving; keep `documentation/DOCS-FETCH.md` and `documentation/EXTERNAL-API.md` close to the actual upstream contract.
 - The AI assistant is optional and depends on external API configuration; do not make the core PDF flow depend on it.
@@ -116,3 +133,11 @@ make install             # install backend + frontend dependencies
 make dev                 # Dots backend on :4000, frontend on :3002
 ```
 Open http://localhost:3002. Requires the `typst` CLI on `PATH` (`brew install typst`).
+
+`make install` also sets up `backend/ingest/.venv` for the PDF/DOCX import
+feature (`make install-ingest`, best-effort — skipped with a note if
+`python3` isn't found, and the rest of the app is unaffected either way).
+One further optional dependency for that feature: importing a `.docx` whose
+letterhead is drawn as shapes rather than stored as a file needs `soffice`/
+`libreoffice` on `PATH` (`brew install --cask libreoffice` on macOS) — see
+`backend/ingest/README.md` for the full breakdown of what needs what.

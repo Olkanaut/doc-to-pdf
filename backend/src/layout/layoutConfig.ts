@@ -17,10 +17,25 @@ export interface LayoutConfig {
   /** Points. */
   fontSize: number;
   lineHeight: number;
-  header: { enabled: boolean; text: string; logo: string | null; align: Align; rule: boolean };
+  /**
+   * `logo` est un fichier de backend/templates/assets. `fullBleed` le pose
+   * bord à bord sur toute la largeur de la page (bandeau d'en-tête repris d'un
+   * PDF) au lieu de l'aligner dans la marge ; la marge correspondante doit
+   * alors être au moins aussi haute que l'image rendue, sinon Typst la rogne.
+   */
+  header: {
+    enabled: boolean;
+    text: string;
+    logo: string | null;
+    fullBleed: boolean;
+    align: Align;
+    rule: boolean;
+  };
   footer: {
     enabled: boolean;
     text: string;
+    logo: string | null;
+    fullBleed: boolean;
     numbering: Numbering;
     align: Align;
     firstPage: boolean;
@@ -58,6 +73,14 @@ export const TABLE_STROKES = ["none", "light", "full"] as const;
 export const TABLE_HEADER_FILLS = ["none", "grey", "brand"] as const;
 export const TABLE_FONT_SIZES = ["inherit", "small"] as const;
 
+/**
+ * Hauteur à laquelle un logo d'en-tête est posé quand il n'est pas bord à bord
+ * (layoutTypst.ts). La marge du côté concerné doit la loger, sinon le logo
+ * mord sur le corps du texte : Word place son en-tête dans une bande à part,
+ * Typst le pose dans la marge.
+ */
+export const INLINE_LOGO_HEIGHT_MM = 12;
+
 export function defaultLayout(): LayoutConfig {
   return {
     paper: "a4",
@@ -66,10 +89,12 @@ export function defaultLayout(): LayoutConfig {
     font: "Marianne",
     fontSize: 11,
     lineHeight: 1.2,
-    header: { enabled: true, text: "", logo: null, align: "left", rule: true },
+    header: { enabled: true, text: "", logo: null, fullBleed: false, align: "left", rule: true },
     footer: {
       enabled: true,
       text: "",
+      logo: null,
+      fullBleed: false,
       numbering: "n-of-total",
       align: "right",
       firstPage: true,
@@ -108,7 +133,9 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
   const f = (o.footer ?? {}) as Record<string, unknown>;
   const t = (o.headings ?? {}) as Record<string, unknown>;
   const tb = (o.table ?? {}) as Record<string, unknown>;
-  const logo = typeof h.logo === "string" && /^[\w.-]+\.(png|jpe?g|svg)$/i.test(h.logo) ? h.logo : null;
+  const asset = (v: unknown): string | null =>
+    typeof v === "string" && /^[\w.-]+\.(png|jpe?g|svg)$/i.test(v) ? v : null;
+  const logo = asset(h.logo);
   const color = typeof t.color === "string" && /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : d.headings.color;
   return {
     paper: oneOf(o.paper, PAPERS, d.paper),
@@ -126,12 +153,15 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
       enabled: bool(h.enabled, d.header.enabled),
       text: str(h.text, d.header.text),
       logo,
+      fullBleed: bool(h.fullBleed, d.header.fullBleed),
       align: oneOf(h.align, ALIGNS, d.header.align),
       rule: bool(h.rule, d.header.rule),
     },
     footer: {
       enabled: bool(f.enabled, d.footer.enabled),
       text: str(f.text, d.footer.text),
+      logo: asset(f.logo),
+      fullBleed: bool(f.fullBleed, d.footer.fullBleed),
       numbering: oneOf(f.numbering, NUMBERINGS, d.footer.numbering),
       align: oneOf(f.align, ALIGNS, d.footer.align),
       firstPage: bool(f.firstPage, d.footer.firstPage),

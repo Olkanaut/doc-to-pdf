@@ -1,11 +1,26 @@
 FRONTEND_PORT ?= 3002
 BACKEND_PORT ?= 4000
 
-.PHONY: install dev backend frontend build lint test
+.PHONY: install install-ingest dev backend frontend build lint test
 
 install:
 	npm --prefix backend install
 	npm --prefix frontend install
+	$(MAKE) install-ingest
+
+# PDF/DOCX import (backend/ingest, see backend/ingest/README.md): best-effort,
+# never fails `make install` when python3 is missing — the rest of the app
+# works fine without it, that route just answers 422.
+install-ingest:
+	@if command -v python3 >/dev/null 2>&1; then \
+		echo "Setting up backend/ingest/.venv (PDF/DOCX import)..."; \
+		python3 -m venv backend/ingest/.venv && \
+		backend/ingest/.venv/bin/pip install --quiet --upgrade pip && \
+		backend/ingest/.venv/bin/pip install --quiet -r backend/ingest/requirements.txt && \
+		echo "backend/ingest/.venv ready."; \
+	 else \
+		echo "python3 not found: skipping backend/ingest/.venv (PDF/DOCX import disabled, see backend/ingest/README.md)."; \
+	 fi
 
 dev:
 	@printf "Starting backend:  http://localhost:%s\n" "$(BACKEND_PORT)"
