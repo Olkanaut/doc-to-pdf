@@ -7,6 +7,7 @@
   "resetPasswordAllowed": true,
   "rememberMe": true,
   "requiredCredentials": ["password"],
+  "accessTokenLifespan": 7200,
   "roles": {
     "realm": [
       {
