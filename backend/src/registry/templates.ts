@@ -157,6 +157,16 @@ export async function getThumbnail(id: string): Promise<Buffer | undefined> {
   }
 }
 
+// Les deux gabarits à en-tête officiel sont montrés en tête de liste : ce sont eux
+// qu'on veut voir en premier, sur la liste comme sur les tuiles de la page Rendu.
+// ponytail: appariement par nom, suffisant pour deux entrées ; si la liste grandit,
+// mettre un champ d'ordre dans meta.json plutôt que d'allonger celle-ci.
+const FEATURED = ["République française", "Ville de Paris"];
+function featuredRank(name: string): number {
+  const i = FEATURED.indexOf(name);
+  return i === -1 ? FEATURED.length : i;
+}
+
 export async function listTemplates(): Promise<TemplateMeta[]> {
   await ensureSeeded();
   const defaultId = await readDefaultId();
@@ -175,7 +185,7 @@ export async function listTemplates(): Promise<TemplateMeta[]> {
   );
   return metas
     .filter((m): m is TemplateMeta => m !== null)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => featuredRank(a.name) - featuredRank(b.name) || a.name.localeCompare(b.name));
 }
 
 export async function getTemplateMeta(id: string): Promise<TemplateMeta | undefined> {
