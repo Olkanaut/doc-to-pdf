@@ -1,0 +1,3 @@
+# Extraction PDF/DOCX (voir README.md).
+# AGPL par défaut : à revoir avant toute distribution fermée.
+pymupdf==1.28.2

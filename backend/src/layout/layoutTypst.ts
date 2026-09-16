@@ -6,7 +6,13 @@
  * tableaux (leur structure vient du document, voir convert/blocksToTypst.ts).
  */
 import { escapeTypstText } from "../convert/escapeTypst.js";
-import { defaultLayout, sanitizeLayout, type LayoutConfig, type Numbering } from "./layoutConfig.js";
+import {
+  defaultLayout,
+  INLINE_LOGO_HEIGHT_MM,
+  sanitizeLayout,
+  type LayoutConfig,
+  type Numbering,
+} from "./layoutConfig.js";
 
 export const LAYOUT_BEGIN = "// dots:layout begin";
 export const LAYOUT_END = "// dots:layout end";
@@ -69,14 +75,28 @@ function contentBlock(parts: string[], indent: string): string {
   return `[\n${parts.map((p) => indent + p).join("\n")}\n${indent.slice(2)}]`;
 }
 
+/**
+ * Bandeau bord à bord : `place` sort de la zone de texte par un `dx` négatif
+ * égal à la marge, et l'image est élargie des deux marges. La marge du côté
+ * concerné doit valoir au moins la hauteur rendue, sinon Typst rogne l'image —
+ * c'est l'appelant qui la règle (voir ingest/templateFromAnalysis.ts).
+ */
+function bleed(file: string, side: "top" | "bottom", cfg: LayoutConfig): string {
+  const { left, right } = cfg.margins;
+  return `#place(${side} + left, dx: -${left}mm, image("assets/${file}", width: 100% + ${left + right}mm))`;
+}
+
 function header(cfg: LayoutConfig): string {
   const h = cfg.header;
   if (!h.enabled) return "none";
   const parts: string[] = [];
   const body = `[${text(h.text)}]`;
-  if (h.logo) {
+  if (h.logo && h.fullBleed) {
+    parts.push(bleed(h.logo, "top", cfg));
+    if (h.text) parts.push(`#align(${h.align})${body}`);
+  } else if (h.logo) {
     parts.push(
-      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${h.align} + horizon), image("assets/${h.logo}", height: 1.2cm), ${body})`,
+      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${h.align} + horizon), image("assets/${h.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm), ${body})`,
     );
   } else if (h.text) {
     parts.push(`#align(${h.align})${body}`);
@@ -89,6 +109,8 @@ function footer(cfg: LayoutConfig): string {
   const f = cfg.footer;
   if (!f.enabled) return "none";
   const parts: string[] = [];
+  if (f.logo && f.fullBleed) parts.push(bleed(f.logo, "bottom", cfg));
+  else if (f.logo) parts.push(`#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`);
   if (f.rule) parts.push(`#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`, "#v(0.2cm)");
   const pieces = [text(f.text), NUMBERING[f.numbering]].filter(Boolean);
   if (pieces.length) parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
@@ -156,6 +178,12 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     `  margin: (top: ${m.top}mm, bottom: ${m.bottom}mm, left: ${m.left}mm, right: ${m.right}mm),`,
     `  header: ${header(cfg)},`,
     `  footer: ${footer(cfg)},`,
+    // Un bandeau bord à bord posé par `place` reste borné par la part de marge
+    // que Typst réserve par défaut (30 %) entre l'en-tête/pied et le corps : à
+    // 0 %, le bandeau dispose de toute la hauteur que templateFromAnalysis.ts
+    // lui a réservée, sans quoi son bas se fait rogner.
+    ...(cfg.header.enabled && cfg.header.logo && cfg.header.fullBleed ? [`  header-ascent: 0%,`] : []),
+    ...(cfg.footer.enabled && cfg.footer.logo && cfg.footer.fullBleed ? [`  footer-descent: 0%,`] : []),
     ")",
     `#set text(font: (${fonts.map((f) => JSON.stringify(f)).join(", ")}), size: ${cfg.fontSize}pt)`,
     `#set par(leading: ${leading}em)`,

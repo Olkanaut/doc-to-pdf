@@ -222,6 +222,142 @@ export async function fetchTemplateAssets(): Promise<{ file: string }[]> {
   return data.assets;
 }
 
+/** URL des octets d'un asset : vignettes de la galerie d'en-tête et de pied de page. */
+export function assetUrl(file: string): string {
+  return `/api/templates/assets/${encodeURIComponent(file)}`;
+}
+
+// ── Import d'un PDF ou d'un .docx ─────────────────────────────────────────────
+
+export interface IngestRegion {
+  kind: "header" | "footer" | "page";
+  /** Points, repère de la page PDF (origine en haut à gauche). */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** La zone est dessinée (tracés) et non posée en bitmap : extractible en SVG. */
+  vector: boolean;
+}
+
+export interface IngestRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Visuel sorti tel quel d'un .docx : il n'y a pas de page à recadrer. */
+export interface IngestAsset {
+  id: string;
+  name: string;
+  kind: "header" | "footer" | "body";
+  vector: boolean;
+  bytes: number;
+  widthPt: number;
+  heightPt: number;
+}
+
+export interface IngestAnalysis {
+  jobId: string;
+  /**
+   * « page » : la première page est rendue et des bandes y sont proposées.
+   * « assets » : le .docx portait ses visuels en clair, ils sont repris tels
+   * quels — rien n'est rendu, donc il n'y a rien à recadrer.
+   */
+  mode: "page" | "assets";
+  page: { widthPt: number; heightPt: number; count: number; previewScale: number };
+  regions: IngestRegion[];
+  assets?: IngestAsset[];
+  layout: Pick<LayoutConfig, "paper" | "orientation" | "margins" | "font" | "fontSize" | "lineHeight"> & {
+    headings: LayoutConfig["headings"];
+  };
+  /** Police du document absente du serveur, remplacée par Marianne. */
+  fontSubstitution: string | null;
+  counts: { text: number; shapes: number; images: number };
+}
+
+export interface IngestFragment {
+  file: string;
+  widthPt: number;
+  heightPt: number;
+}
+
+/** Dépose le fichier et relève sa première page. Le fichier part en base64. */
+export async function analyzeDocument(file: File): Promise<IngestAnalysis> {
+  const fileBase64 = await toBase64(file);
+  return asJson(
+    await apiFetch("/api/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileBase64, filename: file.name }),
+    }),
+  );
+}
+
+export function ingestPreviewUrl(jobId: string): string {
+  return `/api/ingest/${jobId}/preview`;
+}
+
+/** Vignette d'un visuel sorti d'un .docx, désigné par son rang dans `assets`. */
+export function ingestAssetUrl(jobId: string, index: number): string {
+  return `/api/ingest/${jobId}/asset/${index}`;
+}
+
+/** Découpe une zone et la range dans les assets : elle devient choisissable comme visuel. */
+export async function extractFragment(
+  jobId: string,
+  input: {
+    /** Mode « page » : la zone découpée. Mode « assets » : `asset` à la place. */
+    rect?: IngestRect;
+    asset?: string;
+    vector?: boolean;
+    kind: "en-tete" | "pied-de-page" | "fragment";
+  },
+): Promise<IngestFragment> {
+  return asJson(
+    await apiFetch(`/api/ingest/${jobId}/fragment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+/** Crée le gabarit : zones découpées + relevé de la page. */
+export async function createTemplateFromIngest(
+  jobId: string,
+  input: {
+    name: string;
+    header?: IngestRect | null;
+    footer?: IngestRect | null;
+    /** Mode « assets » : visuel du .docx à poser en en-tête. */
+    headerAsset?: string | null;
+    vector?: boolean;
+  },
+): Promise<{ id: string; layout: LayoutConfig; fontSubstitution: string | null }> {
+  return asJson(
+    await apiFetch(`/api/ingest/${jobId}/template`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+/** FileReader plutôt qu'une boucle sur les octets : un PDF de 10 Mo saturerait la pile. */
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
+    reader.onload = () => {
+      const result = String(reader.result);
+      resolve(result.slice(result.indexOf(",") + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── Mise en page (bloc « dots:layout » du .typ) ───────────────────────────────
 
 export type PaperSize = "a4" | "a5" | "us-letter";
@@ -237,10 +373,25 @@ export interface LayoutConfig {
   /** Points. */
   fontSize: number;
   lineHeight: number;
-  header: { enabled: boolean; text: string; logo: string | null; align: Align; rule: boolean };
+  /**
+   * `logo` est un fichier de /api/templates/assets. `fullBleed` le pose bord à
+   * bord sur toute la largeur de la page (bandeau repris d'un PDF) ; la marge
+   * du côté concerné doit alors loger l'image rendue.
+   * Même type que backend/src/layout/layoutConfig.ts.
+   */
+  header: {
+    enabled: boolean;
+    text: string;
+    logo: string | null;
+    fullBleed: boolean;
+    align: Align;
+    rule: boolean;
+  };
   footer: {
     enabled: boolean;
     text: string;
+    logo: string | null;
+    fullBleed: boolean;
     numbering: Numbering;
     align: Align;
     firstPage: boolean;

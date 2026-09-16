@@ -11,8 +11,9 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ChevronDown, ChevronRight, Code } from "@gouvfr-lasuite/ui-components/icons";
-import type { Align, LayoutConfig, Numbering, PaperSize } from "../../api/client";
+import { ChevronDown, ChevronRight, Code, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize } from "../../api/client";
+import { ImportDocumentModal } from "../templates/ImportDocumentModal";
 
 type Option = { value: string; label: string };
 
@@ -83,10 +84,14 @@ interface Props {
   /** Vrai pendant qu'une proposition de l'assistant est en attente. */
   disabled?: boolean;
   onChange: (next: LayoutConfig) => void;
+  /** Un visuel vient d'être importé : la liste des assets est à relire. */
+  onAssetsChanged?: () => void;
 }
 
-export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Props) {
+export function LayoutPanel({ layout, managed, assets, disabled, onChange, onAssetsChanged }: Props) {
   const uid = useId();
+  // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
+  const [importing, setImporting] = useState<"header" | "footer" | null>(null);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -118,10 +123,6 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
       ? list
       : [{ value: String(layout.lineHeight), label: String(layout.lineHeight).replace(".", ",") }, ...list];
   }, [layout.lineHeight]);
-  const logoOptions = useMemo<Option[]>(
-    () => [{ value: "", label: "Aucun" }, ...assets.map((f) => ({ value: f, label: f }))],
-    [assets],
-  );
 
   return (
     <aside className="le-panel" aria-label="Réglages de mise en page">
@@ -228,14 +229,22 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
             checked={layout.header.enabled}
             onChange={(e) => setHeader({ enabled: e.target.checked })}
           />
-          <Select
-            label="Logo"
-            fullWidth
-            clearable={false}
-            options={logoOptions}
-            value={layout.header.logo ?? ""}
-            onChange={(e) => setHeader({ logo: String(e.target.value ?? "") || null })}
+          <Gallery
+            label="Visuel"
+            assets={assets}
+            value={layout.header.logo}
+            onPick={(logo) => setHeader({ logo })}
+            onImport={() => setImporting("header")}
           />
+          {layout.header.logo && (
+            <Switch
+              label="Pleine largeur (bord à bord)"
+              role="switch"
+              fullWidth
+              checked={layout.header.fullBleed}
+              onChange={(e) => setHeader({ fullBleed: e.target.checked })}
+            />
+          )}
           <TextArea
             label="Texte"
             fullWidth
@@ -273,6 +282,22 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
             value={layout.footer.text}
             onChange={(e) => setFooter({ text: e.target.value })}
           />
+          <Gallery
+            label="Visuel"
+            assets={assets}
+            value={layout.footer.logo}
+            onPick={(logo) => setFooter({ logo })}
+            onImport={() => setImporting("footer")}
+          />
+          {layout.footer.logo && (
+            <Switch
+              label="Pleine largeur (bord à bord)"
+              role="switch"
+              fullWidth
+              checked={layout.footer.fullBleed}
+              onChange={(e) => setFooter({ fullBleed: e.target.checked })}
+            />
+          )}
           <Select
             label="Numérotation"
             fullWidth
@@ -365,6 +390,18 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
         </Section>
       </fieldset>
 
+      {importing && (
+        <ImportDocumentModal
+          target={importing}
+          onClose={() => setImporting(null)}
+          onFragment={(file) => {
+            if (importing === "header") setHeader({ logo: file, fullBleed: true });
+            else setFooter({ logo: file, fullBleed: true });
+            onAssetsChanged?.();
+          }}
+        />
+      )}
+
       <div className="le-panel__foot">
         <p className="le-hint">
           <Code size={16} aria-hidden="true" />
@@ -374,6 +411,59 @@ export function LayoutPanel({ layout, managed, assets, disabled, onChange }: Pro
         </p>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Visuels disponibles, en vignettes : les logos livrés et les fragments
+ * découpés dans un PDF importé. La dernière tuile ouvre la fenêtre d'import,
+ * second point d'entrée du parcours (le premier est la page des gabarits).
+ */
+function Gallery({
+  label,
+  assets,
+  value,
+  onPick,
+  onImport,
+}: {
+  label: string;
+  assets: string[];
+  value: string | null;
+  onPick: (file: string | null) => void;
+  onImport: () => void;
+}) {
+  return (
+    <div className="le-gallery">
+      <Label>{label}</Label>
+      <div className="le-gallery__grid">
+        <button
+          type="button"
+          className={`le-thumb le-thumb--none${value ? "" : " le-thumb--on"}`}
+          aria-pressed={!value}
+          title="Aucun visuel"
+          onClick={() => onPick(null)}
+        >
+          Aucun
+        </button>
+        {assets.map((file) => (
+          <button
+            key={file}
+            type="button"
+            className={`le-thumb${value === file ? " le-thumb--on" : ""}`}
+            aria-pressed={value === file}
+            title={file}
+            onClick={() => onPick(file)}
+          >
+            <img src={assetUrl(file)} alt={file} loading="lazy" />
+          </button>
+        ))}
+        <button type="button" className="le-thumb le-thumb--add" title="Importer un visuel" onClick={onImport}>
+          <Upload size={16} aria-hidden="true" />
+          <span className="le-sr">Importer un visuel</span>
+        </button>
+      </div>
+      {value && <span className="le-gallery__name">{value}</span>}
+    </div>
   );
 }
 

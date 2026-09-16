@@ -10,7 +10,7 @@ import {
   setDefaultTemplate,
   type TemplateSummary,
 } from "../api/client";
-import { ImportTemplateModal } from "../components/templates/ImportTemplateModal";
+import { ImportDocumentModal } from "../components/templates/ImportDocumentModal";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
 import "../components/templates/templates-page.css";
@@ -43,8 +43,9 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
 }
 
 /**
- * Galerie des gabarits, page d'accueil de l'app. Les trois actions du Figma sont en
- * tête : déduire d'un PDF (à venir), importer un .typ, partir de zéro.
+ * Galerie des gabarits, page d'accueil de l'app. Deux actions en tête :
+ * importer un document (un .typ s'ouvre tel quel, un PDF ou un .docx passe par
+ * l'analyse et le recadrage) et partir de zéro.
  */
 export function TemplatesListPage() {
   const navigate = useNavigate();
@@ -52,8 +53,6 @@ export function TemplatesListPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
-  // ponytail: bouton d'entrée seulement ; la déduction depuis un PDF sera branchée ensuite.
-  const [fromPdfSoon, setFromPdfSoon] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -118,21 +117,13 @@ export function TemplatesListPage() {
           <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination.</p>
         </div>
         <div className="dots-actions">
-          <Button
-            variant="tertiary"
-            color="brand"
-            aria-expanded={fromPdfSoon}
-            aria-controls="from-pdf-soon"
-            onClick={() => setFromPdfSoon((v) => !v)}
-          >
-            Déduire d'un PDF
-          </Button>
+          {/* Entrée unique : le type du fichier déposé choisit la suite. */}
           <Button
             variant="secondary"
             icon={<Upload aria-hidden="true" />}
             onClick={() => setImportOpen(true)}
           >
-            Importer un .typ
+            Importer un document
           </Button>
           <Button
             color="brand"
@@ -147,22 +138,15 @@ export function TemplatesListPage() {
       </div>
 
       {importOpen && (
-        <ImportTemplateModal
+        <ImportDocumentModal
           onClose={() => {
             setImportOpen(false);
             reload();
           }}
+          onTemplate={(id) => navigate(`/t/${id}/layout`)}
         />
       )}
 
-      {fromPdfSoon && (
-        <div id="from-pdf-soon" role="status">
-          <Alert type={VariantType.INFO}>
-            À venir : déposez un PDF existant, dots en déduira un gabarit (marges, en-tête, polices,
-            pagination) que vous pourrez ajuster dans l'éditeur de mise en page.
-          </Alert>
-        </div>
-      )}
 
       {error && (
         <div role="alert">

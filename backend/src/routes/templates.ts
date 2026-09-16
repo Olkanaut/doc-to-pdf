@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { readdir } from "node:fs/promises";
+import path from "node:path";
+import { readdir, readFile } from "node:fs/promises";
 import {
   TEMPLATES_ASSETS_DIR,
 } from "../registry/templates.js";
@@ -193,6 +194,22 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/api/templates/assets", async () => {
     return { assets: (await listAssets()).map((file) => ({ file })) };
+  });
+
+  /** Octets d'un asset : vignettes de la galerie d'en-tête/pied de page. */
+  app.get<{ Params: { file: string } }>("/api/templates/assets/:file", async (req, reply) => {
+    const { file } = req.params;
+    // Le nom vient de l'URL : il doit être exactement un des fichiers listés.
+    if (!(await listAssets()).includes(file)) {
+      return reply.code(404).send({ error: "Asset inconnu" });
+    }
+    const bytes = await readFile(path.join(TEMPLATES_ASSETS_DIR, file));
+    const type = file.endsWith(".svg")
+      ? "image/svg+xml"
+      : /\.jpe?g$/i.test(file)
+        ? "image/jpeg"
+        : "image/png";
+    return reply.type(type).header("Cache-Control", "private, max-age=3600").send(bytes);
   });
 
   app.get<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {

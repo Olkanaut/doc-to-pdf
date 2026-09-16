@@ -143,12 +143,15 @@ describe("deduceLayout", () => {
       enabled: true,
       text: "RÉPUBLIQUE FRANÇAISE\nMinistère de l'Exemple",
       logo: "logo-ministere.png",
+      fullBleed: false,
       align: "left",
       rule: true,
     });
     expect(l.footer).toEqual({
       enabled: true,
       text: "",
+      logo: null,
+      fullBleed: false,
       numbering: "n-of-total",
       align: "center",
       firstPage: true,
@@ -217,6 +220,29 @@ describe("layoutToTypst", () => {
     expect(lines.join("\n")).toContain('font: ("Arial", "Helvetica", "Libertinus Serif")');
     expect(lines.join("\n")).toContain("flipped: true");
     expect(lines.join("\n")).toContain("counter(page).get().first() > 1");
+  });
+});
+
+describe("bandeau bord à bord", () => {
+  it("header-ascent/footer-descent à 0 % seulement pour un logo bord à bord", () => {
+    const d = defaultLayout();
+    const bleedHeader = layoutToTypst({
+      ...d,
+      header: { ...d.header, logo: "logo-ministere.png", fullBleed: true },
+    });
+    expect(bleedHeader).toContain("header-ascent: 0%,");
+    expect(bleedHeader).not.toContain("footer-descent: 0%,");
+
+    const bleedFooter = layoutToTypst({
+      ...d,
+      footer: { ...d.footer, logo: "logo-ministere.png", fullBleed: true },
+    });
+    expect(bleedFooter).toContain("footer-descent: 0%,");
+    expect(bleedFooter).not.toContain("header-ascent: 0%,");
+
+    // Logo posé à hauteur fixe (pas bord à bord) : Typst garde sa réserve par défaut.
+    const inline = layoutToTypst({ ...d, header: { ...d.header, logo: "logo-ministere.png", fullBleed: false } });
+    expect(inline).not.toContain("header-ascent:");
   });
 });
 
