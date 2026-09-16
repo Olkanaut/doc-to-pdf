@@ -2,12 +2,17 @@ import { LaGaufreV2, MainLayout, UserMenu } from "@gouvfr-lasuite/ui-components"
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { DOCS_ORIGIN } from "../../config";
+import { DOCS_ORIGIN, DRIVE_ORIGIN } from "../../config";
 
-/** Services proposés par la gaufre : la Docs de cet environnement et cette app. */
+/**
+ * Services proposés par la gaufre : la Docs de cet environnement et cette app.
+ * Drive n'apparaît que si VITE_DRIVE_URL est défini, pour garder le profil
+ * docs-solo indépendant de Drive (README.md, « Variables frontend optionnelles »).
+ */
 const LOCAL_SERVICES = {
   services: [
     { name: "Docs", url: DOCS_ORIGIN },
+    ...(DRIVE_ORIGIN ? [{ name: "Drive", url: DRIVE_ORIGIN }] : []),
     { name: "dots", url: "/" },
   ],
 };

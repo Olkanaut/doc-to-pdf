@@ -25,13 +25,17 @@ function TemplateRedirect({ layout = false }: { layout?: boolean }) {
   return <Navigate to={id ? `/t/${encodeURIComponent(id)}${layout ? "/layout" : ""}` : "/"} replace />;
 }
 
-/** Ancien rendu : `/documents/new?doc=…` → `/docs/:id`, le gabarit demandé est conservé. */
+/**
+ * Ancien rendu : `/documents/new?doc=…` → `/docs/:id`, le gabarit demandé est conservé.
+ * Sans document, la cible est `/compose` (rendu sur un document d'exemple) et non
+ * l'accueil, qui ne saurait pas quoi faire du gabarit demandé.
+ */
 function DocumentsNewRedirect() {
   const [params] = useSearchParams();
   const doc = params.get("doc");
   const template = params.get("template");
   const search = template ? `?template=${encodeURIComponent(template)}` : "";
-  return <Navigate to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/docs"}${search}`} replace />;
+  return <Navigate to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/compose"}${search}`} replace />;
 }
 
 /** Raccourci `/d/:id`, même cible que le chemin de Docs. */
@@ -55,6 +59,9 @@ export default function App() {
           {/* Même chemin que Docs : `docs…/docs/<id>/` devient `dots…/docs/<id>/`. */}
           <Route path="/docs" element={guarded(<HomePage />)} />
           <Route path="/docs/:id" element={guarded(<ComposePage />)} />
+          {/* Rendu sans document Docs : ComposePage retombe sur un document d'exemple.
+              C'est la cible du bouton « Utiliser » d'un gabarit. */}
+          <Route path="/compose" element={guarded(<ComposePage />)} />
           <Route path="/d/:id" element={<ShortDocRedirect />} />
           <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
           <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />

@@ -206,7 +206,7 @@ export function TemplatesListPage() {
                 {view === "grid" ? undefined : "Code Typst"}
               </LinkButton>
               <LinkButton
-                to={`/documents/new?template=${t.id}`}
+                to={`/compose?template=${t.id}`}
                 size="small"
                 variant="tertiary"
                 icon={<Play aria-hidden="true" />}
