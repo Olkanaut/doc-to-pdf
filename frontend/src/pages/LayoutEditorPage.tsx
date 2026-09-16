@@ -220,7 +220,7 @@ export function LayoutEditorPage() {
     return (
       <div className="le-load-error" role="alert">
         <Alert type={VariantType.ERROR}>{loadError}</Alert>
-        <Button href="/templates" variant="tertiary" onClick={(e) => follow(e, "/templates", false)}>
+        <Button href="/" variant="tertiary" onClick={(e) => follow(e, "/", false)}>
           Retour aux gabarits
         </Button>
       </div>
@@ -231,12 +231,12 @@ export function LayoutEditorPage() {
     <div className="le">
       <header className="le-header">
         <Button
-          href="/templates"
+          href="/"
           variant="tertiary"
           color="neutral"
           icon={<ArrowLeft aria-hidden="true" />}
           aria-label="Retour aux gabarits"
-          onClick={(e) => follow(e, "/templates")}
+          onClick={(e) => follow(e, "/")}
         />
         <input
           className="le-header__name"
@@ -247,21 +247,21 @@ export function LayoutEditorPage() {
         {isDefault && <Badge type="accent">Par défaut</Badge>}
         <nav className="le-header__modes" aria-label="Mode d'édition">
           <Button
-            href={`/templates/${id}/layout`}
+            href={`/t/${id}/layout`}
             variant="secondary"
             color="neutral"
             size="small"
             aria-current="page"
-            onClick={(e) => follow(e, `/templates/${id}/layout`, false)}
+            onClick={(e) => follow(e, `/t/${id}/layout`, false)}
           >
             Mise en page
           </Button>
           <Button
-            href={`/templates/${id}`}
+            href={`/t/${id}`}
             variant="tertiary"
             color="neutral"
             size="small"
-            onClick={(e) => follow(e, `/templates/${id}`)}
+            onClick={(e) => follow(e, `/t/${id}`)}
           >
             Code Typst
           </Button>

@@ -31,6 +31,8 @@
 
 :root {
   color-scheme: light;
+  --color-primary: #3e5de7;
+  --color-primary-hover: #2845c1;
 }
 
 * {

@@ -2,20 +2,20 @@ import { LaGaufreV2, MainLayout, UserMenu } from "@gouvfr-lasuite/ui-components"
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { LeftPanel } from "./LeftPanel";
+import { DOCS_ORIGIN } from "../../config";
 
-/** Services proposés par la gaufre en local : la Docs locale et cette app. */
+/** Services proposés par la gaufre : la Docs de cet environnement et cette app. */
 const LOCAL_SERVICES = {
   services: [
-    { name: "Docs", url: "http://localhost:3011" },
+    { name: "Docs", url: DOCS_ORIGIN },
     { name: "dots", url: "/" },
   ],
 };
 
 /**
- * Coque de l'app sur le MainLayout du kit : en-tête (marque, gaufre), panneau gauche
- * (création, navigation — voir LeftPanel), pied du panneau (UserMenu du kit + nom).
- * Le contenu des routes arrive en enfant.
+ * Coque de l'app sur le MainLayout du kit : en-tête seul (marque, gaufre, menu
+ * utilisateur), sans panneau latéral — comme la maquette Figma. Le contenu des
+ * routes arrive en enfant ; chaque page porte ses propres actions.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -25,13 +25,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <MainLayout
       icon={<Brand />}
-      rightHeaderContent={<LaGaufreV2 data={LOCAL_SERVICES} />}
-      leftPanelContent={<LeftPanel />}
-      leftPanelFooter={
-        <div className="dots-panel-footer">
+      hideLeftPanelOnDesktop
+      rightHeaderContent={
+        <div className="dots-header-actions">
+          <LaGaufreV2 data={LOCAL_SERVICES} />
           <UserMenu user={menuUser} withMobileView={false} />
-          {/* Le déclencheur du UserMenu n'affiche que les initiales : le nom reste lisible à côté. */}
-          <span className="dots-panel-footer__name">{menuUser.full_name}</span>
         </div>
       }
     >

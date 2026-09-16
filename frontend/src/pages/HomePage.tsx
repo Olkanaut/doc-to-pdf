@@ -96,7 +96,7 @@ export function HomePage() {
     e.preventDefault();
     const id = docIdFromUrl(query);
     if (id) {
-      navigate(`/documents/new?doc=${id}`);
+      navigate(`/docs/${id}`);
       return;
     }
     clearTimeout(timer.current);
@@ -175,7 +175,7 @@ export function HomePage() {
             <ul className="home-docs">
               {items.map((d) => (
                 <li key={d.id}>
-                  <Link to={`/documents/new?doc=${d.id}`} className="home-doc">
+                  <Link to={`/docs/${d.id}`} className="home-doc">
                     <Doc aria-hidden="true" size={20} className="home-doc__icon" />
                     <span className="home-doc__title">{d.title}</span>
                     {d.role && <Badge type="neutral">{ROLE_LABEL[d.role]}</Badge>}

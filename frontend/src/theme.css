@@ -243,3 +243,10 @@ body {
     padding: 24px 16px;
   }
 }
+
+/* En-tête : gaufre et menu utilisateur à droite (plus de panneau gauche). */
+.dots-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

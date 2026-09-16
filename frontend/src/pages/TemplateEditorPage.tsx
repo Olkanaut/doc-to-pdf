@@ -57,7 +57,7 @@ export function TemplateEditorPage() {
     if (!id) return;
     if (!window.confirm(`Supprimer le gabarit « ${name} » ?`)) return;
     await deleteTemplate(id);
-    navigate("/templates");
+    navigate("/");
   }
 
   function handleDownload() {
@@ -110,21 +110,21 @@ export function TemplateEditorPage() {
         <h1>Modifier le gabarit</h1>
         <nav className="editor-modes" aria-label="Mode d'édition">
           <Button
-            href={`/templates/${id}/layout`}
+            href={`/t/${id}/layout`}
             variant="tertiary"
             color="neutral"
             size="small"
-            onClick={(e) => follow(e, `/templates/${id}/layout`)}
+            onClick={(e) => follow(e, `/t/${id}/layout`)}
           >
             Mise en page
           </Button>
           <Button
-            href={`/templates/${id}`}
+            href={`/t/${id}`}
             variant="secondary"
             color="neutral"
             size="small"
             aria-current="page"
-            onClick={(e) => follow(e, `/templates/${id}`, false)}
+            onClick={(e) => follow(e, `/t/${id}`, false)}
           >
             Code Typst
           </Button>

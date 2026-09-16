@@ -2,10 +2,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import { authRoutes } from "./routes/auth.js";
 import { templatesRoutes } from "./routes/templates.js";
 import { fixturesRoutes } from "./routes/fixtures.js";
 import { renderRoutes } from "./routes/render.js";
 import { sessionRoutes } from "./routes/session.js";
+import { documentRoutes } from "./routes/documents.js";
 import { aiRoutes } from "./routes/ai.js";
 import { docsRoutes } from "./routes/docs.js";
 
@@ -18,11 +20,16 @@ try {
 
 const app = Fastify({ logger: true });
 
-await app.register(cors, { origin: true });
+await app.register(cors, {
+  origin: process.env.APP_ORIGIN ?? "http://localhost:3002",
+  credentials: true,
+});
+await app.register(authRoutes);
 await app.register(templatesRoutes);
 await app.register(fixturesRoutes);
 await app.register(renderRoutes);
 await app.register(sessionRoutes);
+await app.register(documentRoutes);
 await app.register(aiRoutes);
 await app.register(docsRoutes);
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Alert, Button, Select, VariantType } from "@gouvfr-lasuite/ui-components";
 import { Download, Link as LinkIcon, StackTemplate } from "@gouvfr-lasuite/ui-components/icons";
 import {
@@ -26,13 +26,15 @@ interface LoadedDoc {
   id: string;
   name: string;
   blockCount: number;
-  /** URL Docs collée, ou null si le document vient de `?doc=<uuid>`. */
+  /** URL Docs collée, ou null si le document vient du chemin de l'adresse. */
   url: string | null;
 }
 
 export function ComposePage() {
   const [searchParams] = useSearchParams();
-  const wantedDoc = searchParams.get("doc");
+  // Le document vient du chemin (`/docs/<id>`) ; `?doc=` reste accepté pour les anciens liens.
+  const { id: pathDoc } = useParams<{ id: string }>();
+  const wantedDoc = pathDoc ?? searchParams.get("doc");
 
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [defaultId, setDefaultId] = useState<string | null>(null);
@@ -40,9 +42,9 @@ export function ComposePage() {
   const [templateId, setTemplateId] = useState("");
   const [fixtureId, setFixtureId] = useState("");
 
-  // Document Docs chargé par le champ URL ou par `?doc=` ; prime sur le document d'exemple.
+  // Document Docs chargé par le champ URL ou par l'adresse ; prime sur le document d'exemple.
   const [doc, setDoc] = useState<LoadedDoc | null>(null);
-  // Vrai d'emblée avec `?doc=` : le rendu attend le document au lieu de rendre un exemple.
+  // Vrai d'emblée quand l'adresse porte un document : on l'attend au lieu de rendre un exemple.
   const [docLoading, setDocLoading] = useState(() => Boolean(wantedDoc && UUID.test(wantedDoc)));
   const [docError, setDocError] = useState<string | null>(null);
   // Numéro du dernier chargement Docs demandé : un résultat plus ancien est jeté.
@@ -208,7 +210,7 @@ export function ComposePage() {
             onSelect={setTemplateId}
           />
           {templateId && (
-            <Link className="compose-link" to={`/templates/${templateId}/layout`}>
+            <Link className="compose-link" to={`/t/${templateId}/layout`}>
               <StackTemplate size={16} aria-hidden="true" />
               Mise en page
             </Link>

@@ -1,14 +1,16 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Badge, Button, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
-import { Code, Play, Plus, Star, StarFilled, Trash } from "@gouvfr-lasuite/ui-components/icons";
+import { Code, Play, Plus, Star, StarFilled, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import {
+  createTemplate,
   deleteTemplate,
   fetchDefaultTemplate,
   fetchTemplates,
   setDefaultTemplate,
   type TemplateSummary,
 } from "../api/client";
+import { ImportTemplateModal } from "../components/templates/ImportTemplateModal";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
 import "../components/templates/templates-page.css";
@@ -40,14 +42,20 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
   );
 }
 
-/** Liste des gabarits. Création et import vivent dans le panneau gauche (LeftPanel). */
+/**
+ * Galerie des gabarits, page d'accueil de l'app. Les trois actions du Figma sont en
+ * tête : déduire d'un PDF (à venir), importer un .typ, partir de zéro.
+ */
 export function TemplatesListPage() {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
   // ponytail: bouton d'entrée seulement ; la déduction depuis un PDF sera branchée ensuite.
   const [fromPdfSoon, setFromPdfSoon] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   function reload() {
     setLoading(true);
@@ -70,6 +78,19 @@ export function TemplatesListPage() {
       localStorage.setItem(VIEW_STORAGE_KEY, next);
     } catch {
       // per-viewer convenience only; fine if it can't persist
+    }
+  }
+
+  async function handleCreate() {
+    setCreating(true);
+    setError(null);
+    try {
+      const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
+      navigate(`/t/${created.id}/layout`);
+    } catch (e) {
+      setError(`Création impossible : ${(e as Error).message}`);
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -98,17 +119,41 @@ export function TemplatesListPage() {
         </div>
         <div className="dots-actions">
           <Button
+            variant="tertiary"
             color="brand"
-            icon={<Plus aria-hidden="true" />}
             aria-expanded={fromPdfSoon}
             aria-controls="from-pdf-soon"
             onClick={() => setFromPdfSoon((v) => !v)}
           >
-            Déduire un gabarit d'un PDF
+            Déduire d'un PDF
+          </Button>
+          <Button
+            variant="secondary"
+            icon={<Upload aria-hidden="true" />}
+            onClick={() => setImportOpen(true)}
+          >
+            Importer un .typ
+          </Button>
+          <Button
+            color="brand"
+            icon={<Plus aria-hidden="true" />}
+            disabled={creating}
+            onClick={() => void handleCreate()}
+          >
+            Nouveau gabarit
           </Button>
           <ViewSwitcher view={view} onChange={handleViewChange} />
         </div>
       </div>
+
+      {importOpen && (
+        <ImportTemplateModal
+          onClose={() => {
+            setImportOpen(false);
+            reload();
+          }}
+        />
+      )}
 
       {fromPdfSoon && (
         <div id="from-pdf-soon" role="status">
@@ -135,7 +180,7 @@ export function TemplatesListPage() {
           view={view}
           // La tuile ouvre l'éditeur de mise en page (cible produit) ; le code Typst
           // reste accessible par l'action secondaire.
-          getOpenHref={(id) => `/templates/${id}/layout`}
+          getOpenHref={(id) => `/t/${id}/layout`}
           renderBadge={(t) =>
             t.isDefault ? (
               <Badge type="accent" className="template-badge">
@@ -151,7 +196,7 @@ export function TemplatesListPage() {
           renderActions={(t) => (
             <span className="template-actions">
               <LinkButton
-                to={`/templates/${t.id}`}
+                to={`/t/${t.id}`}
                 size="small"
                 variant="tertiary"
                 icon={<Code aria-hidden="true" />}
