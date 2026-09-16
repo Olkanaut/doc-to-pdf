@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   fetchDefaultTemplate,
   fetchFixtures,
@@ -17,6 +17,7 @@ import "../components/compose/compose.css";
 
 export function ComposePage() {
   const [searchParams] = useSearchParams();
+  const { id: documentId } = useParams<{ id: string }>();
 
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [defaultId, setDefaultId] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export function ComposePage() {
   );
 
   const fixture = fixtures.find((f) => f.id === fixtureId);
-  const fileName = `${fixtureId || "document"}.pdf`;
+  const fileName = `${documentId || fixtureId || "document"}.pdf`;
   const unsupported = Object.entries(info?.unsupported ?? {});
   const unsupportedTotal = unsupported.reduce((n, [, count]) => n + count, 0);
 
@@ -141,7 +142,7 @@ export function ComposePage() {
             onSelect={setTemplateId}
           />
           {templateId && (
-            <Link className="compose-link" to={`/templates/${templateId}/layout`}>
+            <Link className="compose-link" to={`/t/${templateId}/layout`}>
               <IconLayout size={16} />
               Mise en page
             </Link>

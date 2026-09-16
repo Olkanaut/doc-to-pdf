@@ -161,7 +161,7 @@ export function ImportTemplateModal({ onClose }: { onClose: () => void }) {
         }
       }
       onClose();
-      navigate(`/templates/${created.id}/layout`);
+      navigate(`/t/${created.id}/layout`);
     } catch (e) {
       setImportError((e as Error).message);
       setImporting(false);

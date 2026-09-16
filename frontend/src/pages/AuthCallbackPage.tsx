@@ -29,7 +29,7 @@ export function AuthCallbackPage() {
     completeLogin(code, state)
       .then(async (result) => {
         await refresh();
-        window.location.assign(result.returnTo || "/templates");
+        window.location.assign(result.returnTo || "/");
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Connexion impossible.");

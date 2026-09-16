@@ -203,7 +203,7 @@ export function LayoutEditorPage() {
     return (
       <div className="dots-page">
         <div className="dots-notice dots-notice--error" role="alert">{loadError}</div>
-        <Link to="/templates">Retour aux gabarits</Link>
+        <Link to="/">Retour aux gabarits</Link>
       </div>
     );
   }
@@ -211,7 +211,7 @@ export function LayoutEditorPage() {
   return (
     <div className="le">
       <header className="le-header">
-        <Link to="/templates" className="dots-btn dots-btn--icon" aria-label="Retour aux gabarits" onClick={confirmLeave}>
+        <Link to="/" className="dots-btn dots-btn--icon" aria-label="Retour aux gabarits" onClick={confirmLeave}>
           <IconBack size={20} />
         </Link>
         <input
@@ -222,8 +222,8 @@ export function LayoutEditorPage() {
         />
         {isDefault && <span className="dots-badge">Par défaut</span>}
         <nav className="dots-segmented" aria-label="Mode d'édition">
-          <Link to={`/templates/${id}/layout`} aria-current="page">Mise en page</Link>
-          <Link to={`/templates/${id}`} onClick={confirmLeave}>Code Typst</Link>
+          <Link to={`/t/${id}/layout`} aria-current="page">Mise en page</Link>
+          <Link to={`/t/${id}`} onClick={confirmLeave}>Code Typst</Link>
         </nav>
         <span className="le-header__spacer" />
         {saveError ? (

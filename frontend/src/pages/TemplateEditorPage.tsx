@@ -54,7 +54,7 @@ export function TemplateEditorPage() {
     if (!id) return;
     if (!window.confirm(`Supprimer le gabarit « ${name} » ?`)) return;
     await deleteTemplate(id);
-    navigate("/templates");
+    navigate("/");
   }
 
   function handleDownload() {
@@ -99,14 +99,14 @@ export function TemplateEditorPage() {
         <h1>Modifier le gabarit</h1>
         <nav className="dots-segmented" aria-label="Mode d'édition">
           <Link
-            to={`/templates/${id}/layout`}
+            to={`/t/${id}/layout`}
             onClick={(e) => {
               if (dirty && !window.confirm("Modifications non enregistrées : continuer ?")) e.preventDefault();
             }}
           >
             Mise en page
           </Link>
-          <Link to={`/templates/${id}`} aria-current="page">Code Typst</Link>
+          <Link to={`/t/${id}`} aria-current="page">Code Typst</Link>
         </nav>
         <div className="dots-actions">
           <button type="button" onClick={handleDownload}>

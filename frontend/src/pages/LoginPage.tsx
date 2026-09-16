@@ -2,7 +2,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 function safeReturnTo(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/templates";
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
   return value;
 }
 

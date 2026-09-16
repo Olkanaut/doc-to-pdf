@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 function extractDocumentId(value: string): string {
   const trimmed = value.trim();
@@ -22,6 +22,7 @@ export function HomePage() {
   const [documentRef, setDocumentRef] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,7 +33,8 @@ export function HomePage() {
     }
 
     setError(null);
-    navigate(`/docs/${encodeURIComponent(documentId)}`);
+    const template = searchParams.get("template");
+    navigate(`/docs/${encodeURIComponent(documentId)}${template ? `?template=${encodeURIComponent(template)}` : ""}`);
   }
 
   return (
@@ -40,7 +42,7 @@ export function HomePage() {
       <div className="page-header">
         <h1>Document Docs</h1>
         <div className="page-header-actions">
-          <Link className="button-link secondary-link" to="/templates">
+          <Link className="button-link secondary-link" to="/">
             Gabarits
           </Link>
         </div>

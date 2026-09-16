@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
-import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { LeftPanel } from "./components/shell/LeftPanel";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
-import { DocumentPage } from "./pages/DocumentPage";
+import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
@@ -12,11 +12,27 @@ import { ComposePage } from "./pages/ComposePage";
 import "./App.css";
 import "./theme.css";
 
-/** `/template/editor?id=…` (nom retenu dans CLAUDE.md) → `/templates/:id/layout`. */
+/** `/template/editor?id=...` (nom retenu dans CLAUDE.md) -> `/t/:id/layout`. */
 function LegacyEditorRedirect() {
   const [params] = useSearchParams();
   const id = params.get("id");
-  return <Navigate to={id ? `/templates/${id}/layout` : "/templates"} replace />;
+  return <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />;
+}
+
+function TemplateRedirect({ layout = false }: { layout?: boolean }) {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/t/${encodeURIComponent(id)}${layout ? "/layout" : ""}` : "/"} replace />;
+}
+
+function DocumentsNewRedirect() {
+  const [params] = useSearchParams();
+  const doc = params.get("doc");
+  const template = params.get("template");
+  const nextParams = new URLSearchParams();
+  if (template) nextParams.set("template", template);
+  const search = nextParams.toString();
+  const target = doc ? `/docs/${encodeURIComponent(doc)}` : "/docs";
+  return <Navigate to={`${target}${search ? `?${search}` : ""}`} replace />;
 }
 
 function guarded(element: ReactElement) {
@@ -29,15 +45,18 @@ export default function App() {
       <LeftPanel />
       <main className="dots-main">
         <Routes>
-          <Route path="/" element={<Navigate to="/templates" replace />} />
+          <Route path="/" element={guarded(<TemplatesListPage />)} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
-          <Route path="/templates" element={guarded(<TemplatesListPage />)} />
-          <Route path="/templates/:id" element={guarded(<TemplateEditorPage />)} />
-          <Route path="/templates/:id/layout" element={guarded(<LayoutEditorPage />)} />
+          <Route path="/docs" element={guarded(<HomePage />)} />
+          <Route path="/docs/:id" element={guarded(<ComposePage />)} />
+          <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
+          <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
+          <Route path="/templates" element={<Navigate to="/" replace />} />
+          <Route path="/templates/:id" element={<TemplateRedirect />} />
+          <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />
           <Route path="/template/editor" element={<LegacyEditorRedirect />} />
-          <Route path="/documents/new" element={guarded(<ComposePage />)} />
+          <Route path="/documents/new" element={guarded(<DocumentsNewRedirect />)} />
         </Routes>
       </main>
     </div>

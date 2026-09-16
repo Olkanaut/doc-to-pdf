@@ -53,7 +53,7 @@ function DocumentView({ documentId }: { documentId: string }) {
           <a className="button-link secondary-link" href={docsUrl}>
             Ouvrir dans Docs
           </a>
-          <Link className="button-link" to={`/documents/new?doc=${encodeURIComponent(documentId)}`}>
+          <Link className="button-link" to={`/docs/${encodeURIComponent(documentId)}`}>
             Préparer le PDF
           </Link>
         </div>
@@ -86,11 +86,11 @@ function DocumentView({ documentId }: { documentId: string }) {
       </section>
 
       <section className="doc-actions-grid">
-        <Link className="doc-action" to="/templates">
+        <Link className="doc-action" to="/">
           <strong>Gabarits</strong>
           <span>Choisir ou modifier un gabarit Typst.</span>
         </Link>
-        <Link className="doc-action" to={`/documents/new?doc=${encodeURIComponent(documentId)}`}>
+        <Link className="doc-action" to={`/docs/${encodeURIComponent(documentId)}`}>
           <strong>Rendu PDF</strong>
           <span>Préparer le rendu avec le document sélectionné.</span>
         </Link>

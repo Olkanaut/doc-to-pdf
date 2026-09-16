@@ -29,7 +29,7 @@ export function TemplateTiles({ templates, selectedId, defaultId, onSelect }: Pr
     <fieldset className="compose-templates">
       <legend>
         <span>Gabarit</span>
-        <Link to="/templates">Gérer</Link>
+        <Link to="/">Gérer</Link>
       </legend>
       {templates.map((t) => (
         <Fragment key={t.id}>

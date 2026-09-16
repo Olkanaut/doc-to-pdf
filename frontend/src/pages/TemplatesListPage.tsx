@@ -97,7 +97,7 @@ export function TemplatesListPage() {
           view={view}
           // La tuile ouvre l'éditeur de mise en page (cible produit) ; le code Typst
           // reste accessible par l'action secondaire.
-          getOpenHref={(id) => `/templates/${id}/layout`}
+          getOpenHref={(id) => `/t/${id}/layout`}
           renderBadge={(t) =>
             t.isDefault ? (
               <span className="dots-badge template-badge">
@@ -108,8 +108,8 @@ export function TemplatesListPage() {
           }
           renderActions={(t) => (
             <span className="template-actions">
-              <Link to={`/templates/${t.id}`}>Code Typst</Link>
-              <Link to={`/documents/new?template=${t.id}`}>Utiliser</Link>
+              <Link to={`/t/${t.id}`}>Code Typst</Link>
+              <Link to={`/docs?template=${t.id}`}>Utiliser</Link>
               {!t.isDefault && (
                 <button type="button" className="link-button" onClick={() => handleSetDefault(t.id)}>
                   Définir par défaut

@@ -20,8 +20,8 @@ export function AppHeader() {
           <NavLink to="/" end>
             Document
           </NavLink>
-          <NavLink to="/templates">Gabarits</NavLink>
-          <NavLink to="/documents/new">Créer</NavLink>
+          <NavLink to="/">Gabarits</NavLink>
+          <NavLink to="/docs">Documents</NavLink>
         </nav>
       </div>
 

@@ -52,7 +52,7 @@ export function LeftPanel() {
     setBusy(true);
     try {
       const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
-      navigate(`/templates/${created.id}/layout`);
+      navigate(`/t/${created.id}/layout`);
     } catch (e) {
       window.alert(`Création impossible : ${(e as Error).message}`);
     } finally {
@@ -63,7 +63,7 @@ export function LeftPanel() {
   return (
     <aside className="dots-left-panel">
       <div className="dots-left-panel__header">
-        <Link to="/templates" className="dots-left-panel__brand">
+        <Link to="/" className="dots-left-panel__brand">
           <span className="dots-left-panel__logo" aria-hidden="true">
             dt
           </span>
@@ -75,7 +75,7 @@ export function LeftPanel() {
       {authenticated && (
         <>
           <div className="dots-left-panel__actions">
-            <Link to="/templates" className="dots-btn dots-btn--icon" aria-label="Accueil">
+            <Link to="/" className="dots-btn dots-btn--icon" aria-label="Accueil">
               <IconHome />
             </Link>
             <div className="dots-split" ref={splitRef}>
@@ -119,11 +119,11 @@ export function LeftPanel() {
           </div>
 
           <nav className="dots-left-panel__nav" aria-label="Navigation principale">
-            <NavLink to="/templates" className="dots-nav-item">
+            <NavLink to="/" className="dots-nav-item">
               <IconLayout size={18} />
               Gabarits
             </NavLink>
-            <NavLink to="/documents/new" className="dots-nav-item">
+            <NavLink to="/docs" className="dots-nav-item">
               <IconDoc size={18} />
               Documents
             </NavLink>
