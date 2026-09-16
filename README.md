@@ -145,31 +145,6 @@ docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery
 drive: keycloak local, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 
-## Pourquoi Pas Juste Make
-
-Dans les repos upstream, le setup standard est bien :
-
-```bash
-make bootstrap
-make run
-```
-
-Mais ces commandes lancent les stacks de dev completes de chaque produit. Pour
-Docs, cela tire aussi `docspec`, `celery` et le Keycloak local.
-Pour Drive, cela tire les services d'edition type WOPI/OnlyOffice/Collabora.
-
-Ici, les profils locaux gardent seulement ce qui est utile au POC :
-
-```text
-auth commune
-frontend
-backend/API
-base de donnees
-stockage local
-y-provider pour convertir le contenu Yjs en blocs JSON
-Resource Server API
-```
-
 ## Structure Locale
 
 ```text
@@ -213,8 +188,10 @@ Endpoint principal pour le POC PDF :
 http://localhost:8071/external_api/v1.0/documents/
 ```
 
-La documentation du contrat d'API externe pour les templates Typst est
-disponible dans [README-EXTERNAL-API.md](./README-EXTERNAL-API.md).
+Documentation API :
+
+- [Templates Typst](./README-EXTERNAL-API.md)
+- [Recuperation d'un document Docs depuis Dots](./README-DOCS-FETCH.md)
 
 ## App PDF Locale
 
@@ -259,6 +236,9 @@ OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
 DOCS_API_BASE_URL=http://localhost:8071/external_api/v1.0/
 DOCS_API_TIMEOUT_MS=10000
 DOCS_API_MAX_RESPONSE_BYTES=5242880
+TYPST_TEMPLATES_API_BASE_URL=http://localhost:8071/external_api/v1.0/typst-templates/
+TYPST_TEMPLATES_API_TIMEOUT_MS=10000
+TYPST_TEMPLATES_API_MAX_RESPONSE_BYTES=5242880
 ```
 
 Le backend expose `GET /api/documents/{id}/content`. Il transmet le token

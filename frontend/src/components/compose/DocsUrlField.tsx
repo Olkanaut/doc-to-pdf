@@ -3,7 +3,7 @@ import { Alert, Button, Input, Spinner, VariantType } from "@gouvfr-lasuite/ui-c
 import { docIdFromUrl } from "../../docsUrl";
 
 interface Props {
-  /** URL reconnue : la page charge le document (GET /api/docs/:id) puis relance le rendu. */
+  /** URL reconnue : la page charge le document via le backend Dots. */
   onOpen: (id: string, url: string) => void;
   /** Chargement en cours, porté par la page (aussi pour `?doc=` à l'arrivée). */
   loading: boolean;

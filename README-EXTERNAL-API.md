@@ -1,6 +1,8 @@
 # Typst Templates External API
 
-> This is the target contract. These external routes are not implemented yet.
+Dots uses these resource-server routes to store and fetch user-owned Typst
+templates in the Docs database. The Keycloak access token stays server-side in
+Dots and is forwarded to Docs as a Bearer token.
 
 ```js
 const baseUrl = "http://localhost:8071/external_api/v1.0/typst-templates";

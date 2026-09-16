@@ -31,10 +31,12 @@ function inlineToTypst(inline: InlineContent): string {
   // pas faire échouer le rendu de tout le document.
   if (typeof inline.text !== "string") return "";
 
-  let text = escapeTypstText(inline.text);
-  if (inline.styles?.code) text = `\`${text}\``;
-  if (inline.styles?.bold) text = `*${text}*`;
-  if (inline.styles?.italic) text = `_${text}_`;
+  let text = inline.styles?.code
+    ? `#raw("${escapeTypstString(inline.text)}")`
+    : escapeTypstText(inline.text);
+  if (inline.styles?.bold) text = `#strong[${text}]`;
+  if (inline.styles?.italic) text = `#emph[${text}]`;
+  if (inline.styles?.underline) text = `#underline[${text}]`;
   return text;
 }
 
@@ -62,8 +64,8 @@ function listItemToTypst(
 function blockToTypst(block: Block, images: ImageAsset[], depth = 0): string {
   switch (block.type) {
     case "heading": {
-      const marker = "=".repeat(block.props.level);
-      return `${marker} ${inlinesToTypst(block.content)}`;
+      const level = block.props.level === 2 || block.props.level === 3 ? block.props.level : 1;
+      return `#heading(level: ${level})[${inlinesToTypst(block.content)}]`;
     }
     case "paragraph":
       return inlinesToTypst(block.content);
@@ -78,7 +80,7 @@ function blockToTypst(block: Block, images: ImageAsset[], depth = 0): string {
       const dest = `assets/img-${images.length}${extensionOf(block.props.url)}`;
       images.push({ src: block.props.url, dest });
       const caption = block.props.caption
-        ? `\n#align(center)[_${escapeTypstText(block.props.caption)}_]`
+        ? `\n#align(center)[#emph[${escapeTypstText(block.props.caption)}]]`
         : "";
       return `#image("${dest}", width: 80%)${caption}`;
     }

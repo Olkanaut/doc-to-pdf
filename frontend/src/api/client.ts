@@ -141,10 +141,7 @@ export async function fetchDocumentContent(documentId: string): Promise<DocsDocu
 }
 
 export interface RenderRequest {
-  /** Document d'exemple embarqué (`backend/fixtures`). `fixtureId` ou `docId`, l'un des deux. */
-  fixtureId?: string;
-  /** Document Docs (uuid), lu par le backend via DOCS_API_URL, à la place de `fixtureId`. */
-  docId?: string;
+  fixtureId: string;
   templateId?: string;
   templateSource?: string;
 }
@@ -351,19 +348,13 @@ export async function aiTemplateFromPdf(input: {
 export interface RenderInfo {
   /** Nombre de blocs du document. */
   blockCount: number;
-  /** Type de bloc → nombre d'occurrences rendues en paragraphe simple. */
+  /** Type de bloc → nombre d'occurrences absentes du PDF. */
   unsupported: Record<string, number>;
 }
 
-/** Comme renderPdf, plus les en-têtes X-Dots-* posés par /api/render. */
-export async function renderPdfWithInfo(
-  req: RenderRequest,
+async function renderResponse(
+  res: Response,
 ): Promise<(RenderResult & { info: RenderInfo }) | RenderError> {
-  const res = await fetch("/api/render", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
     return { ok: false, error: data.error ?? "Unknown error", details: data.details };
@@ -372,58 +363,37 @@ export async function renderPdfWithInfo(
   try {
     unsupported = JSON.parse(res.headers.get("X-Dots-Unsupported-Blocks") ?? "{}");
   } catch {
-    // en-tête absent ou mal formé : on affiche simplement rien
+    // Un en-tête absent ou mal formé ne doit pas empêcher l'affichage du PDF.
   }
   const blockCount = Number(res.headers.get("X-Dots-Block-Count") ?? 0);
   return { ok: true, blob: await res.blob(), info: { blockCount, unsupported } };
 }
 
-// ── Documents Docs (La Suite) ─────────────────────────────────────────────────
-
-export interface DocsDocument {
-  id: string;
-  /** Titre du document dans Docs. */
-  name: string;
-  /** Blocs BlockNote, même forme que les fixtures. */
-  blocks: unknown[];
-  blockCount: number;
+/** Comme renderPdf, plus les en-têtes X-Dots-* posés par /api/render. */
+export async function renderPdfWithInfo(
+  req: RenderRequest,
+): Promise<(RenderResult & { info: RenderInfo }) | RenderError> {
+  const res = await apiFetch("/api/render", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  return renderResponse(res);
 }
 
-/**
- * GET /api/docs/:id. Lève une Error portant le message `error` du serveur : 403 (document
- * non accessible), 404 (introuvable), 422 (jamais ouvert dans l'éditeur), 502 (Docs injoignable).
- */
-export async function fetchDocsDocument(id: string): Promise<DocsDocument> {
-  return asJson(await fetch(`/api/docs/${encodeURIComponent(id)}`));
-}
-
-export interface DocsListItem {
-  id: string;
-  title: string;
-  updatedAt: string;
-  role: "reader" | "commenter" | "editor" | "administrator" | "owner" | null;
-}
-
-export interface DocsList {
-  items: DocsListItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-  /** Un cookie de session Docs accompagnait la requête ; sans lui la liste est vide. */
-  hasSession: boolean;
-}
-
-/** GET /api/docs : les documents Docs de l'utilisateur, filtrés par titre ; paramètres vides omis. */
-export async function fetchDocsDocuments(query: {
-  title?: string;
-  page?: number;
-  pageSize?: number;
-}): Promise<DocsList> {
-  const params = new URLSearchParams();
-  if (query.title) params.set("title", query.title);
-  if (query.page !== undefined) params.set("page", String(query.page));
-  if (query.pageSize !== undefined) params.set("page_size", String(query.pageSize));
-  const qs = params.toString();
-  return asJson(await fetch(`/api/docs${qs ? `?${qs}` : ""}`));
+export async function renderDocumentPdf(
+  documentId: string,
+  templateId: string,
+  signal?: AbortSignal,
+): Promise<(RenderResult & { info: RenderInfo }) | RenderError> {
+  const res = await apiFetch(
+    `/api/documents/${encodeURIComponent(documentId)}/render`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateId }),
+      signal,
+    },
+  );
+  return renderResponse(res);
 }

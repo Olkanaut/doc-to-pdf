@@ -8,7 +8,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { LayoutEditorPage } from "./pages/LayoutEditorPage";
-import { ComposePage } from "./pages/ComposePage";
+import { DocumentPage } from "./pages/DocumentPage";
 import "./App.css";
 import "./theme.css";
 
@@ -54,7 +54,7 @@ export default function App() {
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           {/* Même chemin que Docs : `docs…/docs/<id>/` devient `dots…/docs/<id>/`. */}
           <Route path="/docs" element={guarded(<HomePage />)} />
-          <Route path="/docs/:id" element={guarded(<ComposePage />)} />
+          <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
           <Route path="/d/:id" element={<ShortDocRedirect />} />
           <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
           <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
@@ -62,7 +62,7 @@ export default function App() {
           <Route path="/templates/:id" element={<TemplateRedirect />} />
           <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />
           <Route path="/template/editor" element={<LegacyEditorRedirect />} />
-          <Route path="/documents/new" element={<DocumentsNewRedirect />} />
+          <Route path="/documents/new" element={guarded(<DocumentsNewRedirect />)} />
         </Routes>
       </main>
     </AppShell>

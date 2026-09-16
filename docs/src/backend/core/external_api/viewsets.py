@@ -10,10 +10,12 @@ from core.api.permissions import (
     IsSelf,
     ResourceAccessPermission,
 )
+from core.api.serializers import TypstTemplateListSerializer
 from core.api.viewsets import (
     DocumentAccessViewSet,
     DocumentViewSet,
     InvitationViewset,
+    TypstTemplateViewSet,
     UserViewSet,
 )
 from core.external_api.permissions import ResourceServerClientPermission
@@ -89,3 +91,24 @@ class ResourceServerUserViewSet(ResourceServerRestrictionMixin, UserViewSet):
     def resource_server_actions(self):
         """Get resource_server_actions from settings."""
         return self._get_resource_server_actions("users")
+
+
+class ResourceServerTypstTemplateViewSet(
+    ResourceServerRestrictionMixin, TypstTemplateViewSet
+):
+    """Resource Server Viewset for Typst templates."""
+
+    authentication_classes = [ResourceServerAuthentication]
+
+    permission_classes = [ResourceServerClientPermission]
+
+    @property
+    def resource_server_actions(self):
+        """Get resource_server_actions from settings."""
+        return self._get_resource_server_actions("typst_templates")
+
+    def get_serializer_class(self):
+        """Use a lightweight representation for template lists."""
+        if self.action == "list":
+            return TypstTemplateListSerializer
+        return super().get_serializer_class()

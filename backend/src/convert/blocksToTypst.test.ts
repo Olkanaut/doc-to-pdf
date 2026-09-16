@@ -16,22 +16,131 @@ describe("escapeTypstText", () => {
 });
 
 describe("blocksToTypst", () => {
-  it("converts headings, paragraphs and marks", () => {
+  it("converts headings, paragraphs and marks with explicit Typst functions", () => {
     const blocks: Block[] = [
       { type: "heading", props: { level: 1 }, content: [{ type: "text", text: "Titre" }] },
       {
         type: "paragraph",
         content: [
           { type: "text", text: "un mot en " },
-          { type: "text", text: "gras", styles: { bold: true } },
+          {
+            type: "text",
+            text: "gras, italique et souligné",
+            styles: { bold: true, italic: true, underline: true },
+          },
           { type: "text", text: " et un symbole # littéral" },
         ],
       },
     ];
     const { typst } = blocksToTypst(blocks);
-    expect(typst).toContain("= Titre");
-    expect(typst).toContain("*gras*");
+    expect(typst).toContain("#heading(level: 1)[Titre]");
+    expect(typst).toContain(
+      "#underline[#emph[#strong[gras, italique et souligné]]]",
+    );
     expect(typst).toContain("\\#");
+  });
+
+  it.each([1, 2, 3] as const)("preserves heading level %i", (level) => {
+    const blocks: Block[] = [
+      {
+        type: "heading",
+        props: { level },
+        content: [{ type: "text", text: `Titre ${level}` }],
+      },
+    ];
+
+    expect(blocksToTypst(blocks).typst).toBe(
+      `#heading(level: ${level})[Titre ${level}]`,
+    );
+  });
+
+  it.each([
+    [{ bold: true }, "#strong[texte]"],
+    [{ italic: true }, "#emph[texte]"],
+    [{ underline: true }, "#underline[texte]"],
+    [{ bold: true, italic: true }, "#emph[#strong[texte]]"],
+    [{ bold: true, underline: true }, "#underline[#strong[texte]]"],
+    [
+      { bold: true, italic: true, underline: true },
+      "#underline[#emph[#strong[texte]]]",
+    ],
+  ] as const)("converts inline styles %#", (styles, expected) => {
+    const blocks: Block[] = [
+      { type: "paragraph", content: [{ type: "text", text: "texte", styles }] },
+    ];
+
+    expect(blocksToTypst(blocks).typst).toBe(expected);
+  });
+
+  it("uses raw for inline code instead of backtick delimiters", () => {
+    const blocks: Block[] = [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: 'const value = `test\\path` + "quoted"',
+            styles: { code: true },
+          },
+        ],
+      },
+    ];
+
+    expect(blocksToTypst(blocks).typst).toBe(
+      '#raw("const value = `test\\\\path` + \\"quoted\\"")',
+    );
+  });
+
+  it("preserves inline styles in links, lists and table cells", () => {
+    const blocks = [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "link",
+            href: "https://example.fr",
+            content: [
+              {
+                type: "text",
+                text: "lien",
+                styles: { bold: true, underline: true },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "bulletListItem",
+        content: [{ type: "text", text: "élément", styles: { italic: true } }],
+      },
+      {
+        type: "table",
+        content: {
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    {
+                      type: "text",
+                      text: "cellule",
+                      styles: { bold: true, italic: true, underline: true },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ] as Block[];
+
+    const { typst } = blocksToTypst(blocks);
+    expect(typst).toContain(
+      '#link("https://example.fr")[#underline[#strong[lien]]]',
+    );
+    expect(typst).toContain("- #emph[élément]");
+    expect(typst).toContain("#underline[#emph[#strong[cellule]]]");
   });
 
   it("does not let literal markup characters affect structure", () => {
@@ -49,6 +158,7 @@ describe("blocksToTypst", () => {
     const { typst, images } = blocksToTypst(blocks);
     expect(images).toEqual([{ src: "images/sample.png", dest: "assets/img-0.png" }]);
     expect(typst).toContain('#image("assets/img-0.png"');
+    expect(typst).toContain("#align(center)[#emph[légende]]");
   });
 });
 

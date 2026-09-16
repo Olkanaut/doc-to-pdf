@@ -1,6 +1,7 @@
 export interface TextStyles {
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   code?: boolean;
 }
 
