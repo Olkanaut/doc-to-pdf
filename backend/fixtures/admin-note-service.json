@@ -1,0 +1,597 @@
+{
+  "id": "admin-note-service",
+  "name": "Exemple — Note de service DRH (télétravail)",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ministère de l’Exemple",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Direction des ressources humaines"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Bureau des carrières"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Affaire suivie par : Camille Durand-Lefèvre, cheffe du bureau des carrières"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Courriel : camille.durand-lefevre@exemple.gouv.fr — poste 4242"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Référence à rappeler dans toute correspondance : « n° 2026-042 » (DRH/BC)"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Exempleville, le 15 septembre 2026"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Note de service n° 2026-042"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "À l’attention de l’ensemble des agents du ministère",
+          "styles": {
+            "italic": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Objet : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "Modalités de télétravail à compter du 1er novembre 2026"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Réf. : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "circulaire n° 2026-017 du 3 juillet 2026 relative à l’organisation du travail à distance dans les services de l’État ; note interne réf. #A-42 du 20 août 2026"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "P.J. : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "formulaire de demande de télétravail (fichier_nom.pdf), à retourner dûment complété et signé"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Contexte"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La circulaire visée en référence fixe le cadre du télétravail applicable dans les services de l’État à compter du 1er novembre 2026 et abroge les dispositions transitoires en vigueur depuis 2024."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Au sein du Ministère de l’Exemple, 12,5 % des agents exercent aujourd’hui en télétravail régulier ; l’objectif est de porter cette proportion à 40 % d’ici fin 2027, sans dégradation de la continuité du service. La présente note en précise les modalités pratiques et le calendrier."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Agents concernés"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sont éligibles l’ensemble des agents titulaires, contractuels et stagiaires du ministère dont les fonctions sont compatibles avec un exercice à distance. Sont exclus les agents dont la présence physique est requise en continu (accueil du public, sécurité, logistique) et ceux en période d’essai."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les agents en situation de handicap, les agentes en état de grossesse déclarée et les proches aidants peuvent solliciter une quotité dérogatoire (voir tableau ci-dessous). Une note *importante* : cette quotité n’est jamais accordée d’office, elle fait l’objet d’une demande motivée."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Modalités pratiques"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le télétravail s’exerce par journées entières, dans la limite de trois jours par semaine. Les jours télétravaillables sont les suivants :"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "lundi ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "mardi ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "jeudi ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "vendredi, réservé aux agents dont la quotité de travail est égale ou supérieure à 80 %."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le mercredi est une journée de présence obligatoire ; toute dérogation est soumise à l’accord écrit du chef de service."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La demande de télétravail suit les étapes ci-après :"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "compléter le formulaire joint (fichier_nom.pdf), le dater et le signer ;"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "recueillir l’avis motivé du supérieur hiérarchique direct, sous quinze jours ;"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "transmettre le dossier complet au bureau des carrières, à l’adresse teletravail-drh@exemple.gouv.fr ;"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "attendre la notification de la décision, rendue dans un délai d’un mois à compter de la réception du dossier."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les pièces à fournir varient selon la situation de l’agent :"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Situation",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Quotité",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Pièces à fournir",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Droit commun"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 à 3 jours par semaine"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Formulaire signé, avis du supérieur hiérarchique"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Agent en situation de handicap"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Jusqu’à 5 jours par semaine"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Formulaire signé, attestation de la médecine de prévention"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Grossesse déclarée"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Jusqu’à 5 jours par semaine"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Formulaire signé, certificat médical"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Proche aidant"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Jusqu’à 4 jours par semaine"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Formulaire signé, justificatif de la situation d’aidant"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "L’équipement (ordinateur portable, casque) est fourni par la direction des systèmes d’information ; les casques du marché mutualisé lui sont facturés 3 $ par unité, montant converti en euros à la commande. Une indemnité forfaitaire de 2,88 € par jour télétravaillé, plafonnée à 1 200,50 € par an, est versée trimestriellement, à terme échu."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Une foire aux questions est tenue à jour sur "
+        },
+        {
+          "type": "link",
+          "href": "https://intranet.exemple.gouv.fr/rh/teletravail",
+          "content": [
+            {
+              "type": "text",
+              "text": "l’intranet du ministère"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", rubrique « Ressources humaines »."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Calendrier"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le dispositif entre en vigueur le 1er novembre 2026. Les conventions individuelles en cours restent valables au plus tard jusqu’au 31 décembre 2026 ; passé cette date, une nouvelle demande devra être déposée."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les demandes déposées avant le 15 octobre 2026 seront instruites en priorité. Un bilan de la mise en œuvre sera présenté au comité social d’administration lors de sa séance du [à compléter] 2027."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "J’ai l’honneur de vous demander de bien vouloir assurer la diffusion de la présente note auprès des agents placés sous votre autorité et de me signaler toute difficulté d’application."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Je vous prie d’agréer, Mesdames, Messieurs, l’expression de ma considération distinguée."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La directrice des ressources humaines,"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Isabelle Marchand-Vidal",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Copie à : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "secrétariat général ; direction des systèmes d’information ; médecine de prévention ; organisations syndicales représentatives."
+        }
+      ]
+    }
+  ]
+}

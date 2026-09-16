@@ -16,7 +16,16 @@ export interface LinkInline {
   content: TextInline[];
 }
 
-export type InlineContent = TextInline | LinkInline;
+/**
+ * Lien interne Docs, inséré via « / » dans l'éditeur. Ne porte PAS de `text` :
+ * son libellé visible est dans props.title.
+ */
+export interface InterlinkingInline {
+  type: "interlinkingLinkInline";
+  props: { docId?: string; title?: string; disabled?: boolean; trigger?: string };
+}
+
+export type InlineContent = TextInline | LinkInline | InterlinkingInline;
 
 export interface HeadingBlock {
   id?: string;

@@ -1,27 +1,45 @@
-import { Route, Routes } from "react-router-dom";
-import { ProtectedLayout } from "./layouts/ProtectedLayout";
+import type { ReactElement } from "react";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { LeftPanel } from "./components/shell/LeftPanel";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { DocumentPage } from "./pages/DocumentPage";
-import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
+import { LayoutEditorPage } from "./pages/LayoutEditorPage";
 import { ComposePage } from "./pages/ComposePage";
 import "./App.css";
+import "./theme.css";
+
+/** `/template/editor?id=…` (nom retenu dans CLAUDE.md) → `/templates/:id/layout`. */
+function LegacyEditorRedirect() {
+  const [params] = useSearchParams();
+  const id = params.get("id");
+  return <Navigate to={id ? `/templates/${id}/layout` : "/templates"} replace />;
+}
+
+function guarded(element: ReactElement) {
+  return <ProtectedRoute>{element}</ProtectedRoute>;
+}
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
-      <Route element={<ProtectedLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/docs/:id" element={<DocumentPage />} />
-        <Route path="/templates" element={<TemplatesListPage />} />
-        <Route path="/templates/:id" element={<TemplateEditorPage />} />
-        <Route path="/documents/new" element={<ComposePage />} />
-      </Route>
-    </Routes>
+    <div className="dots-shell">
+      <LeftPanel />
+      <main className="dots-main">
+        <Routes>
+          <Route path="/" element={<Navigate to="/templates" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
+          <Route path="/templates" element={guarded(<TemplatesListPage />)} />
+          <Route path="/templates/:id" element={guarded(<TemplateEditorPage />)} />
+          <Route path="/templates/:id/layout" element={guarded(<LayoutEditorPage />)} />
+          <Route path="/template/editor" element={<LegacyEditorRedirect />} />
+          <Route path="/documents/new" element={guarded(<ComposePage />)} />
+        </Routes>
+      </main>
+    </div>
   );
 }

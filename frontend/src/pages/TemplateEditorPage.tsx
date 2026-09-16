@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   deleteTemplate,
   fetchFixtures,
@@ -16,6 +16,7 @@ export function TemplateEditorPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [source, setSource] = useState("");
+  const [saved, setSaved] = useState({ name: "", description: "", source: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewFixtureId, setPreviewFixtureId] = useState("");
@@ -30,6 +31,7 @@ export function TemplateEditorPage() {
       setName(t.name);
       setDescription(t.description);
       setSource(t.source);
+      setSaved({ name: t.name, description: t.description, source: t.source });
       setLoading(false);
     });
     fetchFixtures().then((fixtures) => {
@@ -42,6 +44,7 @@ export function TemplateEditorPage() {
     setSaving(true);
     try {
       await updateTemplate(id, { name, description, source });
+      setSaved({ name, description, source });
     } finally {
       setSaving(false);
     }
@@ -88,11 +91,24 @@ export function TemplateEditorPage() {
 
   if (loading) return <div className="page-loading" role="status">Chargement…</div>;
 
+  const dirty = name !== saved.name || description !== saved.description || source !== saved.source;
+
   return (
-    <div className="page">
-      <div className="page-header">
+    <div className="dots-page">
+      <div className="dots-page-header">
         <h1>Modifier le gabarit</h1>
-        <div className="page-header-actions">
+        <nav className="dots-segmented" aria-label="Mode d'édition">
+          <Link
+            to={`/templates/${id}/layout`}
+            onClick={(e) => {
+              if (dirty && !window.confirm("Modifications non enregistrées : continuer ?")) e.preventDefault();
+            }}
+          >
+            Mise en page
+          </Link>
+          <Link to={`/templates/${id}`} aria-current="page">Code Typst</Link>
+        </nav>
+        <div className="dots-actions">
           <button type="button" onClick={handleDownload}>
             Télécharger .typ
           </button>

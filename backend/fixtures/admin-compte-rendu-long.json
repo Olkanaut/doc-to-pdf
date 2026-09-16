@@ -1,0 +1,1347 @@
+{
+  "id": "admin-compte-rendu-long",
+  "name": "Exemple — Compte rendu COPIL Dématérialisation",
+  "blocks": [
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Compte rendu du comité de pilotage n° 7 — Projet « Dématérialisation des demandes de subvention »"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ministère de l’Exemple",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Direction du numérique — Sous-direction des projets"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Réf. : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "DNUM/SDP/2026-042 — dossier « n° 2026-042 »"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Objet : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "réunion du comité de pilotage du 9 septembre 2026, de 14 h 00 à 16 h 30, salle Condorcet."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "P.J. : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "tableau de suivi budgétaire au 31 août 2026 (fichier_nom.pdf) ; note *importante* de la RSSI sur l’homologation (réf. #A-42)."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Rédacteur : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "M. Julien Fictif, chef de projet — prenom.nom@exemple.gouv.fr"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Participants",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mme Claire Dupont-Exemple, sous-directrice des projets, présidente du comité"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Julien Fictif, chef de projet, Direction du numérique"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mme Aïcha Modèle, responsable de la sécurité des systèmes d’information (RSSI)"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Thomas Gabarit, délégué à la protection des données (DPO)"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mme Sophie Témoin, cheffe du bureau des subventions"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Karim Prototype, Préfecture de la Vallée-d’Exemple, site pilote"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mme Léa Maquette, chargée de communication"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Paul Échantillon, titulaire du marché, Intégrateur Fictif SAS "
+        },
+        {
+          "type": "text",
+          "text": "(point 1 uniquement)",
+          "styles": {
+            "italic": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Excusés",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " : M. Marc Spécimen, secrétaire général adjoint ; Mme Nadia Canevas, contrôleuse budgétaire"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Ordre du jour",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Point d’avancement et respect des jalons"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Situation budgétaire et exécution du marché public"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Revue des risques"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sécurité des systèmes d’information et conformité RGPD"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Plan de communication"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décisions, relevé d’actions et prochaines étapes"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La présidente ouvre la séance à 14 h 05. Le présent compte rendu vaut relevé de décisions ; celui du comité du 3 juillet 2026 est approuvé sans observation."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "1. Point d’avancement"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "État des jalons"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le jalon J3 « fin des développements du lot 1 » a été franchi le 28 août 2026, avec une semaine de retard due à l’indisponibilité de l’environnement d’intégration. Le jalon J4 « recette fonctionnelle » est engagé depuis le 1er septembre et doit s’achever le 3 octobre 2026. Le lot 2 (instruction par les services déconcentrés) reste conforme à la trajectoire, avec un démarrage des développements le 12 octobre 2026."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Recette fonctionnelle"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La recette est conduite par le bureau des subventions avec l’appui de trois testeurs métier de la Préfecture de la Vallée-d’Exemple. À la date du comité, 142 cas de test sur 210 ont été exécutés, dont 118 conformes, 19 en anomalie mineure et 5 en anomalie bloquante. Les anomalies bloquantes portent sur le calcul du taux de subvention, qui affiche « 12,5 % » au lieu de « 12,50 % » dans le récapitulatif, et sur l’impossibilité de joindre un fichier de plus de 10 Mo."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Mise en production"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La mise en production du lot 1 est maintenue au 2 novembre 2026, sous réserve de l’avis du comité de recette et de la décision d’homologation (point 4). Le plan de bascule prévoit un gel des dépôts papier à compter du 26 octobre 2026 et une reprise des dossiers en cours par lots de 500. La page projet, accessible à l’adresse "
+        },
+        {
+          "type": "link",
+          "href": "https://exemple.gouv.fr/projets/demat_subventions",
+          "content": [
+            {
+              "type": "text",
+              "text": "exemple.gouv.fr/projets/demat_subventions"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", sera mise à jour à chaque jalon franchi."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "2. Budget"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Exécution du marché public"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le marché de réalisation, notifié le 15 février 2026 sous le n° 2026-042 pour un montant de 1 248 000 € HT, est exécuté à hauteur de 54 % en engagements et de 38 % en paiements au 31 août 2026. Deux bons de commande complémentaires (96 400 € HT) couvrent la reprise des données et l’accessibilité numérique. La tranche optionnelle du lot 3 (tableau de bord décisionnel) doit être affermie avant le 31 décembre 2026."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Répartition par poste"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Répartition de l’enveloppe globale, tous financements confondus, arrêtée au 31 août 2026 :"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Poste",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Budget initial",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Engagé",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Taux d’exécution",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Développements (lots 1 et 2)"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "780 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "468 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "60,0 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Hébergement SecNumCloud (3 ans)"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "210 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "70 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "33,3 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Reprise des données"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "96 400 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "96 400 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "100,0 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Accompagnement et formation"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "84 200,50 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "21 050,25 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "25,0 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Audit de sécurité et homologation"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "45 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "18 000 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "40,0 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Communication"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "32 400 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 200,50 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "3,7 %"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Total"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 248 000,50 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "674 650,75 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "54,1 %"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Mme Témoin appelle l’attention du comité sur le poste « Communication », dont l’engagement se limite à 1 200,50 € en raison du report de la campagne d’information à l’automne. L’envoi des notifications par SMS, facturé 3 $ par unité par l’opérateur de l’accord-cadre, sera converti en euros à la facturation. Le montant restant à engager, soit 573 349,75 €, couvre les besoins identifiés jusqu’à la fin du lot 2."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "3. Risques"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le registre des risques a été actualisé le 5 septembre 2026. Quatre risques sont classés en niveau élevé et font l’objet d’un suivi renforcé, présenté ci-dessous."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Risque",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Probabilité",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Impact",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mesure de traitement",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Retard de l’homologation de sécurité"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Moyenne"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Fort"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Audit ANSSI anticipé au 22 septembre ; homologation provisoire de six mois"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Indisponibilité des testeurs métier en octobre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Forte"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Moyen"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Deux testeurs suppléants par service ; seconde vague de recette lissée"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Défaillance du titulaire sur le lot 2"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Faible"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Fort"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Pénalités dès le premier jalon manqué ; plan de réversibilité documenté"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Rejet du nouveau parcours par les usagers"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Moyenne"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Moyen"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Panel d’usagers en octobre ; dépôt papier maintenu jusqu’au 31 mars 2027"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Points d’attention"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Prototype signale un risque supplémentaire lié à la charge des services déconcentrés en période de clôture budgétaire et demande que la formation des instructeurs soit programmée avant le 10 novembre 2026. La RSSI ajoute que la dépendance à un composant tiers de signature électronique non maintenu doit être inscrite au registre avec une probabilité « moyenne » et un impact « fort »."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "4. Sécurité et RGPD"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Homologation de sécurité"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La démarche d’homologation est conduite selon le référentiel de l’ANSSI. L’analyse de risques, finalisée le 20 août 2026, identifie 27 mesures de sécurité, dont 21 sont déjà mises en œuvre. L’audit externe, confié à un prestataire qualifié PASSI, débutera le 22 septembre 2026 pour trois semaines ; la commission d’homologation se réunira le 20 octobre 2026. La RSSI rappelle que toute mise en production sans décision d’homologation est exclue."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Hébergement SecNumCloud"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "L’hébergement est assuré par un prestataire qualifié SecNumCloud sur le territoire national. Les environnements de production et de préproduction sont opérationnels depuis le 15 juillet 2026. Les tests de restauration réalisés le 2 septembre donnent un délai de reprise de 2 h 40, conforme à l’objectif de 4 heures. La RSSI demande que le contrat soit complété d’une clause de notification des incidents sous 24 heures, dont la rédaction reste [à compléter] dans le projet d’avenant."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Conformité RGPD"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le DPO rappelle que l’analyse d’impact relative à la protection des données a été achevée le 30 juin 2026. Les données collectées se limitent à l’identité du demandeur, aux coordonnées de la structure et aux pièces justificatives ; elles sont conservées cinq ans après le dernier versement. Aucune formalité préalable auprès de la CNIL n’est requise, mais le traitement sera inscrit au registre du ministère avant la mise en production."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "5. Communication"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Communication interne"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Une lettre d’information mensuelle sera adressée aux agents des services instructeurs à partir d’octobre 2026, et deux webinaires seront organisés les 14 et 21 octobre. Un espace collaboratif sur l’intranet ministériel centralisera les guides utilisateurs et la foire aux questions. Le site pilote disposera d’un référent identifié."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Communication externe"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La campagne d’information des usagers débutera le 5 octobre 2026 : site institutionnel, réseaux sociaux du ministère et courrier aux 3 200 structures ayant déposé une demande depuis 2024. Le message principal, « Une demande, un dépôt en ligne, un suivi en temps réel », a été validé par le cabinet. Le budget, ramené à 32 400 €, abandonne les dépliants imprimés au profit d’un format numérique accessible."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "6. Décisions et prochaines étapes"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Décisions"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "À l’issue des débats, le comité de pilotage adopte les décisions suivantes :"
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-01",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Mise en production du lot 1 confirmée au 2 novembre 2026, sous réserve de l’homologation du 20 octobre 2026."
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-02",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Correctif des cinq anomalies bloquantes livré par le titulaire au plus tard le 18 septembre 2026, sous peine de pénalités."
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-03",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Registre des risques complété et diffusé avec le présent compte rendu."
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-04",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Clause de notification des incidents sous 24 heures intégrée à l’avenant d’hébergement."
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-05",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Note d’opportunité sur la tranche optionnelle du lot 3 présentée au comité du 14 octobre 2026."
+        }
+      ]
+    },
+    {
+      "type": "numberedListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Décision n° 2026-042-06",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": " — Dépôt papier maintenu jusqu’au 31 mars 2027 pour les structures sans accès en ligne."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Relevé d’actions"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "M. Fictif diffuse le registre des risques actualisé avant le 12 septembre 2026 ; Mme Modèle lance l’audit PASSI le 22 septembre ; M. Gabarit fait relire la mention d’information par le service juridique avant le 30 septembre ; Mme Témoin désigne les testeurs suppléants et fiabilise les jeux de test pour le 25 septembre ; M. Prototype programme la formation des instructeurs avant le 10 novembre ; Mme Maquette soumet la lettre d’information avant le 1er octobre ; M. Échantillon livre le plan de bascule détaillé le 9 octobre 2026."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Prochaine réunion"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le prochain comité de pilotage se tiendra le mercredi 14 octobre 2026 à 14 h 00, en salle Condorcet, avec pour ordre du jour le bilan de la recette et la préparation de la commission d’homologation. Les points complémentaires sont à signaler au chef de projet par courriel avant le 5 octobre 2026."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La présidente remercie les participants et lève la séance à 16 h 30."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le chef de projet,",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Julien Fictif"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu et approuvé, la sous-directrice des projets,",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Claire Dupont-Exemple"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Copie à : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "M. le secrétaire général adjoint ; Mme la contrôleuse budgétaire ; M. le préfet de la Vallée-d’Exemple."
+        }
+      ]
+    }
+  ]
+}

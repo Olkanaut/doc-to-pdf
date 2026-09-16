@@ -51,3 +51,60 @@ describe("blocksToTypst", () => {
     expect(typst).toContain('#image("assets/img-0.png"');
   });
 });
+
+// Régressions trouvées en rendant de vrais documents Docs (fixtures reel-*).
+// Les trois faisaient échouer tout le rendu en 500, ou cassaient les liens.
+describe("contenu réel de Docs", () => {
+  it("prend le texte d'un lien dans content[], pas dans .text", () => {
+    const blocks: Block[] = [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "link",
+            href: "https://wemakecommons.org/",
+            content: [{ type: "text", text: "WeMakeCommons", styles: {} }],
+          },
+        ],
+      } as Block,
+    ];
+    const { typst } = blocksToTypst(blocks);
+    expect(typst).toContain('#link("https://wemakecommons.org/")[WeMakeCommons]');
+  });
+
+  it("n'échappe pas la syntaxe markup dans une URL", () => {
+    const url = "https://ara.numerique.gouv.fr/rapport/NQm_a0q0oJUVhg9_jVjUE/resultats";
+    const blocks: Block[] = [
+      {
+        type: "paragraph",
+        content: [{ type: "link", href: url, content: [{ type: "text", text: "rapport", styles: {} }] }],
+      } as Block,
+    ];
+    const { typst } = blocksToTypst(blocks);
+    expect(typst).toContain(`#link("${url}")`);
+    expect(typst).not.toContain("\\_");
+  });
+
+  it("rend un lien interne Docs via props.title", () => {
+    const blocks: Block[] = [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "interlinkingLinkInline",
+            props: { docId: "1e2a0b10-bc55-4b47-94f6-6b854acc3050", title: "Planned S2 2026" },
+          },
+        ],
+      } as Block,
+    ];
+    const { typst } = blocksToTypst(blocks);
+    expect(typst).toContain("Planned S2 2026");
+  });
+
+  it("ignore un inline inconnu sans texte au lieu d'échouer", () => {
+    const blocks: Block[] = [
+      { type: "paragraph", content: [{ type: "mention", props: { id: "x" } }] } as unknown as Block,
+    ];
+    expect(() => blocksToTypst(blocks)).not.toThrow();
+  });
+});

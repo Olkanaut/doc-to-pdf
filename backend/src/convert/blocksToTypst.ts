@@ -1,5 +1,5 @@
 import type { Block, InlineContent } from "../types/blocks.js";
-import { escapeTypstText } from "./escapeTypst.js";
+import { escapeTypstString, escapeTypstText } from "./escapeTypst.js";
 
 export interface ImageAsset {
   /** Absolute path on disk to the source image file. */
@@ -17,9 +17,18 @@ export interface ConvertResult {
 
 function inlineToTypst(inline: InlineContent): string {
   if (inline.type === "link") {
-    const inner = inline.content.map(inlineToTypst).join("");
-    return `#link("${escapeTypstText(inline.href)}")[${inner}]`;
+    const inner = (inline.content ?? []).map(inlineToTypst).join("");
+    return `#link("${escapeTypstString(inline.href)}")[${inner}]`;
   }
+
+  // Lien interne Docs : libellé dans props.title, aucun `text`.
+  if (inline.type === "interlinkingLinkInline") {
+    return escapeTypstText(inline.props?.title ?? "");
+  }
+
+  // Filet de sécurité : un inline inconnu et sans texte est ignoré, il ne doit
+  // pas faire échouer le rendu de tout le document.
+  if (typeof inline.text !== "string") return "";
 
   let text = escapeTypstText(inline.text);
   if (inline.styles?.code) text = `\`${text}\``;

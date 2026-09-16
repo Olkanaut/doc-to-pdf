@@ -4,6 +4,8 @@ export interface TemplateSummary {
   description: string;
   createdAt: string;
   updatedAt: string;
+  /** Posé par le backend : ce gabarit est celui appliqué par défaut. */
+  isDefault?: boolean;
 }
 
 export interface TemplateDetail extends TemplateSummary {
@@ -167,4 +169,208 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult | Rend
   }
   const blob = await res.blob();
   return { ok: true, blob };
+}
+
+// ── Gabarit par défaut ────────────────────────────────────────────────────────
+
+export async function fetchDefaultTemplate(): Promise<TemplateSummary | null> {
+  const res = await fetch("/api/templates/default");
+  if (res.status === 404) return null;
+  return asJson(res);
+}
+
+export async function setDefaultTemplate(templateId: string): Promise<TemplateSummary> {
+  return asJson(
+    await fetch("/api/templates/default", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateId }),
+    }),
+  );
+}
+
+// ── Compilation de test (import, assistant) ───────────────────────────────────
+
+export interface CheckResult {
+  ok: true;
+  /** Durée de `typst compile`, en ms. */
+  ms: number;
+  pages: number;
+  /** Lignes `warning:` de Typst, telles quelles (police absente, etc.). */
+  warnings: string[];
+}
+export interface CheckFailure {
+  ok: false;
+  error: string;
+  details?: string;
+}
+
+export async function checkTemplateSource(input: {
+  source: string;
+  fixtureId?: string;
+}): Promise<CheckResult | CheckFailure> {
+  const res = await fetch("/api/templates/check", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return res.json();
+}
+
+export async function fetchTemplateAssets(): Promise<{ file: string }[]> {
+  const data = await asJson<{ assets: { file: string }[] }>(await fetch("/api/templates/assets"));
+  return data.assets;
+}
+
+// ── Mise en page (bloc « dots:layout » du .typ) ───────────────────────────────
+
+export type PaperSize = "a4" | "a5" | "us-letter";
+export type Align = "left" | "center" | "right";
+export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
+
+export interface LayoutConfig {
+  paper: PaperSize;
+  orientation: "portrait" | "landscape";
+  /** Millimètres. */
+  margins: { top: number; bottom: number; left: number; right: number };
+  font: string;
+  /** Points. */
+  fontSize: number;
+  lineHeight: number;
+  header: { enabled: boolean; text: string; logo: string | null; align: Align; rule: boolean };
+  footer: {
+    enabled: boolean;
+    text: string;
+    numbering: Numbering;
+    align: Align;
+    firstPage: boolean;
+    rule: boolean;
+  };
+  headings: { scale: "compact" | "normal" | "large"; color: string };
+  /** Allure des tableaux ; leur structure (colonnes, fusions, contenu) vient du document. */
+  table: {
+    stroke: "none" | "light" | "full";
+    headerFill: "none" | "grey" | "brand";
+    zebra: boolean;
+    fontSize: "inherit" | "small";
+  };
+}
+
+export async function fetchTemplateLayout(
+  id: string,
+): Promise<{ layout: LayoutConfig; managed: boolean }> {
+  return asJson(await fetch(`/api/templates/${id}/layout`));
+}
+
+/** Source + réglages → source avec le bloc régénéré. Pur, rien n'est enregistré. */
+export async function composeLayout(input: {
+  source: string;
+  layout: LayoutConfig;
+}): Promise<{ source: string }> {
+  return asJson(
+    await fetch("/api/layout/compose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+/** Relit les réglages portés par le bloc « dots:layout » d'une source (après une édition IA). */
+export async function readLayoutFromSource(
+  source: string,
+): Promise<{ layout: LayoutConfig; managed: boolean }> {
+  return asJson(
+    await fetch("/api/layout/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source }),
+    }),
+  );
+}
+
+export async function saveTemplateLayout(
+  id: string,
+  layout: LayoutConfig,
+): Promise<{ meta: TemplateSummary; source: string }> {
+  return asJson(
+    await fetch(`/api/templates/${id}/layout`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ layout }),
+    }),
+  );
+}
+
+// ── Assistant IA ──────────────────────────────────────────────────────────────
+
+export interface AiResult {
+  ok: true;
+  source: string;
+  summary: string;
+  changes: string[];
+  check: CheckResult | CheckFailure;
+}
+export interface AiError {
+  ok: false;
+  error: string;
+  /** Vrai quand la clé API manque côté serveur : l'UI cache l'assistant. */
+  unavailable?: boolean;
+}
+
+export async function aiEditTemplate(input: {
+  source: string;
+  instruction: string;
+  fixtureId?: string;
+}): Promise<AiResult | AiError> {
+  const res = await fetch("/api/ai/template", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return res.json();
+}
+
+export async function aiTemplateFromPdf(input: {
+  pdfBase64: string;
+  name?: string;
+}): Promise<AiResult | AiError> {
+  const res = await fetch("/api/ai/template-from-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return res.json();
+}
+
+// ── Rendu : blocs sans équivalent Typst ───────────────────────────────────────
+
+export interface RenderInfo {
+  /** Nombre de blocs du document. */
+  blockCount: number;
+  /** Type de bloc → nombre d'occurrences rendues en paragraphe simple. */
+  unsupported: Record<string, number>;
+}
+
+/** Comme renderPdf, plus les en-têtes X-Dots-* posés par /api/render. */
+export async function renderPdfWithInfo(
+  req: RenderRequest,
+): Promise<(RenderResult & { info: RenderInfo }) | RenderError> {
+  const res = await fetch("/api/render", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    return { ok: false, error: data.error ?? "Unknown error", details: data.details };
+  }
+  let unsupported: Record<string, number> = {};
+  try {
+    unsupported = JSON.parse(res.headers.get("X-Dots-Unsupported-Blocks") ?? "{}");
+  } catch {
+    // en-tête absent ou mal formé : on affiche simplement rien
+  }
+  const blockCount = Number(res.headers.get("X-Dots-Block-Count") ?? 0);
+  return { ok: true, blob: await res.blob(), info: { blockCount, unsupported } };
 }

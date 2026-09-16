@@ -1,0 +1,616 @@
+{
+  "id": "admin-arrete",
+  "name": "Exemple — Arrêté municipal de circulation",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Commune de Saint-Fixture",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Direction des services techniques — Pôle voirie et espace public"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Réf. : ST/VOI/2026-114 — Dossier suivi par Mme Claire Dupont, courriel : claire.dupont@exemple.gouv.fr"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "P.J. : plan de signalisation temporaire (fichier plan_signalisation_2026-114.pdf)."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Arrêté n° 2026-114"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "portant réglementation temporaire de la circulation et du stationnement rue de l’Exemple, à l’occasion des travaux de renouvellement de la canalisation d’eau potable, du 21 au 25 septembre 2026",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le maire de Saint-Fixture,"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu le code général des collectivités territoriales, notamment ses articles L. 2212-2 et L. 2213-1 et suivants ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu le code de la route, notamment ses articles R. 411-8 et R. 417-10 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu l’instruction interministérielle sur la signalisation routière, huitième partie (signalisation temporaire) ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu l’arrêté municipal « n° 2019-087 » du 3 juin 2019 portant réglementation générale de la circulation et du stationnement ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Vu la demande de l’entreprise TP Exemple, sise 4 chemin des Carrières à Saint-Fixture, en date du 2 septembre 2026, enregistrée sous la réf. #A-42 ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Considérant que les travaux rue de l’Exemple, entre les n° 12 et 38, nécessitent une emprise sur la chaussée incompatible avec la circulation habituelle ;"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Considérant qu’il convient d’assurer la sécurité des usagers de la voie publique, des riverains et du personnel de l’entreprise pendant toute la durée du chantier ;"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "ARRÊTE"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 1 – Objet"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le présent arrêté réglemente temporairement la circulation et le stationnement rue de l’Exemple, entre la place de la Mairie et le n° 38, du lundi 21 septembre 2026 à 7 h 30 au vendredi 25 septembre 2026 à 18 h 00, afin de permettre à l’entreprise TP Exemple de réaliser les travaux visés ci-dessus."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "En cas d’aléa, ces mesures pourront être prolongées de cinq jours ouvrés au plus, sur information des services techniques (claire.dupont@exemple.gouv.fr)."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 2 – Stationnement"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le stationnement de tous les véhicules est interdit, des deux côtés de la chaussée, sur la section définie à l’article 1, pendant toute la durée des travaux. Il sera signalé par panneaux B6a1 et panonceau « M6a »."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Tout véhicule en infraction sera considéré comme gênant au sens de l’article R. 417-10 du code de la route et pourra être mis en fourrière aux frais du contrevenant. Les frais d’enlèvement en vigueur s’élèvent à 126,50 €, soit une hausse de 12,5 % par rapport à 2025."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 3 – Circulation"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La circulation sera alternée par feux tricolores de chantier ou, aux heures de pointe, par piquets K10. La vitesse est limitée à 30 km/h et le dépassement est interdit. Mesures jour par jour :"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Jour",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Tranche horaire",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mesure",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Lundi 21 septembre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "7 h 30 – 18 h 00"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Circulation alternée par feux ; stationnement interdit"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mardi 22 septembre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "7 h 30 – 18 h 00"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Circulation alternée par feux ; stationnement interdit"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Mercredi 23 septembre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "7 h 30 – 12 h 00"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Route barrée — déviation par la rue des Tilleuls"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Jeudi 24 septembre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "7 h 30 – 18 h 00"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Circulation alternée manuelle (piquets K10)"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Vendredi 25 septembre"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "7 h 30 – 18 h 00"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Réfection de chaussée ; circulation alternée par feux"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 4 – Signalisation"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "La signalisation temporaire réglementaire sera mise en place, entretenue et déposée par l’entreprise TP Exemple, sous le contrôle des services techniques municipaux, et maintenue de jour comme de nuit."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "L’entreprise répond des dommages causés aux tiers et à la voirie. Le devis n° D-2026-0331 (remise en état de la chaussée : 1 200,50 € HT ; balises importées : 3 $ par unité) reste à sa charge exclusive."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 5 – Dérogations"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Les articles 2 et 3 ne s’appliquent pas aux véhicules de secours, de police et de gendarmerie, de collecte des déchets, ni à ceux de l’entreprise. L’accès des riverains est maintenu dans la mesure du possible ; il pourra être interrompu trente minutes au plus, avec l’accord du chef de chantier."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Note *importante* : les riverains souhaitant un macaron d’accès temporaire en feront la demande auprès du pôle voirie, sur présentation d’un justificatif de domicile."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Article 6 – Ampliation et voies de recours"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le présent arrêté sera affiché aux extrémités de la section et transmis à M. le préfet de la Vallée-d’Exemple au titre du contrôle de légalité. Ampliation en sera adressée aux destinataires ci-dessous, chargés de son exécution."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Il peut faire l’objet d’un recours gracieux auprès du maire ou d’un recours contentieux devant le tribunal administratif de la Vallée-d’Exemple [à compléter : adresse du tribunal] dans les deux mois de sa publication, y compris via "
+        },
+        {
+          "type": "link",
+          "href": "https://citoyens.telerecours.exemple.gouv.fr",
+          "content": [
+            {
+              "type": "text",
+              "text": "Télérecours citoyens"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Fait à Saint-Fixture, le 11 septembre 2026."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Le maire,",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Marie-Odile Fixturet"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Diffusion :",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Brigade de gendarmerie de Saint-Fixture ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Services techniques municipaux — pôle voirie ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Entreprise TP Exemple, M. Karim Chantier, conducteur de travaux ;"
+        }
+      ]
+    },
+    {
+      "type": "bulletListItem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Affichage en mairie et aux extrémités du chantier."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Copie à : ",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": "M. le préfet de la Vallée-d’Exemple ; SDIS de la Vallée-d’Exemple."
+        }
+      ]
+    }
+  ]
+}
