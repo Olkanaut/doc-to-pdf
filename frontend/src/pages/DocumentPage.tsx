@@ -3,8 +3,10 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   fetchDocumentContent,
   fetchDefaultTemplate,
+  fetchTemplateDetail,
   fetchTemplates,
   type DocsDocumentContent,
+  type TemplateDetail,
   type TemplateSummary,
 } from "../api/client";
 import { TemplateTiles } from "../components/compose/TemplateTiles";
@@ -33,6 +35,8 @@ function DocumentView({ documentId }: { documentId: string }) {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [defaultId, setDefaultId] = useState<string | null>(null);
   const [templateId, setTemplateId] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateDetail | null>(null);
+  const [templateError, setTemplateError] = useState<{ id: string; message: string } | null>(null);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
 
@@ -89,6 +93,31 @@ function DocumentView({ documentId }: { documentId: string }) {
     };
   }, [requestedTemplateId]);
 
+  useEffect(() => {
+    if (!templateId) return;
+
+    let cancelled = false;
+    fetchTemplateDetail(templateId)
+      .then((template) => {
+        if (cancelled) return;
+        setTemplateError(null);
+        setSelectedTemplate(template);
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setSelectedTemplate(null);
+        setTemplateError({
+          id: templateId,
+          message:
+            reason instanceof Error ? reason.message : "Impossible de charger le gabarit.",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [templateId]);
+
   const blockCount = state.status === "loaded" ? state.document.blocks.length : null;
   const updatedAt =
     state.status === "loaded"
@@ -97,6 +126,11 @@ function DocumentView({ documentId }: { documentId: string }) {
           timeStyle: "short",
         }).format(new Date(state.document.updatedAt))
       : null;
+  const selectedTemplateReady = selectedTemplate?.id === templateId ? selectedTemplate : null;
+  const selectedTemplateError = templateError?.id === templateId ? templateError.message : null;
+  const selectedTemplateLoading = Boolean(
+    templateId && !selectedTemplateReady && !selectedTemplateError,
+  );
 
   return (
     <div className="page doc-page">
@@ -143,11 +177,6 @@ function DocumentView({ documentId }: { documentId: string }) {
             )}
           </section>
 
-          {state.status === "loaded" && (
-            <div className="dots-notice doc-notice" role="status">
-              Le contenu Docs est chargé. Le rendu PDF avec le gabarit sélectionné sera branché ensuite.
-            </div>
-          )}
         </section>
 
         <aside className="doc-template-panel" aria-label="Gabarit du document">
@@ -175,6 +204,29 @@ function DocumentView({ documentId }: { documentId: string }) {
                   <IconLayout size={16} />
                   Mise en page
                 </Link>
+              )}
+              {templateId && (
+                <div className="doc-template-detail">
+                  {selectedTemplateLoading && (
+                    <p className="dots-muted">Chargement du gabarit...</p>
+                  )}
+                  {selectedTemplateError && (
+                    <div className="dots-notice dots-notice--error" role="alert">
+                      <strong>{selectedTemplateError}</strong>
+                    </div>
+                  )}
+                  {selectedTemplateReady && (
+                    <>
+                      <p className="doc-panel-label">Gabarit sélectionné</p>
+                      <strong>{selectedTemplateReady.name}</strong>
+                      {selectedTemplateReady.description && (
+                        <p className="doc-template-description">
+                          {selectedTemplateReady.description}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
             </>
           )}

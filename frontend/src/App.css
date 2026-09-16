@@ -635,8 +635,23 @@ button:disabled {
   white-space: nowrap;
 }
 
-.doc-notice {
-  align-items: flex-start;
+.doc-template-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e2e2;
+}
+
+.doc-template-detail strong {
+  font-size: 14px;
+}
+
+.doc-template-description {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .doc-actions-grid {
