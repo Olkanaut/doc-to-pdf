@@ -1,7 +1,7 @@
 import { Button, DropdownMenu, type ButtonElement, type DropdownMenuItem } from "@gouvfr-lasuite/ui-components";
 import { ArrowDropDown, Doc, House, Plus, StackTemplate, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import { useRef, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { createTemplate } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { ImportTemplateModal } from "../templates/ImportTemplateModal";
@@ -13,8 +13,10 @@ import { ImportTemplateModal } from "../templates/ImportTemplateModal";
  */
 export function LeftPanel() {
   const { authenticated } = useAuth();
-  const navigate = useNavigate();
   const [importOpen, setImportOpen] = useState(false);
+  // `/docs` est un alias de l'accueil : NavLink ne le verrait pas actif (to="/" end).
+  const { pathname } = useLocation();
+  const atHome = pathname === "/" || pathname === "/docs";
 
   if (!authenticated) return null;
 
@@ -22,16 +24,17 @@ export function LeftPanel() {
     <>
       <div className="dots-panel__actions">
         <NewTemplateButton onImport={() => setImportOpen(true)} />
-        <Button
-          variant="tertiary"
-          color="brand"
-          aria-label="Accueil"
-          icon={<House aria-hidden="true" />}
-          onClick={() => navigate("/templates")}
-        />
       </div>
 
       <nav className="dots-panel__nav" aria-label="Navigation principale">
+        <Link
+          to="/"
+          className={`dots-nav-item${atHome ? " active" : ""}`}
+          aria-current={atHome ? "page" : undefined}
+        >
+          <House aria-hidden="true" size={20} />
+          Accueil
+        </Link>
         <NavLink to="/templates" className="dots-nav-item">
           <StackTemplate aria-hidden="true" size={20} />
           Gabarits

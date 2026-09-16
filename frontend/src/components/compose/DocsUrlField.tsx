@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { Alert, Button, Input, Spinner, VariantType } from "@gouvfr-lasuite/ui-components";
-
-/** Identifiant d'une URL Docs : `/docs/<uuid>` ou `/d/<uuid>`, URL complète tolérée. */
-function docIdFromUrl(url: string): string | null {
-  const match = /(?:^|\/)(?:d|docs)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#]|$)/i.exec(
-    url.trim(),
-  );
-  return match ? match[1].toLowerCase() : null;
-}
+import { docIdFromUrl } from "../../docsUrl";
 
 interface Props {
   /** URL reconnue : la page charge le document (GET /api/docs/:id) puis relance le rendu. */

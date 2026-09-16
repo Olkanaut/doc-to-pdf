@@ -338,3 +338,34 @@ export interface DocsDocument {
 export async function fetchDocsDocument(id: string): Promise<DocsDocument> {
   return asJson(await fetch(`/api/docs/${encodeURIComponent(id)}`));
 }
+
+export interface DocsListItem {
+  id: string;
+  title: string;
+  updatedAt: string;
+  role: "reader" | "commenter" | "editor" | "administrator" | "owner" | null;
+}
+
+export interface DocsList {
+  items: DocsListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  /** Un cookie de session Docs accompagnait la requête ; sans lui la liste est vide. */
+  hasSession: boolean;
+}
+
+/** GET /api/docs : les documents Docs de l'utilisateur, filtrés par titre ; paramètres vides omis. */
+export async function fetchDocsDocuments(query: {
+  title?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<DocsList> {
+  const params = new URLSearchParams();
+  if (query.title) params.set("title", query.title);
+  if (query.page !== undefined) params.set("page", String(query.page));
+  if (query.pageSize !== undefined) params.set("page_size", String(query.pageSize));
+  const qs = params.toString();
+  return asJson(await fetch(`/api/docs${qs ? `?${qs}` : ""}`));
+}

@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Brand() {
   return (
-    <Link to="/templates" className="dots-brand">
+    <Link to="/" className="dots-brand">
       <span className="dots-brand__logo" aria-hidden="true">
         dt
       </span>

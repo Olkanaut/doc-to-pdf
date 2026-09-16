@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams, useSearchParams } from "react-route
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./components/shell/AppShell";
 import { LoginPage } from "./pages/LoginPage";
+import { HomePage } from "./pages/HomePage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { LayoutEditorPage } from "./pages/LayoutEditorPage";
@@ -36,7 +37,9 @@ export default function App() {
     <AppShell>
       <main className="dots-main">
         <Routes>
-          <Route path="/" element={<Navigate to="/templates" replace />} />
+          <Route path="/" element={guarded(<HomePage />)} />
+          {/* Même chemin que la liste de Docs : `docs…/docs/` devient `dots…/docs/`. */}
+          <Route path="/docs" element={guarded(<HomePage />)} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/templates" element={guarded(<TemplatesListPage />)} />
           <Route path="/templates/:id" element={guarded(<TemplateEditorPage />)} />
