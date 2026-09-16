@@ -5,7 +5,7 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: #f4f5f7;
+  background: var(--dots-grey-050);
   color: #1a1a1a;
 }
 
@@ -518,7 +518,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid #e2e2e2;
+  border: 1px solid var(--dots-grey-050);
   border-radius: 8px;
   overflow: hidden;
   background: white;
@@ -535,9 +535,7 @@ button:disabled {
   text-decoration: none;
 }
 
-.pdf-preview iframe {
-  flex: 1;
-  border: none;
+.pdf-preview .pdf-scroll {
   min-height: 700px;
 }
 
@@ -750,7 +748,7 @@ button:disabled {
 
   .doc-render-preview .pdf-preview,
   .doc-render-preview .pdf-placeholder,
-  .doc-render-preview .pdf-preview iframe {
+  .doc-render-preview .pdf-scroll {
     min-height: 500px;
     height: 500px;
   }
