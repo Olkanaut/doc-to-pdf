@@ -49,7 +49,7 @@ async function buildApp(overrides: DocumentRoutesOptions = {}) {
   const app = Fastify();
   apps.push(app);
   await app.register(documentRoutes, {
-    getSession: () => SESSION,
+    getSession: async () => SESSION,
     fetchDocument: async () => DOCUMENT,
     fetchTemplate: async () => TEMPLATE,
     renderBlocks: async () => ({
@@ -70,7 +70,7 @@ afterEach(async () => {
 
 describe("POST /api/documents/:documentId/render", () => {
   it("requires a Dots session", async () => {
-    const app = await buildApp({ getSession: () => null });
+    const app = await buildApp({ getSession: async () => null });
 
     const response = await app.inject({
       method: "POST",
