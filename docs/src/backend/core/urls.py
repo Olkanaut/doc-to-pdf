@@ -60,6 +60,11 @@ external_api_router.register(
     external_api_viewsets.ResourceServerUserViewSet,
     basename="resource_server_users",
 )
+external_api_router.register(
+    "typst-templates",
+    external_api_viewsets.ResourceServerTypstTemplateViewSet,
+    basename="resource_server_typst_templates",
+)
 
 
 urlpatterns = [

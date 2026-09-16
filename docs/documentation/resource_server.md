@@ -52,6 +52,7 @@ EXTERNAL_API = {
 - `documents`: Controls `/external_api/v1.0/documents/`. Available actions: `list`, `retrieve`, `create`, `update`, `destroy`, `trashbin`, `children`, `restore`, `move`, `versions_list`, `versions_detail`, `favorite_detail`, `link_configuration`, `attachment_upload`, `media_auth`, `content_retrieve`, `formatted_content`, `ai_transform`, `ai_translate`, `ai_proxy`. Always allowed actions: `favorite_list`, `duplicate`.
 - `document_access`: `/external_api/v1.0/documents/{id}/accesses/`. Available actions: `list`, `retrieve`, `create`, `update`, `partial_update`, `destroy`
 - `document_invitation`: Controls `/external_api/v1.0/documents/{id}/invitations/`. Available actions: `list`, `retrieve`, `create`, `partial_update`, `destroy`
+- `typst_templates`: Controls `/external_api/v1.0/typst-templates/`. Available actions: `list`, `retrieve`, `create`, `partial_update`, `destroy`
 - `users`: Controls `/external_api/v1.0/documents/`. Available actions: `get_me`.
 
 Each endpoint has `enabled` (boolean) and `actions` (list of allowed actions). Only actions explicitly listed are accessible.

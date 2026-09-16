@@ -854,6 +854,16 @@ class Base(Configuration):
                 "enabled": True,
                 "actions": ["get_me"],
             },
+            "typst_templates": {
+                "enabled": True,
+                "actions": [
+                    "list",
+                    "retrieve",
+                    "create",
+                    "partial_update",
+                    "destroy",
+                ],
+            },
         },
         environ_name="EXTERNAL_API",
         environ_prefix=None,

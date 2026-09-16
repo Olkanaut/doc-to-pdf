@@ -145,31 +145,6 @@ docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery
 drive: keycloak local, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 
-## Pourquoi Pas Juste Make
-
-Dans les repos upstream, le setup standard est bien :
-
-```bash
-make bootstrap
-make run
-```
-
-Mais ces commandes lancent les stacks de dev completes de chaque produit. Pour
-Docs, cela tire aussi `docspec`, `celery` et le Keycloak local.
-Pour Drive, cela tire les services d'edition type WOPI/OnlyOffice/Collabora.
-
-Ici, les profils locaux gardent seulement ce qui est utile au POC :
-
-```text
-auth commune
-frontend
-backend/API
-base de donnees
-stockage local
-y-provider pour convertir le contenu Yjs en blocs JSON
-Resource Server API
-```
-
 ## Structure Locale
 
 ```text

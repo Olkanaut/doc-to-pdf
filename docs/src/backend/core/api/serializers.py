@@ -111,6 +111,22 @@ class TypstTemplateSerializer(serializers.ModelSerializer):
         return value
 
 
+class TypstTemplateListSerializer(serializers.ModelSerializer):
+    """Serialize a user-owned Typst template without the Typst source."""
+
+    class Meta:
+        model = models.TypstTemplate
+        fields = [
+            "id",
+            "name",
+            "description",
+            "creator",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
 class ListDocumentSerializer(serializers.ModelSerializer):
     """Serialize documents with limited fields for display in lists."""
 
