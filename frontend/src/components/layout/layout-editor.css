@@ -47,29 +47,6 @@
 
 /* ── En-tête ─────────────────────────────────────────────────────────────── */
 
-.le-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 0 0 64px;
-  height: 64px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--c--globals--colors--gray-100);
-}
-.le-header__modes {
-  display: inline-flex;
-  gap: 4px;
-  flex: 0 0 auto;
-  padding: 2px;
-  border-radius: var(--c--components--button--border-radius);
-  background: var(--c--contextuals--background--semantic--neutral--tertiary);
-}
-.le-header__modes .c__button {
-  white-space: nowrap;
-}
-.le-header__spacer {
-  flex: 1 1 auto;
-}
 .le-header__status {
   white-space: nowrap;
   color: var(--c--globals--colors--gray-500);
@@ -133,17 +110,57 @@
   background: var(--c--globals--colors--gray-000);
 }
 .le-panel__top {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 52px;
-  padding: 8px 8px 6px;
-  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+  min-height: 48px;
+  padding: 6px 8px;
 }
 .le-panel__top .c__button {
   flex: 0 0 auto;
+}
+.le-panel__top-spacer {
+  flex: 1 1 auto;
+}
+.le-mode-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+.le-mode-menu__popover {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--c--globals--colors--gray-100);
+  border-radius: 8px;
+  background: var(--c--globals--colors--gray-000);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.le-mode-menu__popover a {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--c--globals--colors--gray-950);
+  font-size: var(--c--globals--font--sizes--sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.le-mode-menu__popover a:hover,
+.le-mode-menu__popover a:focus-visible {
+  outline: none;
+  background: var(--c--globals--colors--gray-050);
+}
+.le-mode-menu__popover a[aria-current="page"] {
+  font-weight: var(--c--globals--font--weights--bold);
 }
 .le-panel__badge {
   align-self: flex-start;
@@ -416,6 +433,7 @@
 
 /* Aperçu */
 .le-preview {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -424,14 +442,22 @@
   background: var(--c--globals--colors--gray-050);
 }
 .le-preview__bar {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  right: 20px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 12px;
-  min-height: 56px;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--c--globals--colors--gray-100);
-  background: var(--c--globals--colors--gray-000);
+  justify-content: flex-end;
+  max-width: min(720px, calc(100% - 40px));
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--c--globals--colors--gray-100), transparent 35%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c--globals--colors--gray-000), transparent 8%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(8px);
   font-size: var(--c--globals--font--sizes--xs);
   color: var(--c--globals--colors--gray-500);
 }
@@ -637,11 +663,6 @@
    porte pour la page de rendu n'a donc pas lieu d'être ici. */
 .le-preview__doc .pdf-preview-toolbar {
   display: none;
-}
-
-/* Pousse l'export du .typ contre le bord droit de la barre. */
-.le-preview__spacer {
-  flex: 1 1 auto;
 }
 
 /* ── Galerie de visuels (en-tête, pied de page) ───────────────────────────── */

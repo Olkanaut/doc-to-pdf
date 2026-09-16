@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Alert, Badge, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
-import { Download, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
+import { Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
   fetchFixtures,
@@ -156,17 +156,6 @@ export function LayoutEditorPage() {
   }, [renderSource, fixtureId]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  /** Extrait le gabarit tel qu'il est édité, proposition de l'assistant comprise. */
-  function handleDownloadTyp() {
-    const blob = new Blob([renderSource], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name || "gabarit"}.typ`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function handleLayoutChange(next: LayoutConfig) {
     composeWanted.current = true;
     setLayout(next);
@@ -231,50 +220,6 @@ export function LayoutEditorPage() {
 
   return (
     <div className="le">
-      <header className="le-header">
-        <nav className="le-header__modes" aria-label="Mode d'édition">
-          <Button
-            href={`/t/${id}/layout`}
-            variant="secondary"
-            color="neutral"
-            size="small"
-            aria-current="page"
-            onClick={(e) => follow(e, `/t/${id}/layout`, false)}
-          >
-            Mise en page
-          </Button>
-          <Button
-            href={`/t/${id}`}
-            variant="tertiary"
-            color="neutral"
-            size="small"
-            onClick={(e) => follow(e, `/t/${id}`)}
-          >
-            Code Typst
-          </Button>
-        </nav>
-        <span className="le-header__spacer" />
-        {saveError ? (
-          <span className="le-header__status le-header__status--error" role="alert">{saveError}</span>
-        ) : (
-          <span className="le-header__status">
-            {saving ? "Enregistrement…" : dirty ? "Modifications non enregistrées" : "Enregistré"}
-          </span>
-        )}
-        <Button
-          variant={aiOpen ? "primary" : "secondary"}
-          icon={<Sparkle aria-hidden="true" />}
-          aria-pressed={aiOpen}
-          onClick={() => setAiOpen(!aiOpen)}
-        >
-          Assistant IA
-        </Button>
-        {/* Pendant une proposition, l'aperçu ne montre pas `source` : enregistrer serait trompeur. */}
-        <Button variant="primary" disabled={!dirty || saving || proposal !== null} onClick={handleSave}>
-          Enregistrer
-        </Button>
-      </header>
-
       <LayoutEditorShell
         aiOpen={aiOpen}
         leftPanel={
@@ -290,6 +235,10 @@ export function LayoutEditorPage() {
               onTemplateNameChange={setName}
               backHref="/"
               onBack={(e) => follow(e, "/")}
+              layoutHref={`/t/${id}/layout`}
+              codeHref={`/t/${id}`}
+              onNavigateLayout={(e) => follow(e, `/t/${id}/layout`, false)}
+              onNavigateCode={(e) => follow(e, `/t/${id}`)}
               // Un visuel importé depuis le panneau s'ajoute aux assets : la liste est relue.
               onAssetsChanged={() => {
                 fetchTemplateAssets()
@@ -309,16 +258,24 @@ export function LayoutEditorPage() {
           <section className="le-preview" aria-label="Aperçu">
             <div className="le-preview__bar">
               {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
-              <span className="le-preview__spacer" />
+              {saveError ? (
+                <span className="le-header__status le-header__status--error" role="alert">{saveError}</span>
+              ) : (
+                <span className="le-header__status">
+                  {saving ? "Enregistrement…" : dirty ? "Modifications non enregistrées" : "Enregistré"}
+                </span>
+              )}
               <Button
-                type="button"
-                variant="secondary"
-                size="small"
-                icon={<Download aria-hidden="true" />}
-                disabled={!source}
-                onClick={handleDownloadTyp}
+                variant={aiOpen ? "primary" : "secondary"}
+                icon={<Sparkle aria-hidden="true" />}
+                aria-pressed={aiOpen}
+                onClick={() => setAiOpen(!aiOpen)}
               >
-                Télécharger .typ
+                Assistant IA
+              </Button>
+              {/* Pendant une proposition, l'aperçu ne montre pas `source` : enregistrer serait trompeur. */}
+              <Button variant="primary" disabled={!dirty || saving || proposal !== null} onClick={handleSave}>
+                Enregistrer
               </Button>
             </div>
             <div className="le-preview__doc">

@@ -11,7 +11,7 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, ChevronDown, ChevronRight, Code, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { ArrowLeft, ChevronDown, ChevronRight, Code, More, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize, type TextStyleKey } from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
 
@@ -97,6 +97,10 @@ interface Props {
   onTemplateNameChange: (name: string) => void;
   backHref: string;
   onBack: (e: MouseEvent<HTMLElement>) => void;
+  layoutHref: string;
+  codeHref: string;
+  onNavigateLayout: (e: MouseEvent<HTMLElement>) => void;
+  onNavigateCode: (e: MouseEvent<HTMLElement>) => void;
   /** Un visuel vient d'être importé : la liste des assets est à relire. */
   onAssetsChanged?: () => void;
 }
@@ -112,6 +116,10 @@ export function LayoutPanel({
   onTemplateNameChange,
   backHref,
   onBack,
+  layoutHref,
+  codeHref,
+  onNavigateLayout,
+  onNavigateCode,
   onAssetsChanged,
 }: Props) {
   const uid = useId();
@@ -119,6 +127,7 @@ export function LayoutPanel({
   const [importing, setImporting] = useState<"header" | "footer" | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
   const [openTextStyle, setOpenTextStyle] = useState<TextStyleKey | null>(null);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -173,6 +182,43 @@ export function LayoutPanel({
           aria-label="Retour aux gabarits"
           onClick={onBack}
         />
+        <span className="le-panel__top-spacer" />
+        <div className="le-mode-menu">
+          <Button
+            type="button"
+            variant="tertiary"
+            color="neutral"
+            icon={<More aria-hidden="true" />}
+            aria-label="Changer de mode d'édition"
+            aria-expanded={modeMenuOpen}
+            onClick={() => setModeMenuOpen((open) => !open)}
+          />
+          {modeMenuOpen && (
+            <div className="le-mode-menu__popover" role="menu">
+              <a
+                href={layoutHref}
+                role="menuitem"
+                aria-current="page"
+                onClick={(e) => {
+                  setModeMenuOpen(false);
+                  onNavigateLayout(e);
+                }}
+              >
+                Mise en page
+              </a>
+              <a
+                href={codeHref}
+                role="menuitem"
+                onClick={(e) => {
+                  setModeMenuOpen(false);
+                  onNavigateCode(e);
+                }}
+              >
+                Code Typst
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       <nav className="le-panel__tabs" aria-label="Réglages du gabarit" role="tablist">
