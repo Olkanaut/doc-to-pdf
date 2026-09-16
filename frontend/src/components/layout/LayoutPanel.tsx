@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import {
   Alert,
   Button,
@@ -128,6 +128,7 @@ export function LayoutPanel({
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
   const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -167,6 +168,26 @@ export function LayoutPanel({
     if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 0);
   }, []);
 
+  useEffect(() => {
+    if (!modeMenuOpen) return;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (modeMenuRef.current?.contains(event.target as Node)) return;
+      setModeMenuOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setModeMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [modeMenuOpen]);
+
   const lineHeightOptions = useMemo<Option[]>(() => {
     const list = LINE_HEIGHTS.map(([v, l]) => ({ value: String(v), label: l }));
     return LINE_HEIGHTS.some(([v]) => v === layout.lineHeight)
@@ -186,7 +207,7 @@ export function LayoutPanel({
           onClick={onBack}
         />
         <span className="le-panel__top-spacer" />
-        <div className="le-mode-menu">
+        <div className="le-mode-menu" ref={modeMenuRef}>
           <Button
             type="button"
             variant="tertiary"
