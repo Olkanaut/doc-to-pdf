@@ -8,7 +8,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { LayoutEditorPage } from "./pages/LayoutEditorPage";
-import { ComposePage } from "./pages/ComposePage";
+import { DocumentPage } from "./pages/DocumentPage";
 import "./App.css";
 import "./theme.css";
 
@@ -47,7 +47,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/docs" element={guarded(<HomePage />)} />
-        <Route path="/docs/:id" element={guarded(<ComposePage />)} />
+        <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
         <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
         <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
         <Route path="/templates" element={<Navigate to="/" replace />} />

@@ -562,6 +562,31 @@ button:disabled {
   margin-top: 12px;
 }
 
+.doc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.doc-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.doc-template-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
 .doc-panel {
   padding: 16px;
   background: white;
@@ -595,15 +620,23 @@ button:disabled {
 
 .doc-summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(140px, auto));
   gap: 24px;
   align-items: end;
+}
+
+.doc-summary p:last-child {
+  margin: 0;
 }
 
 .doc-block-count {
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.doc-notice {
+  align-items: flex-start;
 }
 
 .doc-actions-grid {
@@ -634,6 +667,12 @@ button:disabled {
   color: #666;
   font-size: 13px;
   line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .doc-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
