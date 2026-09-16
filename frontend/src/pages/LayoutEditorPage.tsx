@@ -18,6 +18,7 @@ import {
 import { PdfPreview } from "../components/PdfPreview";
 import { LayoutPanel } from "../components/layout/LayoutPanel";
 import { AiPanel } from "../components/layout/AiPanel";
+import { LayoutEditorShell } from "../components/layout/LayoutEditorShell";
 import "../components/layout/layout-editor.css";
 
 const COMPOSE_DEBOUNCE_MS = 400;
@@ -289,75 +290,79 @@ export function LayoutEditorPage() {
         </Button>
       </header>
 
-      <div className={`le-body${aiOpen ? " le-body--ai" : ""}`}>
-        {layout ? (
-          <LayoutPanel
-            layout={layout}
-            managed={managed}
-            assets={assets}
-            disabled={proposal !== null}
-            onChange={handleLayoutChange}
-          />
-        ) : (
-          <aside className="le-panel" aria-label="Réglages de mise en page">
-            <div className="le-panel__notice" role="alert">
-              <Alert type={VariantType.ERROR}>Réglages indisponibles : {layoutError ?? "chargement…"}</Alert>
+      <LayoutEditorShell
+        aiOpen={aiOpen}
+        leftPanel={
+          layout ? (
+            <LayoutPanel
+              layout={layout}
+              managed={managed}
+              assets={assets}
+              disabled={proposal !== null}
+              onChange={handleLayoutChange}
+            />
+          ) : (
+            <aside className="le-panel" aria-label="Réglages de mise en page">
+              <div className="le-panel__notice" role="alert">
+                <Alert type={VariantType.ERROR}>Réglages indisponibles : {layoutError ?? "chargement…"}</Alert>
+              </div>
+            </aside>
+          )
+        }
+        preview={
+          <section className="le-preview" aria-label="Aperçu">
+            <div className="le-preview__bar">
+              {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
+              <span className="le-preview__spacer" />
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                icon={<Download aria-hidden="true" />}
+                disabled={!source}
+                onClick={handleDownloadTyp}
+              >
+                Télécharger .typ
+              </Button>
             </div>
-          </aside>
-        )}
-
-        <section className="le-preview" aria-label="Aperçu">
-          <div className="le-preview__bar">
-            {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
-            <span className="le-preview__spacer" />
-            <Button
-              type="button"
-              variant="secondary"
-              size="small"
-              icon={<Download aria-hidden="true" />}
-              disabled={!source}
-              onClick={handleDownloadTyp}
-            >
-              Télécharger .typ
-            </Button>
-          </div>
-          <div className="le-preview__doc">
-            {layout && layoutError && (
-              <div role="alert">
-                <Alert type={VariantType.ERROR}>{layoutError}</Alert>
-              </div>
-            )}
-            {renderError && (
-              <div role="alert">
-                <Alert type={VariantType.ERROR}>
-                  <div className="le-preview__error">
-                    <strong>Le gabarit ne compile pas : {renderError.error}</strong>
-                    {renderError.details && (
-                      <details>
-                        <summary>Sortie de typst</summary>
-                        <pre className="le-mono">{renderError.details}</pre>
-                      </details>
-                    )}
-                  </div>
-                </Alert>
-              </div>
-            )}
-            <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />
-          </div>
-        </section>
-
-        {/* Toujours monté : le fil de discussion survit à la fermeture du panneau. */}
-        <AiPanel
-          open={aiOpen}
-          source={source}
-          fixtureId={fixtureId}
-          templateName={name}
-          onProposal={setProposal}
-          onApply={handleApplyProposal}
-          onDismiss={() => setProposal(null)}
-          onClose={() => setAiOpen(false)}
-        />
-      </div>
+            <div className="le-preview__doc">
+              {layout && layoutError && (
+                <div role="alert">
+                  <Alert type={VariantType.ERROR}>{layoutError}</Alert>
+                </div>
+              )}
+              {renderError && (
+                <div role="alert">
+                  <Alert type={VariantType.ERROR}>
+                    <div className="le-preview__error">
+                      <strong>Le gabarit ne compile pas : {renderError.error}</strong>
+                      {renderError.details && (
+                        <details>
+                          <summary>Sortie de typst</summary>
+                          <pre className="le-mono">{renderError.details}</pre>
+                        </details>
+                      )}
+                    </div>
+                  </Alert>
+                </div>
+              )}
+              <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />
+            </div>
+          </section>
+        }
+        aiPanel={
+          <AiPanel
+            open={aiOpen}
+            source={source}
+            fixtureId={fixtureId}
+            templateName={name}
+            onProposal={setProposal}
+            onApply={handleApplyProposal}
+            onDismiss={() => setProposal(null)}
+            onClose={() => setAiOpen(false)}
+          />
+        }
+      />
     </div>
   );
 }
