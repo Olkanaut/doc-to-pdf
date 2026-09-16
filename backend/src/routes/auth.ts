@@ -199,6 +199,28 @@ async function exchangeCodeForToken(
   return res.json() as Promise<TokenResponse>;
 }
 
+async function refreshAccessToken(
+  config: AuthConfig,
+  refreshToken: string,
+): Promise<TokenResponse> {
+  const res = await fetch(`${config.issuerUrl}/protocol/openid-connect/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: refreshToken,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Token refresh failed with HTTP ${res.status}: ${await res.text()}`);
+  }
+
+  return res.json() as Promise<TokenResponse>;
+}
+
 async function fetchUserInfo(config: AuthConfig, accessToken: string): Promise<AuthUser> {
   const res = await fetch(`${config.issuerUrl}/protocol/openid-connect/userinfo`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -259,7 +281,13 @@ function getFlow(req: FastifyRequest, reply: FastifyReply): OidcFlowCookie | nul
   return flow;
 }
 
-export function getAuthSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
+/** Marge sous laquelle on rafraîchit par avance, pour éviter qu'un token expire pendant l'appel amont. */
+const ACCESS_TOKEN_EXPIRY_MARGIN_MS = 10_000;
+
+export async function getAuthSession(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<AuthSession | null> {
   const sessionId = parseCookies(req)[SESSION_COOKIE];
   if (!sessionId) return null;
 
@@ -269,13 +297,33 @@ export function getAuthSession(req: FastifyRequest, reply: FastifyReply): AuthSe
     return null;
   }
 
-  if (session.expiresAt <= Date.now()) {
+  if (session.expiresAt > Date.now() + ACCESS_TOKEN_EXPIRY_MARGIN_MS) {
+    return session;
+  }
+
+  if (!session.refreshToken) {
     sessions.delete(sessionId);
     clearCookie(reply, SESSION_COOKIE);
     return null;
   }
 
-  return session;
+  try {
+    const token = await refreshAccessToken(authConfig(), session.refreshToken);
+    const refreshed: AuthSession = {
+      ...session,
+      accessToken: token.access_token,
+      refreshToken: token.refresh_token ?? session.refreshToken,
+      idToken: token.id_token ?? session.idToken,
+      expiresAt: Date.now() + (token.expires_in ?? SESSION_MAX_AGE_SECONDS) * 1000,
+    };
+    sessions.set(sessionId, refreshed);
+    return refreshed;
+  } catch (err) {
+    req.log.warn({ err }, "Access token refresh failed");
+    sessions.delete(sessionId);
+    clearCookie(reply, SESSION_COOKIE);
+    return null;
+  }
 }
 
 function clearLocalSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
@@ -329,7 +377,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/api/auth/me", async (req, reply) => {
-    const session = getAuthSession(req, reply);
+    const session = await getAuthSession(req, reply);
     if (!session) {
       return reply.send({ authenticated: false });
     }

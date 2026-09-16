@@ -49,8 +49,11 @@ interface UpdateBody {
 
 const ASSET_RE = /\.(png|jpe?g|svg)$/i;
 
-function requireSession(req: FastifyRequest, reply: FastifyReply): AuthSession | null {
-  const session = getAuthSession(req, reply);
+async function requireSession(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<AuthSession | null> {
+  const session = await getAuthSession(req, reply);
   if (!session) {
     reply.code(401).send({ error: "Authentication required" });
     return null;
@@ -133,7 +136,7 @@ async function withExistingLogo(cfg: LayoutConfig): Promise<LayoutConfig> {
 
 export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/templates", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -149,7 +152,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   // Routes statiques sous /api/templates/… : find-my-way les préfère à `:id`
   // quel que soit l'ordre d'enregistrement ; elles sont groupées ici pour la lisibilité.
   app.get("/api/templates/default", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -162,7 +165,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.put<{ Body: { templateId?: unknown } }>("/api/templates/default", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     const id = req.body?.templateId;
@@ -193,7 +196,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -205,7 +208,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Body: CreateBody }>("/api/templates", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     const { name, description, source } = req.body ?? {};
@@ -227,7 +230,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   app.put<{ Params: { id: string }; Body: UpdateBody }>(
     "/api/templates/:id",
     async (req, reply) => {
-      const session = requireSession(req, reply);
+      const session = await requireSession(req, reply);
       if (!session) return;
 
       try {
@@ -244,7 +247,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -259,7 +262,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>("/api/templates/:id/thumbnail", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -281,7 +284,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   // ── Mise en page (bloc « dots:layout » du .typ) ────────────────────────────
 
   app.get<{ Params: { id: string } }>("/api/templates/:id/layout", async (req, reply) => {
-    const session = requireSession(req, reply);
+    const session = await requireSession(req, reply);
     if (!session) return;
 
     try {
@@ -295,7 +298,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   app.put<{ Params: { id: string }; Body: { layout?: unknown } }>(
     "/api/templates/:id/layout",
     async (req, reply) => {
-      const session = requireSession(req, reply);
+      const session = await requireSession(req, reply);
       if (!session) return;
 
       const layout = req.body?.layout;

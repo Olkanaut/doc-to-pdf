@@ -40,7 +40,7 @@ export async function documentRoutes(
   app.get<{ Params: DocumentParams }>(
     "/api/documents/:documentId/content",
     async (req, reply) => {
-      const session = getSession(req, reply);
+      const session = await getSession(req, reply);
       if (!session) {
         return reply.code(401).send({ error: "Authentication required" });
       }
@@ -68,7 +68,7 @@ export async function documentRoutes(
   app.post<{ Params: DocumentParams; Body: RenderDocumentBody }>(
     "/api/documents/:documentId/render",
     async (req, reply) => {
-      const session = getSession(req, reply);
+      const session = await getSession(req, reply);
       if (!session) {
         return reply.code(401).send({ error: "Authentication required" });
       }
