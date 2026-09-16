@@ -12,6 +12,14 @@ const LAYOUT_CONFIG_TYPE = `type PaperSize = "a4" | "a5" | "us-letter";
 type Align = "left" | "center" | "right";
 type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
 type Font = ${FONTS.map((f) => JSON.stringify(f)).join(" | ")};
+type TextStyleKey = "body" | "h1" | "h2" | "h3";
+
+interface TextStyle {
+  font: Font;
+  /** Points. */
+  fontSize: number;
+  color: string;
+}
 
 interface LayoutConfig {
   paper: PaperSize;
@@ -22,6 +30,8 @@ interface LayoutConfig {
   /** Points. */
   fontSize: number;
   lineHeight: number;
+  /** Styles typographiques de base. */
+  textStyles: Record<TextStyleKey, TextStyle>;
   header: {
     enabled: boolean;
     text: string;

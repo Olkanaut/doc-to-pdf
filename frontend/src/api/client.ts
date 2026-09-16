@@ -363,6 +363,14 @@ function toBase64(file: File): Promise<string> {
 export type PaperSize = "a4" | "a5" | "us-letter";
 export type Align = "left" | "center" | "right";
 export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
+export type TextStyleKey = "body" | "h1" | "h2" | "h3";
+
+export interface TextStyle {
+  font: string;
+  /** Points. */
+  fontSize: number;
+  color: string;
+}
 
 export interface LayoutConfig {
   paper: PaperSize;
@@ -373,6 +381,8 @@ export interface LayoutConfig {
   /** Points. */
   fontSize: number;
   lineHeight: number;
+  /** Styles typographiques de base, prêts pour le futur onglet Texte. */
+  textStyles: Record<TextStyleKey, TextStyle>;
   /**
    * `logo` est un fichier de /api/templates/assets. `fullBleed` le pose bord à
    * bord sur toute la largeur de la page (bandeau repris d'un PDF) ; la marge

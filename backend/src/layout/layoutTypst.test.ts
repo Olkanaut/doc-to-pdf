@@ -90,7 +90,7 @@ describe("applyLayout", () => {
     expect(count(out, LAYOUT_END)).toBe(1);
     expect(count(out, "// dots:layout {")).toBe(1);
     expect(out.indexOf(LAYOUT_END)).toBeLessThan(out.indexOf('#include "body.typ"'));
-    expect(readLayout(out)).toEqual({ layout: { ...defaultLayout(), fontSize: 9 }, managed: true });
+    expect(readLayout(out)).toEqual({ layout: sanitizeLayout({ ...defaultLayout(), fontSize: 9 }), managed: true });
   });
 });
 
@@ -105,13 +105,13 @@ describe("readLayout", () => {
   it("sans bloc : réglages déduits de la source, managed false", () => {
     const { layout, managed } = readLayout(minimal);
     expect(managed).toBe(false);
-    expect(layout).toEqual({
+    expect(layout).toEqual(sanitizeLayout({
       ...defaultLayout(),
       margins: { top: 25, bottom: 25, left: 25, right: 25 },
       font: "Libertinus Serif",
       header: { ...defaultLayout().header, enabled: false },
       footer: { ...defaultLayout().footer, align: "center", rule: false },
-    });
+    }));
   });
 
   it("source sans #set page : ni en-tête ni pied, le reste par défaut", () => {
@@ -220,6 +220,45 @@ describe("layoutToTypst", () => {
     expect(lines.join("\n")).toContain('font: ("Arial", "Helvetica", "Libertinus Serif")');
     expect(lines.join("\n")).toContain("flipped: true");
     expect(lines.join("\n")).toContain("counter(page).get().first() > 1");
+  });
+
+  it("dérive les styles de texte depuis les anciens champs quand ils ne sont pas custom", () => {
+    const cfg = { ...defaultLayout(), font: "Arial", fontSize: 14, headings: { scale: "compact", color: "#ff5050" } as const };
+    const out = layoutToTypst(cfg);
+    expect(out).toContain('#set text(font: ("Arial", "Helvetica", "Libertinus Serif"), size: 14pt, fill: rgb("#000000"))');
+    expect(out).toContain(
+      '#show heading.where(level: 1): set text(font: ("Arial", "Helvetica", "Libertinus Serif"), size: 18.2pt, fill: rgb("#ff5050"))',
+    );
+    expect(readLayout(out).layout.textStyles.h1).toEqual({ font: "Arial", fontSize: 18.2, color: "#ff5050" });
+  });
+
+  it("garde les anciens champs pilotes quand les styles existants étaient seulement dérivés", () => {
+    const imported = sanitizeLayout({ ...defaultLayout(), font: "Arial", fontSize: 12 });
+    const edited = sanitizeLayout({ ...imported, fontSize: 10, headings: { scale: "large", color: "#ff5050" } });
+    expect(edited.textStyles).toMatchObject({
+      body: { font: "Arial", fontSize: 10, color: "#000000" },
+      h1: { font: "Arial", fontSize: 19, color: "#ff5050" },
+      h2: { font: "Arial", fontSize: 15, color: "#ff5050" },
+      h3: { font: "Arial", fontSize: 12, color: "#ff5050" },
+    });
+  });
+
+  it("écrit les styles de texte custom body, h1, h2 et h3", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      textStyles: {
+        body: { font: "Helvetica", fontSize: 10, color: "#222222" },
+        h1: { font: "Arial", fontSize: 24, color: "#ff5050" },
+        h2: { font: "Libertinus Serif", fontSize: 18, color: "#00aa77" },
+        h3: { font: "DejaVu Sans Mono", fontSize: 13, color: "#555555" },
+      },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain('#set text(font: ("Helvetica", "Arial", "Libertinus Serif"), size: 10pt, fill: rgb("#222222"))');
+    expect(out).toContain('#show heading.where(level: 1): set text(font: ("Arial", "Helvetica", "Libertinus Serif"), size: 24pt, fill: rgb("#ff5050"))');
+    expect(out).toContain('#show heading.where(level: 2): set text(font: ("Libertinus Serif", "Arial", "Helvetica"), size: 18pt, fill: rgb("#00aa77"))');
+    expect(out).toContain('#show heading.where(level: 3): set text(font: ("DejaVu Sans Mono", "Arial", "Helvetica", "Libertinus Serif"), size: 13pt, fill: rgb("#555555"))');
+    expect(readLayout(out).layout.textStyles).toEqual(cfg.textStyles);
   });
 });
 

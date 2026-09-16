@@ -7,11 +7,13 @@
  */
 import { escapeTypstText } from "../convert/escapeTypst.js";
 import {
+  HEADING_SIZE_FACTORS,
   defaultLayout,
   INLINE_LOGO_HEIGHT_MM,
   sanitizeLayout,
   type LayoutConfig,
   type Numbering,
+  type TextStyle,
 } from "./layoutConfig.js";
 
 export const LAYOUT_BEGIN = "// dots:layout begin";
@@ -21,13 +23,6 @@ const LAYOUT_MARK = "// dots:layout";
 
 /** Polices de repli, toujours présentes : Marianne n'est pas installée partout. */
 const FALLBACK_FONTS = ["Arial", "Helvetica", "Libertinus Serif"];
-
-/** Tailles des titres de niveau 1 à 3, en em, selon l'échelle. */
-const HEADING_SIZES = {
-  compact: [1.3, 1.15, 1.05],
-  normal: [1.6, 1.3, 1.1],
-  large: [1.9, 1.5, 1.2],
-} as const;
 
 const NUMBERING: Record<Numbering, string> = {
   none: "",
@@ -69,6 +64,15 @@ function text(raw: string): string {
 /** Couleur déjà validée (#rrggbb) par sanitizeLayout. */
 function rgb(color: string): string {
   return `rgb("${color}")`;
+}
+
+function fontTuple(font: string): string {
+  const fonts = [font, ...FALLBACK_FONTS.filter((f) => f !== font)];
+  return `(${fonts.map((f) => JSON.stringify(f)).join(", ")})`;
+}
+
+function textSet(style: TextStyle): string {
+  return `set text(font: ${fontTuple(style.font)}, size: ${style.fontSize}pt, fill: ${rgb(style.color)})`;
 }
 
 function contentBlock(parts: string[], indent: string): string {
@@ -164,8 +168,8 @@ function jsonLine(cfg: LayoutConfig): string {
 
 /** Le bloc complet, de `// dots:layout begin` à `// dots:layout end`. */
 export function layoutToTypst(cfg: LayoutConfig): string {
+  cfg = sanitizeLayout(cfg);
   const m = cfg.margins;
-  const fonts = [cfg.font, ...FALLBACK_FONTS.filter((f) => f !== cfg.font)];
   const color = rgb(cfg.headings.color);
   // 0.65em est l'interligne par défaut de Typst, pris comme équivalent de 1.2.
   const leading = Math.round(((0.65 * cfg.lineHeight) / 1.2) * 100) / 100;
@@ -185,10 +189,10 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     ...(cfg.header.enabled && cfg.header.logo && cfg.header.fullBleed ? [`  header-ascent: 0%,`] : []),
     ...(cfg.footer.enabled && cfg.footer.logo && cfg.footer.fullBleed ? [`  footer-descent: 0%,`] : []),
     ")",
-    `#set text(font: (${fonts.map((f) => JSON.stringify(f)).join(", ")}), size: ${cfg.fontSize}pt)`,
+    `#${textSet(cfg.textStyles.body)}`,
     `#set par(leading: ${leading}em)`,
-    ...HEADING_SIZES[cfg.headings.scale].map(
-      (size, i) => `#show heading.where(level: ${i + 1}): set text(size: ${size}em, fill: ${color})`,
+    ...(["h1", "h2", "h3"] as const).map(
+      (key, i) => `#show heading.where(level: ${i + 1}): ${textSet(cfg.textStyles[key])}`,
     ),
     ...table(cfg, color),
     LAYOUT_END,
@@ -369,5 +373,22 @@ export function deduceLayout(source: string): LayoutConfig {
       rule: /#line\(/.test(footer),
     },
     headings: { color },
+    textStyles: font || fontSize || color
+      ? {
+        body: { font: font ?? "Libertinus Serif", fontSize, color: "#000000" },
+        ...(["h1", "h2", "h3"] as const).reduce<Record<string, { font: string | undefined; fontSize: number | undefined; color: string | undefined }>>(
+          (acc, key, i) => {
+            const scale = HEADING_SIZE_FACTORS.normal[i];
+            acc[key] = {
+              font: font ?? "Libertinus Serif",
+              fontSize: fontSize ? Math.round(fontSize * scale * 10) / 10 : undefined,
+              color,
+            };
+            return acc;
+          },
+          {},
+        ),
+      }
+      : undefined,
   });
 }
