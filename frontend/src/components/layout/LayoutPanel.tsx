@@ -12,7 +12,7 @@ import {
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
 import { ArrowLeft, ChevronDown, ChevronRight, Code, Upload } from "@gouvfr-lasuite/ui-components/icons";
-import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize } from "../../api/client";
+import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize, type TextStyleKey } from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
 
 type Option = { value: string; label: string };
@@ -21,7 +21,6 @@ type Option = { value: string; label: string };
 const FONTS: Option[] = ["Marianne", "Arial", "Helvetica", "Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"].map(
   (f) => ({ value: f, label: f }),
 );
-const FONT_SIZES = [8, 9, 10, 11, 12, 13, 14, 15, 16];
 const LINE_HEIGHTS: [number, string][] = [
   [1, "1,0"],
   [1.15, "1,15"],
@@ -45,11 +44,6 @@ const NUMBERINGS: Option[] = [
   { value: "n-of-total", label: "1 / N" },
   { value: "page-n-of-total", label: "Page 1 / N" },
 ];
-const HEADING_SCALES: Option[] = [
-  { value: "compact", label: "Compacte" },
-  { value: "normal", label: "Normale" },
-  { value: "large", label: "Grande" },
-];
 /* Tableaux : mêmes listes que backend/src/layout/layoutConfig.ts (TABLE_*). */
 const TABLE_STROKES: Option[] = [
   { value: "none", label: "Aucun" },
@@ -72,11 +66,18 @@ const MARGIN_SIDES = [
   ["right", "Droite"],
 ] as const;
 const TABS = [
-  { id: "format", label: "Format" },
+  { id: "format", label: "General" },
+  { id: "text", label: "Text" },
   { id: "header", label: "En-tête" },
   { id: "footer", label: "Pied" },
   { id: "tables", label: "Tableaux" },
 ] as const;
+const TEXT_STYLE_SECTIONS: { key: TextStyleKey; label: string }[] = [
+  { key: "h1", label: "Heading 1" },
+  { key: "h2", label: "Heading 2" },
+  { key: "h3", label: "Heading 3" },
+  { key: "body", label: "Text" },
+];
 
 /** Les Radio du kit alignés en ligne (le groupe est en colonne par défaut). */
 const RADIO_ROW = { flexDirection: "row", flexWrap: "wrap", gap: "0 0.75rem" } as const;
@@ -117,6 +118,7 @@ export function LayoutPanel({
   // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
   const [importing, setImporting] = useState<"header" | "footer" | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
+  const [openTextStyle, setOpenTextStyle] = useState<TextStyleKey | null>(null);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -124,6 +126,23 @@ export function LayoutPanel({
     set({ footer: { ...layout.footer, ...patch } });
   const setTable = (patch: Partial<LayoutConfig["table"]>) =>
     set({ table: { ...layout.table, ...patch } });
+  const setTextStyle = (key: TextStyleKey, patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>) => {
+    const nextStyle = { ...layout.textStyles[key], ...patch };
+    const next: Partial<LayoutConfig> = {
+      textStyles: { ...layout.textStyles, [key]: nextStyle },
+    };
+    if (key === "body") {
+      if (patch.font) next.font = patch.font;
+      if (typeof patch.fontSize === "number") next.fontSize = patch.fontSize;
+    }
+    if (key === "h1" && patch.color) next.headings = { ...layout.headings, color: patch.color };
+    set(next);
+  };
+  const setTextStyleSize = (key: TextStyleKey, raw: string) => {
+    const n = Number(raw);
+    if (raw === "" || !Number.isFinite(n)) return;
+    setTextStyle(key, { fontSize: Math.min(72, Math.max(6, n)) });
+  };
   const setMargin = (side: keyof LayoutConfig["margins"], raw: string) => {
     const n = Number(raw);
     if (raw === "" || !Number.isFinite(n)) return;
@@ -136,13 +155,6 @@ export function LayoutPanel({
     if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 0);
   }, []);
 
-  // Valeur hors liste (écrite par l'assistant, ex. 10.5) : affichée plutôt qu'un Select vide.
-  const fontSizeOptions = useMemo<Option[]>(() => {
-    const list = FONT_SIZES.map((s) => ({ value: String(s), label: `${s} pt` }));
-    return FONT_SIZES.includes(layout.fontSize)
-      ? list
-      : [{ value: String(layout.fontSize), label: `${layout.fontSize} pt` }, ...list];
-  }, [layout.fontSize]);
   const lineHeightOptions = useMemo<Option[]>(() => {
     const list = LINE_HEIGHTS.map(([v, l]) => ({ value: String(v), label: l }));
     return LINE_HEIGHTS.some(([v]) => v === layout.lineHeight)
@@ -253,67 +265,33 @@ export function LayoutPanel({
               </div>
             </Section>
 
-            <Section title="Typographie">
+            <Section title="Paragraphe">
               <Select
-                label="Police"
+                label="Interligne"
                 fullWidth
                 clearable={false}
-                options={FONTS}
-                value={layout.font}
-                onChange={(e) => set({ font: String(e.target.value) })}
-                // Repli de layoutTypst.ts (FALLBACK_FONTS) : l'aperçu ne remonte pas les avertissements typst.
-                text="Si la police n'est pas installée sur le serveur, Arial la remplace (Libertinus Serif à défaut)."
+                options={lineHeightOptions}
+                value={String(layout.lineHeight)}
+                onChange={(e) => set({ lineHeight: Number(e.target.value) })}
               />
-              <div className="le-grid-2">
-                <Select
-                  label="Taille"
-                  fullWidth
-                  clearable={false}
-                  options={fontSizeOptions}
-                  value={String(layout.fontSize)}
-                  onChange={(e) => set({ fontSize: Number(e.target.value) })}
-                />
-                <Select
-                  label="Interligne"
-                  fullWidth
-                  clearable={false}
-                  options={lineHeightOptions}
-                  value={String(layout.lineHeight)}
-                  onChange={(e) => set({ lineHeight: Number(e.target.value) })}
-                />
-              </div>
             </Section>
+          </TabPanel>
 
-            <Section title="Titres">
-              <Select
-                label="Échelle"
-                fullWidth
-                clearable={false}
-                options={HEADING_SCALES}
-                value={layout.headings.scale}
-                onChange={(e) =>
-                  set({
-                    headings: {
-                      ...layout.headings,
-                      scale: String(e.target.value) as LayoutConfig["headings"]["scale"],
-                    },
-                  })
-                }
-              />
-              {/* Pas de sélecteur de couleur dans le kit : champ natif, étiqueté par le Label du kit. */}
-              <div className="le-color">
-                <Label htmlFor={`${uid}-color`}>Couleur</Label>
-                <span className="le-color__control">
-                  <input
-                    id={`${uid}-color`}
-                    type="color"
-                    value={layout.headings.color}
-                    onChange={(e) => set({ headings: { ...layout.headings, color: e.target.value } })}
-                  />
-                  <span className="le-mono">{layout.headings.color}</span>
-                </span>
-              </div>
-            </Section>
+          <TabPanel uid={uid} tab="text" activeTab={activeTab}>
+            <div className="le-text-styles" aria-label="Styles de texte">
+              {TEXT_STYLE_SECTIONS.map(({ key, label }) => (
+                <TextStyleSection
+                  key={key}
+                  id={`${uid}-text-${key}`}
+                  label={label}
+                  style={layout.textStyles[key]}
+                  open={openTextStyle === key}
+                  onToggle={() => setOpenTextStyle((current) => (current === key ? null : key))}
+                  onChange={(patch) => setTextStyle(key, patch)}
+                  onSizeChange={(raw) => setTextStyleSize(key, raw)}
+                />
+              ))}
+            </div>
           </TabPanel>
 
           <TabPanel uid={uid} tab="header" activeTab={activeTab}>
@@ -511,6 +489,79 @@ function TabPanel({
     >
       {children}
     </div>
+  );
+}
+
+function TextStyleSection({
+  id,
+  label,
+  style,
+  open,
+  onToggle,
+  onChange,
+  onSizeChange,
+}: {
+  id: string;
+  label: string;
+  style: LayoutConfig["textStyles"][TextStyleKey];
+  open: boolean;
+  onToggle: () => void;
+  onChange: (patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>) => void;
+  onSizeChange: (raw: string) => void;
+}) {
+  return (
+    <section className="le-style">
+      <button
+        type="button"
+        className="le-style__toggle"
+        aria-expanded={open}
+        aria-controls={`${id}-body`}
+        onClick={onToggle}
+      >
+        <span>{label}</span>
+        {open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+      </button>
+      {open && (
+        <div id={`${id}-body`} className="le-style__body">
+          <div className="le-style__row">
+            <span className="le-style__label">Font</span>
+            <Select
+              label="Police"
+              fullWidth
+              clearable={false}
+              options={FONTS}
+              value={style.font}
+              onChange={(e) => onChange({ font: String(e.target.value) })}
+            />
+          </div>
+          <div className="le-style__row">
+            <span className="le-style__label">Size</span>
+            <Input
+              label="Taille"
+              type="number"
+              min={6}
+              max={72}
+              step={0.5}
+              fullWidth
+              value={String(style.fontSize)}
+              onChange={(e) => onSizeChange(e.target.value)}
+            />
+          </div>
+          <div className="le-style__row">
+            <span className="le-style__label">Color</span>
+            <span className="le-style__color">
+              <input
+                aria-label={`Couleur ${label}`}
+                type="color"
+                value={style.color}
+                onChange={(e) => onChange({ color: e.target.value })}
+              />
+              <span className="le-mono">{style.color.toUpperCase()}</span>
+            </span>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
