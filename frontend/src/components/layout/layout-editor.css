@@ -56,28 +56,6 @@
   padding: 0 16px;
   border-bottom: 1px solid var(--c--globals--colors--gray-100);
 }
-/* Le nom du gabarit se modifie en place, comme un titre (pas un champ de formulaire). */
-.le-header__name {
-  flex: 0 1 320px;
-  min-width: 80px;
-  height: 36px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: var(--c--components--button--border-radius);
-  background: transparent;
-  font: inherit;
-  font-size: var(--c--globals--font--sizes--lg);
-  font-weight: var(--c--globals--font--weights--bold);
-  color: inherit;
-}
-.le-header__name:hover {
-  border-color: var(--c--globals--colors--gray-100);
-}
-.le-header__name:focus {
-  outline: none;
-  border-color: var(--c--contextuals--border--semantic--brand--primary);
-  box-shadow: 0 0 0 2px var(--c--globals--colors--brand-100);
-}
 .le-header__modes {
   display: inline-flex;
   gap: 4px;
@@ -151,6 +129,104 @@
   width: 100%;
   min-width: 0;
   height: 100%;
+  overflow: hidden;
+  background: var(--c--globals--colors--gray-000);
+}
+.le-panel__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+}
+.le-panel__top .c__button {
+  flex: 0 0 auto;
+}
+.le-panel__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--c--components--button--border-radius);
+  background: transparent;
+  font: inherit;
+  font-size: var(--c--globals--font--sizes--ml);
+  font-weight: var(--c--globals--font--weights--bold);
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.le-panel__name:hover {
+  border-color: var(--c--globals--colors--gray-100);
+}
+.le-panel__name:focus {
+  outline: none;
+  border-color: var(--c--contextuals--border--semantic--brand--primary);
+  box-shadow: 0 0 0 2px var(--c--globals--colors--brand-100);
+}
+.le-panel__badge {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--c--contextuals--content--semantic--brand--primary);
+  font-size: var(--c--globals--font--sizes--xs);
+  font-weight: var(--c--globals--font--weights--bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.le-panel__tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+  background: var(--c--globals--colors--gray-000);
+}
+.le-panel__tab {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c--globals--colors--gray-500);
+  font: inherit;
+  font-size: var(--c--globals--font--sizes--sm);
+  font-weight: var(--c--globals--font--weights--medium);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.le-panel__tab:hover {
+  color: var(--c--globals--colors--gray-950);
+  background: var(--c--globals--colors--gray-050);
+}
+.le-panel__tab:focus-visible {
+  z-index: 2;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--c--globals--colors--brand-100);
+}
+.le-panel__tab--active {
+  z-index: 1;
+  background: var(--c--globals--colors--gray-050);
+  color: var(--c--globals--colors--gray-950);
+  font-weight: var(--c--globals--font--weights--bold);
+}
+.le-panel__scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 .le-panel__fields,
@@ -257,6 +333,9 @@
 }
 .le-panel__notice code {
   font-size: var(--c--globals--font--sizes--s);
+}
+.le-panel [role="tabpanel"][hidden] {
+  display: none;
 }
 
 /* Aperçu */

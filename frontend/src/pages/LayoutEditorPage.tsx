@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Alert, Badge, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, Download, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
+import { Download, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
   fetchFixtures,
@@ -232,21 +232,6 @@ export function LayoutEditorPage() {
   return (
     <div className="le">
       <header className="le-header">
-        <Button
-          href="/"
-          variant="tertiary"
-          color="neutral"
-          icon={<ArrowLeft aria-hidden="true" />}
-          aria-label="Retour aux gabarits"
-          onClick={(e) => follow(e, "/")}
-        />
-        <input
-          className="le-header__name"
-          aria-label="Nom du gabarit"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        {isDefault && <Badge type="accent">Par défaut</Badge>}
         <nav className="le-header__modes" aria-label="Mode d'édition">
           <Button
             href={`/t/${id}/layout`}
@@ -296,10 +281,15 @@ export function LayoutEditorPage() {
           layout ? (
             <LayoutPanel
               layout={layout}
+              templateName={name}
+              isDefault={isDefault}
               managed={managed}
               assets={assets}
               disabled={proposal !== null}
               onChange={handleLayoutChange}
+              onTemplateNameChange={setName}
+              backHref="/"
+              onBack={(e) => follow(e, "/")}
               // Un visuel importé depuis le panneau s'ajoute aux assets : la liste est relue.
               onAssetsChanged={() => {
                 fetchTemplateAssets()
