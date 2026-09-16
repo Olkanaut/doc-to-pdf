@@ -16,73 +16,103 @@ A public servant finishes a note in **Docs** (La Suite's collaborative editor). 
 
 2. **We do NOT depend on BlockNote.js's own Typst exporter — this was a deliberate reversal, worth knowing about.** Early research found that Docs' editor (BlockNote.js) ships `@blocknote/xl-typst-exporter` + `@blocknote/xl-typst-compiler`, which convert BlockNote blocks to Typst and compile to PDF **entirely client-side via WASM**, with a low-level API (`TypstExporter.transformBlocks()` + `TypstCompiler.compilePdf()`) that would even let us wrap the output in our own custom `.typ` template. This was technically elegant (zero backend, nothing ever leaves the browser) and was actually hinted at in the brief itself. **The team explicitly chose not to take this dependency** — instead we treat "BlockNote-shaped block JSON" purely as a *data contract* (because that's what Docs' real export API returns) and wrote our own small, fully-owned JSON→Typst converter, compiling server-side via the plain `typst` CLI. Rationale: no 25MB WASM bundle, no coupling to BlockNote's private/internal APIs, fully auditable escaping logic. **If you see "BlockNote" mentioned in old research notes or this file, it refers to the data shape we mimic, never a package we import.**
 
-3. **Phase 1 mock data = static JSON fixtures**, not a live embedded editor. Fixtures are hand-written to match BlockNote's real block-JSON shape (since that's what the real Docs API will return in Phase 2), so the converter built against fixtures should mostly just work against real data later.
+3. **Fixtures still exist, but they are now a local/demo path, not the main integration path.** `backend/fixtures/*.json` keeps BlockNote-shaped examples useful for tests, demos, and template iteration through `POST /api/render`. The real Docs path now goes through `/api/documents/:documentId/content` and `/api/documents/:documentId/render`, which call Docs' external API with the user's Keycloak access token.
 
-4. **Phase 2 will target a self-hosted Docs instance** (Docker Compose + its bundled Keycloak as the OIDC provider), not the real `docs.numerique.gouv.fr` + ProConnect. Research found no realistic path to real ProConnect OAuth-client approval for an outside team within a 48h hackathon (no self-serve registration found; partner onboarding is a multi-day approval process). Self-hosting exercises the *same* Resource Server API contract while keeping the demo fully within our control.
+4. **The integration targets the local self-hosted La Suite stack** (`docs-solo`: Docs + shared Keycloak), not the real `docs.numerique.gouv.fr` + ProConnect. Research found no realistic path to real ProConnect OAuth-client approval for an outside team within a 48h hackathon (no self-serve registration found; partner onboarding is a multi-day approval process). Self-hosting exercises the same Resource Server API contract while keeping the demo fully within our control.
 
-5. **The app is multiple pages, not one screen** — `/templates` (library), `/templates/:id` (editor), `/documents/new` (compose: pick content + template → generate PDF). The `docs.→dots.` URL-swap gimmick targets the compose page specifically (it becomes `/d/:docId` in Phase 2, pre-filled with a real document) — template management is a separate "prepare your gabarits ahead of time" area, not something the gimmick opens.
+5. **The app is multiple pages, not one screen.** Current primary routes are `/` (template library), `/docs` (paste/open a Docs URL or ID), `/docs/:id` (fetch a Docs document, choose a template, preview/download the PDF), `/t/:id` (template source editor), and `/t/:id/layout` (visual layout editor). `/d/:id` is the short URL-swap route and redirects to `/docs/:id`. Older planned routes (`/templates/*`, `/documents/new`) still exist as redirects for compatibility.
 
-6. **Auth is architected now, wired for real later.** The frontend has a real `AuthProvider`/`ProtectedRoute`/`useAuth()` seam, and the backend has a real `GET /api/session` endpoint — but today `/api/session` is a stub that always returns "authenticated" (see `backend/src/routes/session.ts`). Phase 2 replaces only that one endpoint's implementation (real check against the Keycloak session cookie); no page or routing code needs to change.
+6. **Auth is wired to Keycloak now.** The backend implements OIDC Authorization Code + PKCE in `backend/src/routes/auth.ts`, stores the resulting access token in a server-side in-memory session, and exposes the session to the browser only through HttpOnly cookies. The frontend uses `AuthProvider`/`ProtectedRoute`/`useAuth()` and calls Dots with `credentials: "include"`. Important limitation: sessions are currently in memory, so restarting the backend logs users out; token refresh is stored if returned but not yet used to renew sessions.
 
-7. **Templates are stored as files, not a database**, seeded once from the original 3 presets: `backend/data/templates/<id>/{meta.json,template.typ}` (gitignored — this is runtime state, not source). Full CRUD lives in `backend/src/registry/templates.ts`. **Important open point for the team**: this storage is only "shared" if everyone points at the *same running backend instance* — if each teammate runs `npm run dev` locally, you each get your own empty template store and won't see each other's work, and the live demo won't show anything prepared in advance. Fix: deploy one shared backend instance (even a bare-bones one, e.g. via a quick Fly.io/Render deploy or a tunnel like ngrok from one machine) *before* everyone starts creating templates, and have all frontends (local `npm run dev` is fine) point at that one shared backend via `vite.config.ts`'s proxy target — not yet done, needs a decision on where to host it.
+7. **User-owned templates live in Docs through the external `typst-templates` API.** Dots' `/api/templates` routes proxy CRUD to Docs with the server-side Keycloak access token. Users can only access their own templates because Docs authorizes the Bearer token. There is still file-backed template storage in `backend/src/registry/templates.ts`, but it is now the local/fixture path used by `POST /api/render` and seeded assets, not the source of truth for real user templates. Per-user default template selection is currently stored locally by Dots under `backend/data/template-defaults`.
 
 ## Research findings worth knowing (condensed)
 
 **La Suite Docs** (`github.com/suitenumerique/docs`, MIT license, Django+DRF backend / Next.js+React frontend):
 - Editor is BlockNote.js + ProseMirror + Yjs (CRDT).
 - **Resource Server API** at `/external_api/v1.0/`, OIDC Bearer-token auth (token introspection), added v4.8.2, documented in `documentation/resource_server.md` in that repo. Flagged by its own maintainers as "subject to future evolution" (beta).
-- Content export: `GET .../api/v1.0/documents/{id}/formatted-content/?content_format=json|html|markdown` — `json` gives BlockNote's block JSON, exactly the shape our fixtures mimic.
+- Content export: `GET .../external_api/v1.0/documents/{id}/formatted-content/?content_format=json|html|markdown` — `json` gives BlockNote's block JSON, exactly the shape our fixtures mimic.
 - Self-hostable via `make bootstrap && make run` (Docker Compose + local Keycloak for dev — production instances presumably point at ProConnect, but this is not directly confirmed in the repo).
-- Separate, older **server-to-server API** exists too (shared-token auth via `DJANGO_SERVER_TO_SERVER_API_TOKENS`) — not what we're using, but worth knowing it exists if Phase 2 auth gets stuck.
+- Separate, older **server-to-server API** exists too (shared-token auth via `DJANGO_SERVER_TO_SERVER_API_TOKENS`) — not what we're using, but worth knowing it exists as a possible fallback/investigation path.
 
 **Typst tooling**: shelling out to the official `typst` CLI (`brew install typst`, or a static release binary in Docker) is the simplest, fastest path — no meaningful downside vs. embedding it as a library for a project this size. Compiles run in ~200–400ms even via subprocess. Docker gotcha to remember for deploy: fonts must be explicitly bundled/pathed (`--font-path` / `TYPST_FONT_PATHS`) since containers don't have system fonts.
 
-Full plan document (analysis, requirements, both system-design diagrams, folder structure) lives at `/Users/ok/.claude/plans/track-3-eager-crystal.md` on the machine this was built on — copy it into the repo if you want it versioned; it's not currently tracked in git.
+Historical note: older planning material may still mention file-only template storage, stub auth, and `/documents/new`. Treat those as implementation history. The current contracts are documented in `documentation/EXTERNAL-API.md`, `documentation/DOCS-FETCH.md`, and the route/client files in `backend/src`.
 
-## Current state: multi-page app with template CRUD, implemented and verified
+## Current state on `main`
 
 Repo layout:
 ```
 doc-pdf/
 ├── README.md          # run instructions
 ├── CONTEXT.md          # this file
+├── documentation/
+│   ├── EXTERNAL-API.md # Docs typst-templates external API contract
+│   └── DOCS-FETCH.md   # Dots-to-Docs document fetch/render contract
 ├── backend/            # Fastify + TS
 │   ├── src/convert/blocksToTypst.ts   # our hand-rolled JSON → Typst converter
 │   ├── src/convert/escapeTypst.ts     # escapes \ * _ ` # < > @ $ [ ] in literal text
 │   ├── src/compile/typstCompile.ts    # per-request temp dir + `typst compile` subprocess
-│   ├── src/registry/templates.ts      # file-backed template CRUD (seeds 3 presets on first run)
+│   ├── src/clients/docsClient.ts      # calls Docs formatted-content external API
+│   ├── src/clients/templatesClient.ts # calls Docs typst-templates external API
+│   ├── src/routes/auth.ts             # OIDC login/callback/logout + session cookie
+│   ├── src/routes/documents.ts        # real Docs document fetch/render routes
+│   ├── src/routes/templates.ts        # Dots template API, backed by Docs typst-templates
+│   ├── src/routes/render.ts           # fixture/local rendering route
+│   ├── src/routes/ai.ts               # optional AI template assistant
 │   ├── src/registry/fixtures.ts       # reads mock documents from fixtures/*.json
-│   ├── src/routes/{templates,fixtures,render,session}.ts
-│   ├── fixtures/*.json                # 3 mock documents (BlockNote-shaped)
-│   ├── templates/*.typ + assets/      # seed source for the 3 presets: minimal, ministere, collectivite
-│   └── data/templates/<id>/           # live template storage (gitignored, runtime state)
+│   ├── src/registry/templates.ts      # file-backed templates for fixture/local path
+│   ├── fixtures/*.json                # mock documents (BlockNote-shaped)
+│   ├── templates/*.typ + assets/      # seed source/assets for local rendering and shared logos
+│   └── data/                          # local runtime state (gitignored)
 └── frontend/            # Vite + React + react-router-dom
     └── src/
-        ├── auth/{AuthContext,ProtectedRoute}.tsx   # auth seam, see decision #6 above
-        ├── pages/{TemplatesListPage,TemplateEditorPage,ComposePage,LoginPage}.tsx
+        ├── auth/{AuthContext,ProtectedRoute}.tsx
+        ├── pages/{HomePage,DocumentPage,TemplatesListPage,TemplateEditorPage,LayoutEditorPage,LoginPage}.tsx
+        ├── api/client.ts                            # frontend only talks to Dots /api
         └── components/                              # shared pickers, PDF preview
 ```
 
-Routes: `/templates` (library — list/create/delete), `/templates/:id` (editor — edit/save/preview/download/share/delete), `/documents/new?template=:id` (compose — pick content, generate, preview, download). All three are wrapped in `<ProtectedRoute>`; `/login` is a placeholder for the real Keycloak redirect.
+### Runtime flow
 
-**Verified working** (across sessions):
-- Backend unit tests pass (escaping + conversion correctness, including a test that literal `*`/`_`/`#` in document text render as plain text, not markup).
-- All fixture × template combinations render successfully via `POST /api/render`, visually confirmed via PDF→PNG (logo, header banner, pagination, bold/italic, tables, images all correct).
-- Full template CRUD lifecycle exercised via curl (create/read/update/delete, plus confirming seeded presets survive and render still works afterward).
-- Full multi-page browser flow driven with Playwright: root redirects to `/templates`, seeded templates list correctly, editor loads/edits/saves/previews real `.typ` source, creating a new template and deleting one both work, and navigating from a template card's "Créer un document" link correctly pre-selects that template on the compose page.
+Real Docs render:
+1. User logs into Dots through Keycloak (`/api/auth/login` → `/api/auth/callback`).
+2. Browser keeps only the Dots HttpOnly session cookie and calls Dots `/api/*`.
+3. `GET /api/documents/:documentId/content` validates a UUID, calls Docs `documents/:id/formatted-content/?content_format=json`, and returns `{ id, title, blocks, createdAt, updatedAt }`.
+4. `POST /api/documents/:documentId/render` fetches the Docs document and the selected Typst template in parallel, converts `blocks` to Typst, compiles with `typst`, and returns `application/pdf`.
+5. Response headers include `X-Dots-Block-Count` and `X-Dots-Unsupported-Blocks` so the UI can explain what was omitted.
 
-**Not yet built** (Phase 2, per the plan, plus new items from this session):
-- **Decide where to host one shared backend instance** so the team's template library (and the demo) reflects everyone's work rather than N empty local stores — see decision #7 above. Blocking for effective teamwork on templates, not blocking for solo frontend/backend code changes.
-- Self-hosted Docs + Keycloak instance; wiring `/api/session` to a real session check; `/auth/login` + `/auth/callback` (OIDC Authorization Code flow via `openid-client`).
-- `/api/doc/:id` — proxies to Docs' `formatted-content` endpoint with a Bearer token; compose page's fixture picker gets a "paste a Docs URL/ID" alternative; `/d/:id` route for the URL-swap demo.
-- Docker packaging + deploy alongside the self-hosted Docs stack.
-- Asset upload (custom logo/fonts per user-created template) — deliberately deferred; new templates today can only reference the existing shared `templates/assets/*` logos.
-- Stretch/polish, in priority order per the team's latest call: (1) `/templates` page — done; (2) explore PDF→Typst-template AI generation next (flagged as the highest-value bonus if it works — "parse every PDF to a Typst template" as a live demo moment); (3) template gallery/default-template niceties are lower priority than that.
+Template management:
+- Frontend calls Dots `/api/templates`.
+- Dots requires the session cookie, reads the server-side access token, and proxies to Docs `/external_api/v1.0/typst-templates/`.
+- `documentation/EXTERNAL-API.md` documents the Docs-side API contract.
+- Default template preference is a Dots-local preference keyed by the user's OIDC `sub`.
+
+Local/fixture render:
+- `POST /api/render` still renders fixture content from `backend/fixtures` with local file-backed templates.
+- This path is useful for tests, local template iteration, and demos without a live Docs document.
+- Do not confuse it with the real Docs path, which is `/api/documents/:documentId/render`.
+
+AI assistant:
+- `/api/ai/template` edits a Typst template from an instruction.
+- `/api/ai/template-from-pdf` tries to generate a Typst template from a PDF.
+- These routes require `ANTHROPIC_API_KEY` in `backend/.env`; without it they return `503` and the frontend should hide or disable the assistant.
+
+### Current limitations / open points
+
+- Sessions are in memory. A backend restart logs users out; production needs persistent/session-store strategy or a stateless encrypted session design.
+- Remote Docs images are not downloaded yet. Real Docs documents containing body images return `422` during render.
+- User asset upload is not implemented. Templates can reference existing shared assets from `backend/templates/assets`.
+- Docker/deploy packaging still needs a final decision, especially Typst binary and fonts (`--font-path` / `TYPST_FONT_PATHS` in containers).
+- Docs' Resource Server API is still treated as beta/evolving; keep `documentation/DOCS-FETCH.md` and `documentation/EXTERNAL-API.md` close to the actual upstream contract.
+- The AI assistant is optional and depends on external API configuration; do not make the core PDF flow depend on it.
+- Before claiming a behavior is verified, run the relevant checks on the current branch (`make test`, `make build`, `make lint`, and Playwright when the frontend flow changed).
 
 ## How to run it right now
 
 ```bash
-cd backend && npm install && npm run dev   # Fastify API on :4000
-cd frontend && npm install && npm run dev  # Vite dev server on :5173
+./setup.sh docs-solo up  # start local Docs + Keycloak stack first
+make install             # install backend + frontend dependencies
+make dev                 # Dots backend on :4000, frontend on :3002
 ```
-Open http://localhost:5173. Requires the `typst` CLI on `PATH` (`brew install typst`).
+Open http://localhost:3002. Requires the `typst` CLI on `PATH` (`brew install typst`).
