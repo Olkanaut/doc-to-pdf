@@ -12,7 +12,17 @@ import {
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
 import { ArrowLeft, ChevronDown, ChevronRight, More, Upload } from "@gouvfr-lasuite/ui-components/icons";
-import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize, type TextStyleKey } from "../../api/client";
+import {
+  assetUrl,
+  type Align,
+  type FooterContent,
+  type HeaderContent,
+  type LayoutConfig,
+  type Numbering,
+  type PageBandMode,
+  type PaperSize,
+  type TextStyleKey,
+} from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
 
 type Option = { value: string; label: string };
@@ -43,6 +53,12 @@ const NUMBERINGS: Option[] = [
   { value: "n", label: "1" },
   { value: "n-of-total", label: "1 / N" },
   { value: "page-n-of-total", label: "Page 1 / N" },
+];
+const PAGE_BAND_MODES: Option[] = [
+  { value: "all", label: "Toutes les pages" },
+  { value: "except-first", label: "Pages suivantes uniquement" },
+  { value: "first-only", label: "Première page uniquement" },
+  { value: "different-first", label: "Première page différente" },
 ];
 /* Tableaux : mêmes listes que backend/src/layout/layoutConfig.ts (TABLE_*). */
 const TABLE_STROKES: Option[] = [
@@ -82,6 +98,8 @@ const TEXT_STYLE_SECTIONS: { key: TextStyleKey; label: string }[] = [
 const RADIO_ROW = { flexDirection: "row", flexWrap: "wrap", gap: "0 0.75rem" } as const;
 type LayoutTab = (typeof TABS)[number]["id"];
 type TextSection = TextStyleKey | "table";
+type BandSlot = "default" | "first";
+type Importing = { kind: "header" | "footer"; slot: BandSlot };
 
 interface Props {
   layout: LayoutConfig;
@@ -124,7 +142,7 @@ export function LayoutPanel({
 }: Props) {
   const uid = useId();
   // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
-  const [importing, setImporting] = useState<"header" | "footer" | null>(null);
+  const [importing, setImporting] = useState<Importing | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
   const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
@@ -134,6 +152,14 @@ export function LayoutPanel({
     set({ header: { ...layout.header, ...patch } });
   const setFooter = (patch: Partial<LayoutConfig["footer"]>) =>
     set({ footer: { ...layout.footer, ...patch } });
+  const setHeaderContent = (slot: BandSlot, patch: Partial<HeaderContent>) => {
+    if (slot === "default") setHeader(patch);
+    else setHeader({ first: { ...layout.header.first, ...patch } });
+  };
+  const setFooterContent = (slot: BandSlot, patch: Partial<FooterContent>) => {
+    if (slot === "default") setFooter(patch);
+    else setFooter({ first: { ...layout.footer.first, ...patch } });
+  };
   const setTable = (patch: Partial<LayoutConfig["table"]>) =>
     set({ table: { ...layout.table, ...patch } });
   const setTextStyle = (key: TextStyleKey, patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>) => {
@@ -376,42 +402,62 @@ export function LayoutPanel({
                 checked={layout.header.enabled}
                 onChange={(e) => setHeader({ enabled: e.target.checked })}
               />
-              <Gallery
-                label="Visuel"
-                assets={assets}
-                value={layout.header.logo}
-                onPick={(logo) => setHeader({ logo })}
-                onImport={() => setImporting("header")}
+              <Select
+                label="Application"
+                fullWidth
+                clearable={false}
+                options={PAGE_BAND_MODES}
+                value={layout.header.mode}
+                onChange={(e) => {
+                  const mode = String(e.target.value) as PageBandMode;
+                  setHeader({
+                    mode,
+                    ...(mode === "different-first" && layout.header.mode !== "different-first"
+                      ? {
+                          first: {
+                            text: layout.header.text,
+                            logo: layout.header.logo,
+                            fullBleed: layout.header.fullBleed,
+                            align: layout.header.align,
+                            rule: layout.header.rule,
+                          },
+                        }
+                      : {}),
+                  });
+                }}
               />
-              {layout.header.logo && (
-                <Switch
-                  label="Pleine largeur (bord à bord)"
-                  role="switch"
-                  fullWidth
-                  checked={layout.header.fullBleed}
-                  onChange={(e) => setHeader({ fullBleed: e.target.checked })}
+              {layout.header.mode === "different-first" ? (
+                <>
+                  <div className="le-group">
+                    <Label>Première page</Label>
+                    <HeaderFields
+                      uid={`${uid}-header-first`}
+                      assets={assets}
+                      value={layout.header.first}
+                      onChange={(patch) => setHeaderContent("first", patch)}
+                      onImport={() => setImporting({ kind: "header", slot: "first" })}
+                    />
+                  </div>
+                  <div className="le-group">
+                    <Label>Pages suivantes</Label>
+                    <HeaderFields
+                      uid={`${uid}-header-default`}
+                      assets={assets}
+                      value={layout.header}
+                      onChange={(patch) => setHeaderContent("default", patch)}
+                      onImport={() => setImporting({ kind: "header", slot: "default" })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <HeaderFields
+                  uid={`${uid}-header`}
+                  assets={assets}
+                  value={layout.header}
+                  onChange={(patch) => setHeaderContent("default", patch)}
+                  onImport={() => setImporting({ kind: "header", slot: "default" })}
                 />
               )}
-              <TextArea
-                label="Texte"
-                fullWidth
-                rows={2}
-                value={layout.header.text}
-                onChange={(e) => setHeader({ text: e.target.value })}
-              />
-              <AlignRadios
-                name={`${uid}-header-align`}
-                groupLabel="Alignement de l'en-tête"
-                value={layout.header.align}
-                onChange={(v) => setHeader({ align: v })}
-              />
-              <Switch
-                label="Filet"
-                role="switch"
-                fullWidth
-                checked={layout.header.rule}
-                onChange={(e) => setHeader({ rule: e.target.checked })}
-              />
             </Section>
           </TabPanel>
 
@@ -424,57 +470,64 @@ export function LayoutPanel({
                 checked={layout.footer.enabled}
                 onChange={(e) => setFooter({ enabled: e.target.checked })}
               />
-              <TextArea
-                label="Texte"
-                fullWidth
-                rows={2}
-                value={layout.footer.text}
-                onChange={(e) => setFooter({ text: e.target.value })}
-              />
-              <Gallery
-                label="Visuel"
-                assets={assets}
-                value={layout.footer.logo}
-                onPick={(logo) => setFooter({ logo })}
-                onImport={() => setImporting("footer")}
-              />
-              {layout.footer.logo && (
-                <Switch
-                  label="Pleine largeur (bord à bord)"
-                  role="switch"
-                  fullWidth
-                  checked={layout.footer.fullBleed}
-                  onChange={(e) => setFooter({ fullBleed: e.target.checked })}
-                />
-              )}
               <Select
-                label="Numérotation"
+                label="Application"
                 fullWidth
                 clearable={false}
-                options={NUMBERINGS}
-                value={layout.footer.numbering}
-                onChange={(e) => setFooter({ numbering: String(e.target.value) as Numbering })}
+                options={PAGE_BAND_MODES}
+                value={layout.footer.mode}
+                onChange={(e) => {
+                  const mode = String(e.target.value) as PageBandMode;
+                  setFooter({
+                    mode,
+                    firstPage: mode !== "except-first",
+                    ...(mode === "different-first" && layout.footer.mode !== "different-first"
+                      ? {
+                          first: {
+                            text: layout.footer.text,
+                            logo: layout.footer.logo,
+                            fullBleed: layout.footer.fullBleed,
+                            numbering: layout.footer.numbering,
+                            align: layout.footer.align,
+                            rule: layout.footer.rule,
+                          },
+                        }
+                      : {}),
+                  });
+                }}
               />
-              <AlignRadios
-                name={`${uid}-footer-align`}
-                groupLabel="Alignement du pied de page"
-                value={layout.footer.align}
-                onChange={(v) => setFooter({ align: v })}
-              />
-              <Switch
-                label="Numéroter la première page"
-                role="switch"
-                fullWidth
-                checked={layout.footer.firstPage}
-                onChange={(e) => setFooter({ firstPage: e.target.checked })}
-              />
-              <Switch
-                label="Filet"
-                role="switch"
-                fullWidth
-                checked={layout.footer.rule}
-                onChange={(e) => setFooter({ rule: e.target.checked })}
-              />
+              {layout.footer.mode === "different-first" ? (
+                <>
+                  <div className="le-group">
+                    <Label>Première page</Label>
+                    <FooterFields
+                      uid={`${uid}-footer-first`}
+                      assets={assets}
+                      value={layout.footer.first}
+                      onChange={(patch) => setFooterContent("first", patch)}
+                      onImport={() => setImporting({ kind: "footer", slot: "first" })}
+                    />
+                  </div>
+                  <div className="le-group">
+                    <Label>Pages suivantes</Label>
+                    <FooterFields
+                      uid={`${uid}-footer-default`}
+                      assets={assets}
+                      value={layout.footer}
+                      onChange={(patch) => setFooterContent("default", patch)}
+                      onImport={() => setImporting({ kind: "footer", slot: "default" })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <FooterFields
+                  uid={`${uid}-footer`}
+                  assets={assets}
+                  value={layout.footer}
+                  onChange={(patch) => setFooterContent("default", patch)}
+                  onImport={() => setImporting({ kind: "footer", slot: "default" })}
+                />
+              )}
             </Section>
           </TabPanel>
         </fieldset>
@@ -483,11 +536,11 @@ export function LayoutPanel({
 
       {importing && (
         <ImportDocumentModal
-          target={importing}
+          target={importing.kind}
           onClose={() => setImporting(null)}
           onFragment={(file) => {
-            if (importing === "header") setHeader({ logo: file, fullBleed: true });
-            else setFooter({ logo: file, fullBleed: true });
+            if (importing.kind === "header") setHeaderContent(importing.slot, { logo: file, fullBleed: true });
+            else setFooterContent(importing.slot, { logo: file, fullBleed: true });
             onAssetsChanged?.();
           }}
         />
@@ -672,6 +725,124 @@ function TableStyleSection({
         </div>
       )}
     </section>
+  );
+}
+
+function HeaderFields({
+  uid,
+  assets,
+  value,
+  onChange,
+  onImport,
+}: {
+  uid: string;
+  assets: string[];
+  value: HeaderContent;
+  onChange: (patch: Partial<HeaderContent>) => void;
+  onImport: () => void;
+}) {
+  return (
+    <>
+      <Gallery
+        label="Visuel"
+        assets={assets}
+        value={value.logo}
+        onPick={(logo) => onChange({ logo })}
+        onImport={onImport}
+      />
+      {value.logo && (
+        <Switch
+          label="Pleine largeur (bord à bord)"
+          role="switch"
+          fullWidth
+          checked={value.fullBleed}
+          onChange={(e) => onChange({ fullBleed: e.target.checked })}
+        />
+      )}
+      <TextArea
+        label="Texte"
+        fullWidth
+        rows={2}
+        value={value.text}
+        onChange={(e) => onChange({ text: e.target.value })}
+      />
+      <AlignRadios
+        name={`${uid}-align`}
+        groupLabel="Alignement de l'en-tête"
+        value={value.align}
+        onChange={(align) => onChange({ align })}
+      />
+      <Switch
+        label="Filet"
+        role="switch"
+        fullWidth
+        checked={value.rule}
+        onChange={(e) => onChange({ rule: e.target.checked })}
+      />
+    </>
+  );
+}
+
+function FooterFields({
+  uid,
+  assets,
+  value,
+  onChange,
+  onImport,
+}: {
+  uid: string;
+  assets: string[];
+  value: FooterContent;
+  onChange: (patch: Partial<FooterContent>) => void;
+  onImport: () => void;
+}) {
+  return (
+    <>
+      <TextArea
+        label="Texte"
+        fullWidth
+        rows={2}
+        value={value.text}
+        onChange={(e) => onChange({ text: e.target.value })}
+      />
+      <Gallery
+        label="Visuel"
+        assets={assets}
+        value={value.logo}
+        onPick={(logo) => onChange({ logo })}
+        onImport={onImport}
+      />
+      {value.logo && (
+        <Switch
+          label="Pleine largeur (bord à bord)"
+          role="switch"
+          fullWidth
+          checked={value.fullBleed}
+          onChange={(e) => onChange({ fullBleed: e.target.checked })}
+        />
+      )}
+      <Select
+        label="Numérotation"
+        fullWidth
+        clearable={false}
+        options={NUMBERINGS}
+        value={value.numbering}
+        onChange={(e) => onChange({ numbering: String(e.target.value) as Numbering })}
+      />
+      <AlignRadios
+        name={`${uid}-align`}
+        groupLabel="Alignement du pied de page"
+        value={value.align}
+        onChange={(align) => onChange({ align })}
+      />
+      <Switch
+        label="Filet"
+        role="switch"
+        fullWidth
+        checked={value.rule}
+        onChange={(e) => onChange({ rule: e.target.checked })}
+      />
+    </>
   );
 }
 

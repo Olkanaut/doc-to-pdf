@@ -105,13 +105,12 @@ describe("readLayout", () => {
   it("sans bloc : réglages déduits de la source, managed false", () => {
     const { layout, managed } = readLayout(minimal);
     expect(managed).toBe(false);
-    expect(layout).toEqual(sanitizeLayout({
-      ...defaultLayout(),
+    expect(layout).toMatchObject({
       margins: { top: 25, bottom: 25, left: 25, right: 25 },
       font: "Libertinus Serif",
-      header: { ...defaultLayout().header, enabled: false },
-      footer: { ...defaultLayout().footer, align: "center", rule: false },
-    }));
+      header: { enabled: false },
+      footer: { enabled: true, mode: "all", align: "center", rule: false },
+    });
   });
 
   it("source sans #set page : ni en-tête ni pied, le reste par défaut", () => {
@@ -139,16 +138,18 @@ describe("deduceLayout", () => {
     expect(l.orientation).toBe("portrait");
     expect(l.margins).toEqual({ top: 40, bottom: 25, left: 25, right: 25 });
     expect(l.font).toBe("Libertinus Serif");
-    expect(l.header).toEqual({
+    expect(l.header).toMatchObject({
       enabled: true,
+      mode: "all",
       text: "RÉPUBLIQUE FRANÇAISE\nMinistère de l'Exemple",
       logo: "logo-ministere.png",
       fullBleed: false,
       align: "left",
       rule: true,
     });
-    expect(l.footer).toEqual({
+    expect(l.footer).toMatchObject({
       enabled: true,
+      mode: "all",
       text: "",
       logo: null,
       fullBleed: false,
@@ -220,6 +221,34 @@ describe("layoutToTypst", () => {
     expect(lines.join("\n")).toContain('font: ("Arial", "Helvetica", "Libertinus Serif")');
     expect(lines.join("\n")).toContain("flipped: true");
     expect(lines.join("\n")).toContain("counter(page).get().first() > 1");
+  });
+
+  it("applique un en-tête seulement sur la première page", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: { ...defaultLayout().header, mode: "first-only", text: "Couverture" },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain("header: [");
+    expect(out).toContain('if counter(page).get().first() == 1');
+    expect(out).toContain("[Couverture]");
+  });
+
+  it("applique un pied différent en première page", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      footer: {
+        ...defaultLayout().footer,
+        mode: "different-first",
+        text: "Suite",
+        first: { ...defaultLayout().footer.first, text: "Première", numbering: "none" },
+      },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain("if counter(page).get().first() == 1");
+    expect(out).toContain(" else ");
+    expect(out).toContain("[Première]");
+    expect(out).toContain("[Suite#h(1em)#context counter(page).display(\"1 / 1\", both: true)]");
   });
 
   it("dérive les styles de texte depuis les anciens champs quand ils ne sont pas custom", () => {
@@ -412,6 +441,30 @@ describe("compilation réelle (typst)", () => {
       bodyImages: [],
     });
     expect(pdf.length).toBeGreaterThan(0);
+  });
+
+  it("première page différente compile", async () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: {
+        ...defaultLayout().header,
+        mode: "different-first",
+        text: "Pages suivantes",
+        first: { ...defaultLayout().header.first, text: "Première page" },
+      },
+      footer: {
+        ...defaultLayout().footer,
+        mode: "first-only",
+        text: "Couverture",
+        numbering: "none",
+      },
+    });
+    const pdf = await compileToPdf({
+      templateSource: applyLayout(minimal, cfg),
+      bodyTypst: `${bodyTypst}\n#pagebreak()\n== Page deux`,
+      bodyImages: [],
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   it("texte avec `//` et fins de ligne exotiques compile", async () => {

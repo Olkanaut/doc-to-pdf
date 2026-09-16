@@ -11,8 +11,11 @@ import {
   defaultLayout,
   INLINE_LOGO_HEIGHT_MM,
   sanitizeLayout,
+  type FooterContent,
+  type HeaderContent,
   type LayoutConfig,
   type Numbering,
+  type PageBandMode,
   type TextStyle,
 } from "./layoutConfig.js";
 
@@ -90,9 +93,23 @@ function bleed(file: string, side: "top" | "bottom", cfg: LayoutConfig): string 
   return `#place(${side} + left, dx: -${left}mm, image("assets/${file}", width: 100% + ${left + right}mm))`;
 }
 
-function header(cfg: LayoutConfig): string {
-  const h = cfg.header;
-  if (!h.enabled) return "none";
+function pageBand(defaultParts: string[], firstParts: string[], mode: PageBandMode): string {
+  const defaultBlock = contentBlock(defaultParts, "      ");
+  const firstBlock = contentBlock(firstParts, "      ");
+  if (mode === "all") return contentBlock(defaultParts, "    ");
+  if (mode === "except-first") {
+    return contentBlock([`#context { if counter(page).get().first() > 1 ${defaultBlock} }`], "    ");
+  }
+  if (mode === "first-only") {
+    return contentBlock([`#context { if counter(page).get().first() == 1 ${defaultBlock} }`], "    ");
+  }
+  return contentBlock(
+    [`#context { if counter(page).get().first() == 1 ${firstBlock} else ${defaultBlock} }`],
+    "    ",
+  );
+}
+
+function headerParts(h: HeaderContent, cfg: LayoutConfig): string[] {
   const parts: string[] = [];
   const body = `[${text(h.text)}]`;
   if (h.logo && h.fullBleed) {
@@ -106,24 +123,39 @@ function header(cfg: LayoutConfig): string {
     parts.push(`#align(${h.align})${body}`);
   }
   if (h.rule) parts.push("#v(0.2cm)", `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`);
-  return contentBlock(parts, "    ");
+  return parts;
 }
 
-function footer(cfg: LayoutConfig): string {
-  const f = cfg.footer;
-  if (!f.enabled) return "none";
+function header(cfg: LayoutConfig): string {
+  const h = cfg.header;
+  if (!h.enabled) return "none";
+  return pageBand(headerParts(h, cfg), headerParts(h.first, cfg), h.mode);
+}
+
+function footerParts(f: FooterContent, cfg: LayoutConfig): string[] {
   const parts: string[] = [];
   if (f.logo && f.fullBleed) parts.push(bleed(f.logo, "bottom", cfg));
   else if (f.logo) parts.push(`#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`);
   if (f.rule) parts.push(`#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`, "#v(0.2cm)");
   const pieces = [text(f.text), NUMBERING[f.numbering]].filter(Boolean);
   if (pieces.length) parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
-  if (f.firstPage) return contentBlock(parts, "    ");
-  // Pas de pied sur la première page : tout son contenu passe sous condition.
-  return contentBlock(
-    [`#context { if counter(page).get().first() > 1 ${contentBlock(parts, "      ")} }`],
-    "    ",
-  );
+  return parts;
+}
+
+function footer(cfg: LayoutConfig): string {
+  const f = cfg.footer;
+  if (!f.enabled) return "none";
+  return pageBand(footerParts(f, cfg), footerParts(f.first, cfg), f.mode);
+}
+
+function hasFullBleedHeader(cfg: LayoutConfig): boolean {
+  const h = cfg.header;
+  return h.enabled && Boolean((h.logo && h.fullBleed) || (h.mode === "different-first" && h.first.logo && h.first.fullBleed));
+}
+
+function hasFullBleedFooter(cfg: LayoutConfig): boolean {
+  const f = cfg.footer;
+  return f.enabled && Boolean((f.logo && f.fullBleed) || (f.mode === "different-first" && f.first.logo && f.first.fullBleed));
 }
 
 /**
@@ -186,8 +218,8 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     // que Typst réserve par défaut (30 %) entre l'en-tête/pied et le corps : à
     // 0 %, le bandeau dispose de toute la hauteur que templateFromAnalysis.ts
     // lui a réservée, sans quoi son bas se fait rogner.
-    ...(cfg.header.enabled && cfg.header.logo && cfg.header.fullBleed ? [`  header-ascent: 0%,`] : []),
-    ...(cfg.footer.enabled && cfg.footer.logo && cfg.footer.fullBleed ? [`  footer-descent: 0%,`] : []),
+    ...(hasFullBleedHeader(cfg) ? [`  header-ascent: 0%,`] : []),
+    ...(hasFullBleedFooter(cfg) ? [`  footer-descent: 0%,`] : []),
     ")",
     `#${textSet(cfg.textStyles.body)}`,
     `#set par(leading: ${leading}em)`,

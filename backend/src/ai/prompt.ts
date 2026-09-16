@@ -11,6 +11,7 @@ const TYPST_FONTS = ["Arial", "Helvetica", "Libertinus Serif", "New Computer Mod
 const LAYOUT_CONFIG_TYPE = `type PaperSize = "a4" | "a5" | "us-letter";
 type Align = "left" | "center" | "right";
 type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
+type PageBandMode = "all" | "except-first" | "first-only" | "different-first";
 type Font = ${FONTS.map((f) => JSON.stringify(f)).join(" | ")};
 type TextStyleKey = "body" | "h1" | "h2" | "h3";
 
@@ -19,6 +20,19 @@ interface TextStyle {
   /** Points. */
   fontSize: number;
   color: string;
+}
+
+interface HeaderContent {
+  text: string;
+  /** Nom de fichier seul, sans "assets/" (ex. "logo-ministere.png") ; le Typst y accède par image("assets/<logo>"). */
+  logo: string | null;
+  fullBleed: boolean;
+  align: Align;
+  rule: boolean;
+}
+
+interface FooterContent extends HeaderContent {
+  numbering: Numbering;
 }
 
 interface LayoutConfig {
@@ -34,17 +48,24 @@ interface LayoutConfig {
   textStyles: Record<TextStyleKey, TextStyle>;
   header: {
     enabled: boolean;
+    mode: PageBandMode;
+    first: HeaderContent;
     text: string;
-    /** Nom de fichier seul, sans "assets/" (ex. "logo-ministere.png") ; le Typst y accède par image("assets/<logo>"). */
     logo: string | null;
+    fullBleed: boolean;
     align: Align;
     rule: boolean;
   };
   footer: {
     enabled: boolean;
+    mode: PageBandMode;
+    first: FooterContent;
     text: string;
+    logo: string | null;
+    fullBleed: boolean;
     numbering: Numbering;
     align: Align;
+    /** Ancien booléen de compatibilité ; mode pilote le rendu. */
     firstPage: boolean;
     rule: boolean;
   };

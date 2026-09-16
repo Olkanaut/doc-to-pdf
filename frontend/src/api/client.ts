@@ -364,12 +364,25 @@ export type PaperSize = "a4" | "a5" | "us-letter";
 export type Align = "left" | "center" | "right";
 export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
 export type TextStyleKey = "body" | "h1" | "h2" | "h3";
+export type PageBandMode = "all" | "except-first" | "first-only" | "different-first";
 
 export interface TextStyle {
   font: string;
   /** Points. */
   fontSize: number;
   color: string;
+}
+
+export interface HeaderContent {
+  text: string;
+  logo: string | null;
+  fullBleed: boolean;
+  align: Align;
+  rule: boolean;
+}
+
+export interface FooterContent extends HeaderContent {
+  numbering: Numbering;
 }
 
 export interface LayoutConfig {
@@ -391,14 +404,17 @@ export interface LayoutConfig {
    */
   header: {
     enabled: boolean;
+    mode: PageBandMode;
     text: string;
     logo: string | null;
     fullBleed: boolean;
     align: Align;
     rule: boolean;
+    first: HeaderContent;
   };
   footer: {
     enabled: boolean;
+    mode: PageBandMode;
     text: string;
     logo: string | null;
     fullBleed: boolean;
@@ -406,6 +422,7 @@ export interface LayoutConfig {
     align: Align;
     firstPage: boolean;
     rule: boolean;
+    first: FooterContent;
   };
   headings: { scale: "compact" | "normal" | "large"; color: string };
   /** Allure des tableaux ; leur structure (colonnes, fusions, contenu) vient du document. */

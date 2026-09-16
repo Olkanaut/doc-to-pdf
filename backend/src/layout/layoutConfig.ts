@@ -8,12 +8,25 @@ export type PaperSize = "a4" | "a5" | "us-letter";
 export type Align = "left" | "center" | "right";
 export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
 export type TextStyleKey = "body" | "h1" | "h2" | "h3";
+export type PageBandMode = "all" | "except-first" | "first-only" | "different-first";
 
 export interface TextStyle {
   font: string;
   /** Points. */
   fontSize: number;
   color: string;
+}
+
+export interface HeaderContent {
+  text: string;
+  logo: string | null;
+  fullBleed: boolean;
+  align: Align;
+  rule: boolean;
+}
+
+export interface FooterContent extends HeaderContent {
+  numbering: Numbering;
 }
 
 export interface LayoutConfig {
@@ -35,21 +48,26 @@ export interface LayoutConfig {
    */
   header: {
     enabled: boolean;
+    mode: PageBandMode;
     text: string;
     logo: string | null;
     fullBleed: boolean;
     align: Align;
     rule: boolean;
+    first: HeaderContent;
   };
   footer: {
     enabled: boolean;
+    mode: PageBandMode;
     text: string;
     logo: string | null;
     fullBleed: boolean;
     numbering: Numbering;
     align: Align;
+    /** Ancien booléen conservé pour compatibilité ; `mode` pilote le rendu. */
     firstPage: boolean;
     rule: boolean;
+    first: FooterContent;
   };
   headings: { scale: "compact" | "normal" | "large"; color: string };
   /** Allure des tableaux ; leur structure (colonnes, fusions, contenu) vient du document. */
@@ -78,6 +96,7 @@ export const FONTS = [
 export const PAPERS: readonly PaperSize[] = ["a4", "a5", "us-letter"];
 export const ALIGNS: readonly Align[] = ["left", "center", "right"];
 export const NUMBERINGS: readonly Numbering[] = ["none", "n", "n-of-total", "page-n-of-total"];
+export const PAGE_BAND_MODES: readonly PageBandMode[] = ["all", "except-first", "first-only", "different-first"];
 export const HEADING_SCALES = ["compact", "normal", "large"] as const;
 /** Tailles des titres de niveau 1 à 3, en proportion de la taille du texte courant. */
 export const HEADING_SIZE_FACTORS: Record<LayoutConfig["headings"]["scale"], readonly [number, number, number]> = {
@@ -127,9 +146,19 @@ export function defaultLayout(): LayoutConfig {
     fontSize,
     lineHeight: 1.2,
     textStyles: textStylesFromLegacy(font, fontSize, headings),
-    header: { enabled: true, text: "", logo: null, fullBleed: false, align: "left", rule: true },
+    header: {
+      enabled: true,
+      mode: "all",
+      text: "",
+      logo: null,
+      fullBleed: false,
+      align: "left",
+      rule: true,
+      first: { text: "", logo: null, fullBleed: false, align: "left", rule: true },
+    },
     footer: {
       enabled: true,
+      mode: "all",
       text: "",
       logo: null,
       fullBleed: false,
@@ -137,6 +166,14 @@ export function defaultLayout(): LayoutConfig {
       align: "right",
       firstPage: true,
       rule: true,
+      first: {
+        text: "",
+        logo: null,
+        fullBleed: false,
+        numbering: "none",
+        align: "right",
+        rule: true,
+      },
     },
     headings,
     table: { stroke: "light", headerFill: "grey", zebra: false, fontSize: "inherit" },
@@ -185,6 +222,29 @@ function textStyle(raw: unknown, fallback: TextStyle): TextStyle {
   };
 }
 
+const asset = (v: unknown): string | null =>
+  typeof v === "string" && /^[\w.-]+\.(png|jpe?g|svg)$/i.test(v) ? v : null;
+
+function headerContent(raw: unknown, fallback: HeaderContent): HeaderContent {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const logo = o.logo === null ? null : (asset(o.logo) ?? fallback.logo);
+  return {
+    text: str(o.text, fallback.text),
+    logo,
+    fullBleed: bool(o.fullBleed, fallback.fullBleed),
+    align: oneOf(o.align, ALIGNS, fallback.align),
+    rule: bool(o.rule, fallback.rule),
+  };
+}
+
+function footerContent(raw: unknown, fallback: FooterContent): FooterContent {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return {
+    ...headerContent(o, fallback),
+    numbering: oneOf(o.numbering, NUMBERINGS, fallback.numbering),
+  };
+}
+
 /**
  * Frontière de confiance : tout ce qui entre par l'API passe ici. Valeurs hors
  * liste ou hors bornes → valeur par défaut, jamais d'erreur. Le texte libre est
@@ -207,9 +267,14 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
   const rawTextStyles: Partial<Record<TextStyleKey, unknown>> = isLegacyDerivedTextStyles(o.textStyles)
     ? {}
     : ((o.textStyles ?? {}) as Record<TextStyleKey, unknown>);
-  const asset = (v: unknown): string | null =>
-    typeof v === "string" && /^[\w.-]+\.(png|jpe?g|svg)$/i.test(v) ? v : null;
-  const logo = asset(h.logo);
+  const headerDefault = headerContent(h, d.header);
+  const footerDefault = footerContent(f, d.footer);
+  const headerMode = oneOf(h.mode, PAGE_BAND_MODES, d.header.mode);
+  const footerMode = oneOf(
+    f.mode,
+    PAGE_BAND_MODES,
+    bool(f.firstPage, d.footer.firstPage) ? d.footer.mode : "except-first",
+  );
   return {
     paper: oneOf(o.paper, PAPERS, d.paper),
     orientation: oneOf(o.orientation, ["portrait", "landscape"] as const, d.orientation),
@@ -230,21 +295,16 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
     },
     header: {
       enabled: bool(h.enabled, d.header.enabled),
-      text: str(h.text, d.header.text),
-      logo,
-      fullBleed: bool(h.fullBleed, d.header.fullBleed),
-      align: oneOf(h.align, ALIGNS, d.header.align),
-      rule: bool(h.rule, d.header.rule),
+      mode: headerMode,
+      ...headerDefault,
+      first: headerContent(h.first, { ...headerDefault }),
     },
     footer: {
       enabled: bool(f.enabled, d.footer.enabled),
-      text: str(f.text, d.footer.text),
-      logo: asset(f.logo),
-      fullBleed: bool(f.fullBleed, d.footer.fullBleed),
-      numbering: oneOf(f.numbering, NUMBERINGS, d.footer.numbering),
-      align: oneOf(f.align, ALIGNS, d.footer.align),
-      firstPage: bool(f.firstPage, d.footer.firstPage),
-      rule: bool(f.rule, d.footer.rule),
+      mode: footerMode,
+      ...footerDefault,
+      firstPage: footerMode !== "except-first",
+      first: footerContent(f.first, { ...footerDefault, numbering: "none" }),
     },
     headings,
     table: {

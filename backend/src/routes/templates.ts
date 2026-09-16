@@ -129,8 +129,18 @@ async function listAssets(): Promise<string[]> {
 
 /** Le nom du logo est déjà filtré par sanitizeLayout ; ici on exige que le fichier existe. */
 async function withExistingLogo(cfg: LayoutConfig): Promise<LayoutConfig> {
-  if (cfg.header.logo && !(await listAssets()).includes(cfg.header.logo)) {
+  const assets = await listAssets();
+  if (cfg.header.logo && !assets.includes(cfg.header.logo)) {
     cfg.header.logo = null;
+  }
+  if (cfg.header.first.logo && !assets.includes(cfg.header.first.logo)) {
+    cfg.header.first.logo = null;
+  }
+  if (cfg.footer.logo && !assets.includes(cfg.footer.logo)) {
+    cfg.footer.logo = null;
+  }
+  if (cfg.footer.first.logo && !assets.includes(cfg.footer.first.logo)) {
+    cfg.footer.first.logo = null;
   }
   return cfg;
 }
