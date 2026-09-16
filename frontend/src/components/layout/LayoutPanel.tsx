@@ -11,7 +11,7 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, ChevronDown, ChevronRight, Code, More, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { ArrowLeft, ChevronDown, ChevronRight, More, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import { assetUrl, type Align, type LayoutConfig, type Numbering, type PaperSize, type TextStyleKey } from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
 
@@ -70,7 +70,6 @@ const TABS = [
   { id: "text", label: "Text" },
   { id: "header", label: "En-tête" },
   { id: "footer", label: "Pied" },
-  { id: "tables", label: "Tableaux" },
 ] as const;
 const TEXT_STYLE_SECTIONS: { key: TextStyleKey; label: string }[] = [
   { key: "h1", label: "Heading 1" },
@@ -82,6 +81,7 @@ const TEXT_STYLE_SECTIONS: { key: TextStyleKey; label: string }[] = [
 /** Les Radio du kit alignés en ligne (le groupe est en colonne par défaut). */
 const RADIO_ROW = { flexDirection: "row", flexWrap: "wrap", gap: "0 0.75rem" } as const;
 type LayoutTab = (typeof TABS)[number]["id"];
+type TextSection = TextStyleKey | "table";
 
 interface Props {
   layout: LayoutConfig;
@@ -126,7 +126,7 @@ export function LayoutPanel({
   // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
   const [importing, setImporting] = useState<"header" | "footer" | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
-  const [openTextStyle, setOpenTextStyle] = useState<TextStyleKey | null>(null);
+  const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
@@ -160,7 +160,10 @@ export function LayoutPanel({
   // Le navigateur traite `#tableaux` avant le rendu React : on ouvre l'onglet puis on recale le défilement.
   useEffect(() => {
     const hash = window.location.hash.slice(1);
-    if (hash === "tableaux") setActiveTab("tables");
+    if (hash === "tableaux") {
+      setActiveTab("text");
+      setOpenTextSection("table");
+    }
     if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 0);
   }, []);
 
@@ -324,8 +327,8 @@ export function LayoutPanel({
                   id={`${uid}-text-${key}`}
                   label={label}
                   style={layout.textStyles[key]}
-                  open={openTextStyle === key}
-                  onToggle={() => setOpenTextStyle((current) => (current === key ? null : key))}
+                  open={openTextSection === key}
+                  onToggle={() => setOpenTextSection((current) => (current === key ? null : key))}
                   onChange={(patch) => setTextStyle(key, patch)}
                   onSizeChange={(raw) => setTextStyleSize(key, raw)}
                   lineHeight={key === "body" ? layout.lineHeight : undefined}
@@ -333,6 +336,13 @@ export function LayoutPanel({
                   onLineHeightChange={key === "body" ? (value) => set({ lineHeight: value }) : undefined}
                 />
               ))}
+              <TableStyleSection
+                id={`${uid}-text-table`}
+                open={openTextSection === "table"}
+                onToggle={() => setOpenTextSection((current) => (current === "table" ? null : "table"))}
+                table={layout.table}
+                onChange={setTable}
+              />
             </div>
           </TabPanel>
 
@@ -446,53 +456,8 @@ export function LayoutPanel({
               />
             </Section>
           </TabPanel>
-
-          <TabPanel uid={uid} tab="tables" activeTab={activeTab}>
-            {/* Le gabarit règle l'allure des tableaux ; leurs colonnes et fusions viennent du document. */}
-            <Section id="tableaux" title="Tableaux">
-              <Select
-                label="Filets"
-                fullWidth
-                clearable={false}
-                options={TABLE_STROKES}
-                value={layout.table.stroke}
-                onChange={(e) => setTable({ stroke: String(e.target.value) as LayoutConfig["table"]["stroke"] })}
-              />
-              <Select
-                label="Fond de l'en-tête"
-                fullWidth
-                clearable={false}
-                options={TABLE_HEADER_FILLS}
-                value={layout.table.headerFill}
-                onChange={(e) => setTable({ headerFill: String(e.target.value) as LayoutConfig["table"]["headerFill"] })}
-              />
-              <Switch
-                label="Lignes alternées"
-                role="switch"
-                fullWidth
-                checked={layout.table.zebra}
-                onChange={(e) => setTable({ zebra: e.target.checked })}
-              />
-              <Select
-                label="Taille du texte"
-                fullWidth
-                clearable={false}
-                options={TABLE_FONT_SIZES}
-                value={layout.table.fontSize}
-                onChange={(e) => setTable({ fontSize: String(e.target.value) as LayoutConfig["table"]["fontSize"] })}
-              />
-            </Section>
-          </TabPanel>
         </fieldset>
 
-        <div className="le-panel__foot">
-          <p className="le-hint">
-            <Code size={16} aria-hidden="true" />
-            <span>
-              Chaque réglage réécrit le bloc <code>// dots:layout</code> du .typ ; le reste du code reste à la main.
-            </span>
-          </p>
-        </div>
       </div>
 
       {importing && (
@@ -564,8 +529,7 @@ function TextStyleSection({
       </SectionToggle>
       {open && (
         <div id={`${id}-body`} className="le-style__body">
-          <div className="le-style__row">
-            <span className="le-style__label">Font</span>
+          <StyleFieldRow label="Font">
             <Select
               label="Police"
               fullWidth
@@ -574,9 +538,8 @@ function TextStyleSection({
               value={style.font}
               onChange={(e) => onChange({ font: String(e.target.value) })}
             />
-          </div>
-          <div className="le-style__row">
-            <span className="le-style__label">Size</span>
+          </StyleFieldRow>
+          <StyleFieldRow label="Size">
             <Input
               label="Taille"
               type="number"
@@ -587,10 +550,9 @@ function TextStyleSection({
               value={String(style.fontSize)}
               onChange={(e) => onSizeChange(e.target.value)}
             />
-          </div>
+          </StyleFieldRow>
           {lineHeight !== undefined && lineHeightOptions && onLineHeightChange && (
-            <div className="le-style__row">
-              <span className="le-style__label">Interligne</span>
+            <StyleFieldRow label="Interligne">
               <Select
                 label="Interligne"
                 fullWidth
@@ -599,10 +561,9 @@ function TextStyleSection({
                 value={String(lineHeight)}
                 onChange={(e) => onLineHeightChange(Number(e.target.value))}
               />
-            </div>
+            </StyleFieldRow>
           )}
-          <div className="le-style__row">
-            <span className="le-style__label">Color</span>
+          <StyleFieldRow label="Color">
             <span className="le-style__color">
               <input
                 aria-label={`Couleur ${label}`}
@@ -612,7 +573,81 @@ function TextStyleSection({
               />
               <span className="le-mono">{style.color.toUpperCase()}</span>
             </span>
-          </div>
+          </StyleFieldRow>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function StyleFieldRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="le-style__row">
+      <span className="le-style__label">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function TableStyleSection({
+  id,
+  open,
+  onToggle,
+  table,
+  onChange,
+}: {
+  id: string;
+  open: boolean;
+  onToggle: () => void;
+  table: LayoutConfig["table"];
+  onChange: (patch: Partial<LayoutConfig["table"]>) => void;
+}) {
+  return (
+    <section id="tableaux" className="le-style">
+      <SectionToggle open={open} controls={`${id}-body`} onToggle={onToggle}>
+        Tableaux
+      </SectionToggle>
+      {open && (
+        <div id={`${id}-body`} className="le-style__body">
+          <StyleFieldRow label="Filets">
+            <Select
+              label="Filets"
+              fullWidth
+              clearable={false}
+              options={TABLE_STROKES}
+              value={table.stroke}
+              onChange={(e) => onChange({ stroke: String(e.target.value) as LayoutConfig["table"]["stroke"] })}
+            />
+          </StyleFieldRow>
+          <StyleFieldRow label="Fond">
+            <Select
+              label="Fond de l'en-tête"
+              fullWidth
+              clearable={false}
+              options={TABLE_HEADER_FILLS}
+              value={table.headerFill}
+              onChange={(e) => onChange({ headerFill: String(e.target.value) as LayoutConfig["table"]["headerFill"] })}
+            />
+          </StyleFieldRow>
+          <StyleFieldRow label="Alternance">
+            <Switch
+              label="Lignes alternées"
+              role="switch"
+              fullWidth
+              checked={table.zebra}
+              onChange={(e) => onChange({ zebra: e.target.checked })}
+            />
+          </StyleFieldRow>
+          <StyleFieldRow label="Taille">
+            <Select
+              label="Taille du texte"
+              fullWidth
+              clearable={false}
+              options={TABLE_FONT_SIZES}
+              value={table.fontSize}
+              onChange={(e) => onChange({ fontSize: String(e.target.value) as LayoutConfig["table"]["fontSize"] })}
+            />
+          </StyleFieldRow>
         </div>
       )}
     </section>
@@ -672,11 +707,10 @@ function Gallery({
   );
 }
 
-/** `id` : ancre (`#tableaux`) pour atteindre une section sous la ligne de flottaison du panneau. */
-function Section({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <section id={id} className="le-section">
+    <section className="le-section">
       <SectionToggle open={open} onToggle={() => setOpen(!open)}>
         {title}
       </SectionToggle>
