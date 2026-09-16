@@ -41,3 +41,12 @@
   gap: 16px;
   width: 100%;
 }
+
+/* La couche de texte de react-pdf (`.textLayer`, z-index 2) est transparente mais
+   capte les clics : sans contexte d'empilement local, elle passe au-dessus des
+   modales et du voile de la page, qui deviennent inertes au-dessus de l'aperçu.
+   `position: relative; z-index: 0` enferme ses z-index dans l'aperçu. */
+.pdf-preview {
+  position: relative;
+  z-index: 0;
+}

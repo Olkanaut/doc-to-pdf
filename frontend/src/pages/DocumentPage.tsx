@@ -1,22 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   fetchDocumentContent,
   fetchDefaultTemplate,
-  fetchTemplateDetail,
   fetchTemplates,
   renderDocumentPdf,
   type DocsDocumentContent,
   type RenderInfo,
-  type TemplateDetail,
   type TemplateSummary,
 } from "../api/client";
 import { PdfPreview } from "../components/PdfPreview";
 import { TemplateTiles } from "../components/compose/TemplateTiles";
-import { Button } from "@gouvfr-lasuite/ui-components";
-import { Download, StackTemplate } from "@gouvfr-lasuite/ui-components/icons";
+import { DocInfoPopover } from "../components/document/DocInfoPopover";
+import { SendMailModal } from "../components/document/SendMailModal";
+import { Alert, Button, Input, Spinner, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
+import { Download, Mail, StackTemplate, Zoom } from "@gouvfr-lasuite/ui-components/icons";
 import { docsUrl } from "../config";
 import "../components/compose/compose.css";
+import "../components/document/document-page.css";
 
 export function DocumentPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,24 @@ type PdfState =
 
 type PdfViewState = PdfState | { status: "loading" };
 
+/** `Button` du kit rendu en lien interne : navigation sans rechargement. */
+function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
+  const navigate = useNavigate();
+  return (
+    <Button
+      {...props}
+      href={to}
+      onClick={(e: MouseEvent<HTMLAnchorElement & HTMLButtonElement>) => {
+        onClick?.(e);
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+          return;
+        e.preventDefault();
+        navigate(to);
+      }}
+    />
+  );
+}
+
 function DocumentView({ documentId }: { documentId: string }) {
   const [searchParams] = useSearchParams();
   const requestedTemplateId = searchParams.get("template");
@@ -45,10 +64,10 @@ function DocumentView({ documentId }: { documentId: string }) {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [defaultId, setDefaultId] = useState<string | null>(null);
   const [templateId, setTemplateId] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateDetail | null>(null);
-  const [templateError, setTemplateError] = useState<{ id: string; message: string } | null>(null);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [mailOpen, setMailOpen] = useState(false);
   const [pdfState, setPdfState] = useState<PdfState>({ status: "idle" });
   const pdfUrlRef = useRef<string | null>(null);
 
@@ -104,31 +123,6 @@ function DocumentView({ documentId }: { documentId: string }) {
       cancelled = true;
     };
   }, [requestedTemplateId]);
-
-  useEffect(() => {
-    if (!templateId) return;
-
-    let cancelled = false;
-    fetchTemplateDetail(templateId)
-      .then((template) => {
-        if (cancelled) return;
-        setTemplateError(null);
-        setSelectedTemplate(template);
-      })
-      .catch((reason: unknown) => {
-        if (cancelled) return;
-        setSelectedTemplate(null);
-        setTemplateError({
-          id: templateId,
-          message:
-            reason instanceof Error ? reason.message : "Impossible de charger le gabarit.",
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [templateId]);
 
   useEffect(() => {
     const requestKey =
@@ -207,159 +201,175 @@ function DocumentView({ documentId }: { documentId: string }) {
           timeStyle: "short",
         }).format(new Date(state.document.updatedAt))
       : null;
-  const selectedTemplateReady = selectedTemplate?.id === templateId ? selectedTemplate : null;
-  const selectedTemplateError = templateError?.id === templateId ? templateError.message : null;
-  const selectedTemplateLoading = Boolean(
-    templateId && !selectedTemplateReady && !selectedTemplateError,
-  );
+  const title = state.status === "loaded" ? state.document.title : "Document Docs";
   const fileName = `${documentId || "document"}.pdf`;
   const unsupported =
     activePdfState.status === "ready" ? Object.entries(activePdfState.info.unsupported) : [];
   const unsupportedTotal = unsupported.reduce((total, [, count]) => total + count, 0);
 
+  const shown = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return templates;
+    return templates.filter((t) => t.name.toLowerCase().includes(needle));
+  }, [templates, query]);
+
   return (
-    <div className="page doc-page">
-      <div className="page-header">
-        <h1>{state.status === "loaded" ? state.document.title : "Document Docs"}</h1>
-        <div className="page-header-actions">
-          <a className="button-link secondary-link" href={documentUrl}>
-            Ouvrir dans Docs
-          </a>
-          <Link className="button-link" to="/docs">
-            Changer de document
-          </Link>
+    <div className="doc-shell">
+      <aside className="doc-rail" aria-label="Document et gabarits">
+        <div className="doc-rail__doc">
+          <div className="doc-rail__name-row">
+            <span className="doc-rail__name" title={title}>
+              {title}
+            </span>
+            <DocInfoPopover
+              title={title}
+              documentId={documentId}
+              blockCount={blockCount}
+              updatedAt={updatedAt}
+            />
+          </div>
+          <div className="doc-rail__acts">
+            {/* Docs vit sur une autre origine : lien franc, pas de navigation interne. */}
+            <Button size="small" variant="tertiary" color="neutral" href={documentUrl}>
+              Ouvrir dans Docs
+            </Button>
+            <LinkButton to="/docs" size="small" variant="tertiary" color="neutral">
+              Changer
+            </LinkButton>
+          </div>
         </div>
-      </div>
 
-      <div className="doc-layout">
-        <section className="doc-main">
-          <section className="doc-panel">
-            {state.status === "loading" && (
-              <p className="doc-load-status">Chargement du document...</p>
-            )}
-            {state.status === "error" && (
-              <div className="error" role="alert">
-                {state.message}
-              </div>
-            )}
-            {state.status === "loaded" && (
-              <div className="doc-summary">
-                <div>
-                  <p className="doc-panel-label">Identifiant</p>
-                  <p className="doc-id">{state.document.id}</p>
-                </div>
-                <div>
-                  <p className="doc-panel-label">Contenu</p>
-                  <p className="doc-block-count">
-                    {blockCount} bloc{blockCount === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <div>
-                  <p className="doc-panel-label">Dernière mise à jour</p>
-                  <p>{updatedAt}</p>
-                </div>
-              </div>
-            )}
-          </section>
+        {state.status === "error" && (
+          <div role="alert">
+            <Alert type={VariantType.ERROR}>{state.message}</Alert>
+          </div>
+        )}
 
-          <section className="doc-render" aria-label="Aperçu PDF">
-            <div className="doc-render-toolbar">
-              <span className="dots-muted" role="status">
-                {activePdfState.status === "loading" ? "Génération du PDF..." : ""}
-              </span>
-              <Button
-                size="small"
-                icon={<Download aria-hidden="true" />}
-                href={activePdfState.status === "ready" ? activePdfState.url : undefined}
-                download={activePdfState.status === "ready" ? fileName : undefined}
-                disabled={activePdfState.status !== "ready"}
-              >
-                Télécharger le PDF
-              </Button>
-            </div>
+        <Input
+          label="Rechercher un gabarit"
+          hideLabel
+          variant="classic"
+          fullWidth
+          type="search"
+          placeholder="Rechercher un gabarit"
+          icon={<Zoom aria-hidden="true" />}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
 
-            {activePdfState.status === "error" && (
-              <div className="dots-notice dots-notice--error doc-render-error" role="alert">
-                <strong>{activePdfState.message}</strong>
-                {activePdfState.details && (
-                  <details>
-                    <summary>Détails</summary>
-                    <pre className="dots-mono">{activePdfState.details}</pre>
-                  </details>
-                )}
-              </div>
-            )}
-
-            {unsupportedTotal > 0 && (
-              <div className="dots-notice" role="status">
-                {unsupportedTotal} bloc{unsupportedTotal > 1 ? "s" : ""} sans équivalent
-                Typst ({unsupported.map(([type, count]) => `${type} ×${count}`).join(", ")}) ne
-                {unsupportedTotal > 1 ? " figurent" : " figure"} pas dans le PDF.
-              </div>
-            )}
-
-            <div className="doc-render-preview">
-              <PdfPreview
-                pdfUrl={activePdfState.status === "ready" ? activePdfState.url : null}
-                fileName={fileName}
-              />
-            </div>
-          </section>
-        </section>
-
-        <aside className="doc-template-panel" aria-label="Gabarit du document">
-          {templatesLoading && <p className="dots-muted">Chargement des gabarits...</p>}
+        <div className="doc-rail__templates">
+          {templatesLoading && (
+            <p className="dots-muted doc-rail__empty" role="status">
+              Chargement des gabarits…
+            </p>
+          )}
           {templatesError && (
-            <div className="dots-notice dots-notice--error" role="alert">
-              <strong>{templatesError}</strong>
+            <div role="alert">
+              <Alert type={VariantType.ERROR}>{templatesError}</Alert>
             </div>
           )}
           {!templatesLoading && !templatesError && templates.length === 0 && (
-            <div className="dots-notice">
-              Aucun gabarit disponible pour le moment.
-            </div>
+            <p className="dots-muted doc-rail__empty">Aucun gabarit disponible pour le moment.</p>
           )}
           {!templatesLoading && !templatesError && templates.length > 0 && (
-            <>
+            shown.length === 0 ? (
+              <p className="dots-muted doc-rail__empty">Aucun gabarit ne porte ce nom.</p>
+            ) : (
               <TemplateTiles
-                templates={templates}
+                templates={shown}
                 selectedId={templateId}
                 defaultId={defaultId}
                 onSelect={setTemplateId}
               />
-              {templateId && (
-                <Link className="compose-link" to={`/t/${templateId}/layout`}>
-                  <StackTemplate size={16} />
-                  Mise en page
-                </Link>
-              )}
-              {templateId && (
-                <div className="doc-template-detail">
-                  {selectedTemplateLoading && (
-                    <p className="dots-muted">Chargement du gabarit...</p>
-                  )}
-                  {selectedTemplateError && (
-                    <div className="dots-notice dots-notice--error" role="alert">
-                      <strong>{selectedTemplateError}</strong>
-                    </div>
-                  )}
-                  {selectedTemplateReady && (
-                    <>
-                      <p className="doc-panel-label">Gabarit sélectionné</p>
-                      <strong>{selectedTemplateReady.name}</strong>
-                      {selectedTemplateReady.description && (
-                        <p className="doc-template-description">
-                          {selectedTemplateReady.description}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </>
+            )
           )}
-        </aside>
-      </div>
+        </div>
+      </aside>
+
+      <section className="doc-view" aria-label="Aperçu PDF">
+        {(activePdfState.status === "error" || unsupportedTotal > 0) && (
+          <div className="doc-view__notices">
+            {activePdfState.status === "error" && (
+              <div role="alert">
+                <Alert type={VariantType.ERROR}>
+                  <div>
+                    <strong>{activePdfState.message}</strong>
+                    {activePdfState.details && (
+                      <details>
+                        <summary>Détails</summary>
+                        <pre className="dots-mono">{activePdfState.details}</pre>
+                      </details>
+                    )}
+                  </div>
+                </Alert>
+              </div>
+            )}
+            {unsupportedTotal > 0 && (
+              <div role="status">
+                <Alert type={VariantType.INFO}>
+                  {unsupportedTotal} bloc{unsupportedTotal > 1 ? "s" : ""} sans équivalent Typst (
+                  {unsupported.map(([type, count]) => `${type} ×${count}`).join(", ")}) ne
+                  {unsupportedTotal > 1 ? " figurent" : " figure"} pas dans le PDF.
+                </Alert>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="doc-view__preview">
+          <PdfPreview
+            pdfUrl={activePdfState.status === "ready" ? activePdfState.url : null}
+            fileName={fileName}
+          />
+        </div>
+
+        <div className="doc-acts">
+          {activePdfState.status === "loading" && (
+            <span className="dots-muted" role="status">
+              <Spinner size="small" /> Génération…
+            </span>
+          )}
+          {templateId && (
+            <LinkButton
+              to={`/t/${templateId}/layout`}
+              size="small"
+              variant="tertiary"
+              color="neutral"
+              icon={<StackTemplate aria-hidden="true" />}
+            >
+              Mise en page
+            </LinkButton>
+          )}
+          <Button
+            type="button"
+            size="small"
+            variant="secondary"
+            icon={<Mail aria-hidden="true" />}
+            onClick={() => setMailOpen(true)}
+          >
+            Envoyer
+          </Button>
+          <Button
+            size="small"
+            color="brand"
+            icon={<Download aria-hidden="true" />}
+            href={activePdfState.status === "ready" ? activePdfState.url : undefined}
+            download={activePdfState.status === "ready" ? fileName : undefined}
+            disabled={activePdfState.status !== "ready"}
+          >
+            Télécharger
+          </Button>
+        </div>
+      </section>
+
+      {mailOpen && (
+        <SendMailModal
+          documentTitle={title}
+          fileName={fileName}
+          pdfReady={activePdfState.status === "ready"}
+          onClose={() => setMailOpen(false)}
+        />
+      )}
     </div>
   );
 }

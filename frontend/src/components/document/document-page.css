@@ -1,0 +1,299 @@
+/* Écran « un document → PDF » : rail gauche (nom du document, ⓘ, recherche,
+   gabarits) et PDF sur toute la surface restante, avec ses actions posées en
+   bas à droite. Boutons, champs, avis, modale et popover viennent du kit ; ne
+   restent ici que la structure et les quelques éléments qu'il n'a pas. */
+
+.doc-shell {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+/* ── Rail ────────────────────────────────────────────────────────────────── */
+
+.doc-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  /* Élément de grille : sans cela `min-height: auto` l'empêche de défiler. */
+  min-height: 0;
+  padding: 16px;
+  border-right: 1px solid var(--dots-grey-100);
+  overflow-y: auto;
+}
+
+.doc-rail__doc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.doc-rail__name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Le rail est étroit : le nom est tronqué, et c'est le ⓘ qui le redonne entier. */
+.doc-rail__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+ /* Les deux boutons tiennent côte à côte dans le rail : sans icône, « Ouvrir dans
+   Docs » et « Changer » font 232 px de large pour 267 px disponibles. */
+.doc-rail__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: -6px;
+}
+
+.doc-rail__templates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.doc-rail__empty {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* ── ⓘ et son popover ────────────────────────────────────────────────────── */
+
+.doc-info {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Le popover du kit se pose à gauche de son ancre ; dans un rail de 300 px il
+   déborderait à droite, d'où l'alignement sur le bord droit. */
+.doc-info .c__popover {
+  right: 0;
+  z-index: 5;
+}
+
+.doc-info__card {
+  width: 268px;
+  padding: 12px 14px;
+  background: var(--dots-grey-000);
+  border-radius: var(--dots-radius);
+}
+
+.doc-info__title {
+  margin: 0 0 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.doc-info__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0;
+}
+
+.doc-info__list dt {
+  color: var(--dots-grey-500);
+  font-size: 0.75rem;
+}
+
+.doc-info__list dd {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+}
+
+.doc-info__list dd:last-child {
+  margin-bottom: 0;
+}
+
+.doc-info__id {
+  overflow-wrap: anywhere;
+  font-size: 0.6875rem;
+}
+
+/* ── Colonne PDF ─────────────────────────────────────────────────────────── */
+
+.doc-view {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--dots-grey-050);
+}
+
+.doc-view__notices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.doc-view__notices pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.doc-view__preview {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px 16px 16px;
+}
+
+.doc-view__preview .pdf-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* PdfPreview porte son propre lien de téléchargement ; ici il est dans la barre. */
+.doc-view__preview .pdf-preview-toolbar {
+  display: none;
+}
+
+/* Le PDF défile sous la barre flottante : la marge basse rend la fin de la
+   dernière page atteignable malgré elle. */
+.doc-view__preview .pdf-scroll {
+  padding-bottom: 72px;
+}
+
+.doc-view__preview .pdf-placeholder {
+  flex: 1 1 auto;
+  height: auto;
+  background: var(--dots-grey-000);
+  border-color: var(--dots-grey-150);
+}
+
+/* ── Actions flottantes ──────────────────────────────────────────────────── */
+
+.doc-acts {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--dots-grey-000);
+  border: 1px solid var(--dots-grey-100);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* ── Modale d'envoi ──────────────────────────────────────────────────────── */
+
+.doc-mail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.doc-mail__attach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--dots-grey-100);
+  border-radius: var(--dots-radius);
+  font-size: 0.8125rem;
+}
+
+.doc-mail__attach-ico {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  background: var(--dots-grey-050);
+  border-radius: 3px;
+  color: var(--dots-grey-600);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.doc-mail__attach-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sur bureau la page tient dans l'écran : ce sont les colonnes qui défilent,
+   et l'aperçu prend la hauteur restante au lieu du min-height d'App.css. */
+@media (min-width: 901px) {
+  .doc-shell .doc-view__preview .pdf-scroll {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .doc-shell {
+    height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .doc-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--dots-grey-100);
+  }
+
+  .doc-acts {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+/* ── Gabarits : sélection à la manière de Docs ───────────────────────────── */
+
+/* Dans le panneau de Docs, la ligne sélectionnée ne porte qu'un fond gris : ni
+   filet coloré, ni puce. Les tuiles du kit (Radio) gardent leur rôle et leur
+   clavier, on ne change que ce qui se voit — et seulement dans ce rail, les
+   mêmes tuiles servant ailleurs (compose.css). */
+.doc-rail .compose-tile.c__checkbox {
+  border-color: transparent;
+}
+
+.doc-rail .compose-tile.c__checkbox:hover {
+  background: var(--dots-grey-050);
+}
+
+.doc-rail .compose-tile.c__checkbox:has(input:checked) {
+  border-color: transparent;
+  background: var(--dots-grey-100);
+}
+
+/* La puce radio sort de l'œil, pas de l'arbre d'accessibilité ni du clavier :
+   l'input devient la surface de clic de la tuile entière, transparente. */
+.doc-rail .compose-tile .c__checkbox__container {
+  position: relative;
+}
+
+.doc-rail .compose-tile input[type="radio"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Le kit posait son anneau sur la puce : il revient sur la tuile entière. */
+.doc-rail .compose-tile.c__checkbox:has(input:focus-visible) {
+  outline: 2px solid var(--dots-brand-500);
+  outline-offset: 1px;
+}

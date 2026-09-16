@@ -26,7 +26,9 @@ const templates = [
 test("renders Docs content with the selected database template", async ({ page }) => {
   const renderedTemplateIds: string[] = [];
 
-  await page.route("**/api/**", async (route) => {
+  // Le motif ne vise que l'API : `**/api/**` attrapait aussi le module
+  // `/src/api/client.ts` servi par Vite, et la page restait blanche.
+  await page.route(/\/api\/(auth|session|templates|documents)/, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
 
@@ -86,13 +88,16 @@ test("renders Docs content with the selected database template", async ({ page }
 
   await page.goto(`/docs/${DOCUMENT_ID}`);
 
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Document de démonstration" }),
-  ).toBeVisible();
-  const download = page.getByRole("link", { name: "Télécharger le PDF" });
+  // Le nom du document vit dans le rail, avec le ⓘ qui porte le détail.
+  await expect(page.getByText("Document de démonstration")).toBeVisible();
+  const download = page.getByRole("link", { name: "Télécharger" });
   await expect(download).toHaveAttribute("href", /^blob:/);
   await expect(download).toHaveAttribute("download", `${DOCUMENT_ID}.pdf`);
-  await expect(page.getByTitle("Aperçu du PDF")).toHaveAttribute("src", /^blob:/);
+  await expect(page.getByRole("group", { name: "Aperçu du PDF" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Informations sur le document" }).click();
+  await expect(page.getByRole("dialog").getByText(DOCUMENT_ID)).toBeVisible();
+  await page.keyboard.press("Escape");
   expect(renderedTemplateIds).toEqual([TEMPLATE_ONE]);
 
   await page.getByRole("radio", { name: "Moderne" }).click();
