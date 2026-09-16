@@ -1,16 +1,8 @@
-import { LaGaufreV2, MainLayout, UserMenu } from "@gouvfr-lasuite/ui-components";
+import { MainLayout, UserMenu } from "@gouvfr-lasuite/ui-components";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { DOCS_ORIGIN } from "../../config";
-
-/** Services proposés par la gaufre : la Docs de cet environnement et cette app. */
-const LOCAL_SERVICES = {
-  services: [
-    { name: "Docs", url: DOCS_ORIGIN },
-    { name: "dots", url: "/" },
-  ],
-};
+import { DotsGaufre } from "./DotsGaufre";
 
 /**
  * Coque de l'app sur le MainLayout du kit : en-tête seul (marque, gaufre, menu
@@ -18,33 +10,44 @@ const LOCAL_SERVICES = {
  * routes arrive en enfant ; chaque page porte ses propres actions.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  // Même repli que Docs (LeftPanelFooter) : « Invité » sans session.
-  const menuUser = { full_name: user?.name ?? "Invité", email: "" };
-
   return (
     <MainLayout
-      icon={<Brand />}
+      icon={<HeaderIcon />}
       hideLeftPanelOnDesktop
-      rightHeaderContent={
-        <div className="dots-header-actions">
-          <LaGaufreV2 data={LOCAL_SERVICES} />
-          <UserMenu user={menuUser} withMobileView={false} />
-        </div>
-      }
+      rightHeaderContent={<HeaderRight />}
     >
       {children}
     </MainLayout>
   );
 }
 
-function Brand() {
+function HeaderIcon() {
   return (
-    <Link to="/" className="dots-brand">
-      <span className="dots-brand__logo" aria-hidden="true">
+    <Link to="/" className="dots__header__left" aria-label="Dots">
+      <span className="dots__header__logo" aria-hidden="true">
         dt
       </span>
-      <span className="dots-brand__title">dots</span>
+      <span className="dots__header__title">Dots</span>
     </Link>
   );
+}
+
+function HeaderRight() {
+  return (
+    <div className="dots__header__right">
+      <DotsGaufre />
+      <DotsUserProfile />
+    </div>
+  );
+}
+
+function DotsUserProfile() {
+  const { authenticated, user, logout } = useAuth();
+  // Même repli que Docs (LeftPanelFooter) : « Invité » sans session.
+  const menuUser = {
+    full_name: user?.name ?? user?.preferredUsername ?? "Invité",
+    email: user?.email ?? "",
+  };
+
+  return <UserMenu user={menuUser} logout={authenticated ? () => void logout() : undefined} />;
 }
