@@ -261,6 +261,9 @@ OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
 DOCS_API_BASE_URL=http://localhost:8071/external_api/v1.0/
 DOCS_API_TIMEOUT_MS=10000
 DOCS_API_MAX_RESPONSE_BYTES=5242880
+TYPST_TEMPLATES_API_BASE_URL=http://localhost:8071/external_api/v1.0/typst-templates/
+TYPST_TEMPLATES_API_TIMEOUT_MS=10000
+TYPST_TEMPLATES_API_MAX_RESPONSE_BYTES=5242880
 ```
 
 Le backend expose `GET /api/documents/{id}/content`. Il transmet le token
