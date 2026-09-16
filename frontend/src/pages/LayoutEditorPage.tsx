@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Badge, Button, Loader, Select, VariantType } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
+import { Alert, Badge, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
+import { ArrowLeft, Download, Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
   fetchFixtures,
@@ -12,7 +12,6 @@ import {
   renderPdf,
   updateTemplate,
   type AiResult,
-  type FixtureSummary,
   type LayoutConfig,
   type RenderError,
 } from "../api/client";
@@ -50,12 +49,9 @@ export function LayoutEditorPage() {
   const [managed, setManaged] = useState(false);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
-  const [fixtures, setFixtures] = useState<FixtureSummary[]>([]);
   const [fixtureId, setFixtureId] = useState("");
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [rendering, setRendering] = useState(false);
-  const [renderMs, setRenderMs] = useState<number | null>(null);
   const [renderError, setRenderError] = useState<RenderError | null>(null);
 
   const [aiOpen, setAiOpen] = useState(false);
@@ -95,7 +91,8 @@ export function LayoutEditorPage() {
     fetchFixtures()
       .then((f) => {
         if (cancelled) return;
-        setFixtures(f);
+        // L'aperçu juge la mise en page, pas le contenu : on prend le premier
+        // document d'exemple sans le proposer au choix.
         setFixtureId((cur) => cur || f[0]?.id || "");
       })
       .catch(() => {});
@@ -138,13 +135,9 @@ export function LayoutEditorPage() {
   useEffect(() => {
     if (!renderSource || !fixtureId) return;
     const seq = ++renderSeq.current;
-    const t0 = performance.now();
-    setRendering(true);
     renderPdf({ fixtureId, templateSource: renderSource }).then(
       (r) => {
         if (seq !== renderSeq.current) return;
-        setRendering(false);
-        setRenderMs(Math.round(performance.now() - t0));
         if (r.ok) {
           if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
           pdfUrlRef.current = URL.createObjectURL(r.blob);
@@ -156,15 +149,23 @@ export function LayoutEditorPage() {
       },
       (e) => {
         if (seq !== renderSeq.current) return;
-        setRendering(false);
         setRenderError({ ok: false, error: message(e) });
       },
     );
   }, [renderSource, fixtureId]);
 
-  const fixtureOptions = useMemo(() => fixtures.map((f) => ({ value: f.id, label: f.name })), [fixtures]);
-
   // ── Actions ────────────────────────────────────────────────────────────────
+  /** Extrait le gabarit tel qu'il est édité, proposition de l'assistant comprise. */
+  function handleDownloadTyp() {
+    const blob = new Blob([renderSource], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name || "gabarit"}.typ`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleLayoutChange(next: LayoutConfig) {
     composeWanted.current = true;
     setLayout(next);
@@ -307,23 +308,18 @@ export function LayoutEditorPage() {
 
         <section className="le-preview" aria-label="Aperçu">
           <div className="le-preview__bar">
-            <Select
-              label="Document d'exemple"
-              variant="inline"
-              clearable={false}
-              placeholder="aucun document d'exemple"
-              options={fixtureOptions}
-              value={fixtureId}
-              onChange={(e) => setFixtureId(String(e.target.value ?? ""))}
-            />
-            <span aria-live="polite">
-              {rendering
-                ? "· recompilation…"
-                : renderMs !== null
-                  ? `· recompilé à chaque réglage (${renderMs} ms)`
-                  : "· recompilé à chaque réglage"}
-            </span>
             {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
+            <span className="le-preview__spacer" />
+            <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              icon={<Download aria-hidden="true" />}
+              disabled={!source}
+              onClick={handleDownloadTyp}
+            >
+              Télécharger .typ
+            </Button>
           </div>
           <div className="le-preview__doc">
             {layout && layoutError && (

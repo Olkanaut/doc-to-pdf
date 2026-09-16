@@ -1,0 +1,43 @@
+/* Aperçu PDF rendu par react-pdf. Le cadre se fond dans le gris ambiant : le
+   filet qui l'entoure porte la même couleur que le fond de la zone d'aperçu,
+   de sorte qu'on ne voit que les pages. */
+
+.pdf-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  background: var(--dots-grey-050);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Une page = une feuille posée sur le gris, avec juste assez d'ombre pour
+   qu'on distingue son bord sans dessiner de trait. */
+.pdf-page {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+  background: var(--dots-grey-000);
+  max-width: 100%;
+}
+
+.pdf-page canvas {
+  display: block;
+}
+
+.pdf-scroll__message {
+  margin: auto;
+  color: var(--dots-grey-500);
+}
+
+/* react-pdf empile ses pages dans un conteneur intermédiaire : sans cela, le
+   `gap` du parent ne s'applique pas entre elles. */
+.pdf-scroll .react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}

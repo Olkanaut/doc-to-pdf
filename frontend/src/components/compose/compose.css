@@ -232,7 +232,7 @@
     min-height: 0;
     height: auto;
   }
-  .compose-preview .pdf-preview iframe {
+  .compose-preview .pdf-scroll {
     min-height: 0;
   }
   .compose-preview .pdf-placeholder {

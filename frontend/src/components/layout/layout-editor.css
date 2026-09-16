@@ -260,7 +260,7 @@
   min-height: 0;
   height: auto;
 }
-.le-preview__doc .pdf-preview iframe {
+.le-preview__doc .pdf-scroll {
   min-height: 0;
 }
 .le-preview__doc .pdf-placeholder {
@@ -445,4 +445,16 @@
 .le-ai__input .c__field {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* L'aperçu du gabarit sert à juger la mise en page : le PDF n'y est pas un
+   livrable, seul le .typ s'exporte. Le lien de téléchargement que PdfPreview
+   porte pour la page de rendu n'a donc pas lieu d'être ici. */
+.le-preview__doc .pdf-preview-toolbar {
+  display: none;
+}
+
+/* Pousse l'export du .typ contre le bord droit de la barre. */
+.le-preview__spacer {
+  flex: 1 1 auto;
 }
