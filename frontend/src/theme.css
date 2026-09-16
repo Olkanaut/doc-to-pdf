@@ -45,6 +45,12 @@ body {
   z-index: 10000;
 }
 
+/* Le kit pose le backdrop des modales en `position: fixed` sans z-index.
+   Les barres flottantes de l'éditeur peuvent alors rester au-dessus du voile. */
+.ReactModalPortal .c__modal__backdrop {
+  z-index: 1000;
+}
+
 /* Marque dans l'en-tête du kit (leftIcon), structurée comme les headers La Suite. */
 .dots__header__left {
   display: flex;
