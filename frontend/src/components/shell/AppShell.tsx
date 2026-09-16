@@ -24,10 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 function HeaderIcon() {
   return (
     <Link to="/" className="dots__header__left" aria-label="Dots">
-      <span className="dots__header__logo" aria-hidden="true">
-        dt
-      </span>
-      <span className="dots__header__title">Dots</span>
+      <img className="dots__header__logo" src="/logo_full.svg" alt="" />
     </Link>
   );
 }

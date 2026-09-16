@@ -49,26 +49,13 @@ body {
 .dots__header__left {
   display: flex;
   align-items: center;
-  gap: 8px;
   color: var(--dots-grey-900);
   text-decoration: none;
 }
 .dots__header__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--dots-brand-600);
-  color: var(--dots-grey-000);
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-.dots__header__title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  display: block;
+  width: auto;
+  height: 30px;
 }
 
 /* Zone centrale : le kit borne la hauteur à 100dvh − 52 px (en-tête) et fait défiler

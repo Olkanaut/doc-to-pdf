@@ -4,6 +4,7 @@ import { DOCS_ORIGIN, DOTS_ORIGIN, DRIVE_ORIGIN, LASUITE_SERVICES_API_URL } from
 
 const LASUITE_INTEGRATION_ORIGIN = "https://integration.lasuite.numerique.gouv.fr";
 const LASUITE_GAUFRE_HTML_URL = `${LASUITE_INTEGRATION_ORIGIN}/api/v1/gaufre`;
+const DOTS_LOGO_URL = `${DOTS_ORIGIN}/logo.svg`;
 
 type RemoteService = {
   id?: string;
@@ -81,7 +82,7 @@ function normalizeService(service: RemoteService, assets: Map<string, ServiceAss
   }
 
   if (service.id === "dots" || service.name === "Dots") {
-    return withLogo({ ...normalized, name: "Dots", url: DOTS_ORIGIN });
+    return withLogo({ ...normalized, name: "Dots", url: DOTS_ORIGIN, logo: DOTS_LOGO_URL });
   }
 
   return withLogo(normalized);
@@ -92,7 +93,7 @@ function withDotsService(services: GaufreService[]): GaufreService[] {
     (service) => service.id === "dots" || service.name.toLowerCase() === "dots",
   );
   if (hasDots) return services;
-  return [...services, withLogo({ id: "dots", name: "Dots", url: DOTS_ORIGIN })];
+  return [...services, withLogo({ id: "dots", name: "Dots", url: DOTS_ORIGIN, logo: DOTS_LOGO_URL })];
 }
 
 async function fetchOfficialAssets(signal: AbortSignal): Promise<Map<string, ServiceAsset>> {
