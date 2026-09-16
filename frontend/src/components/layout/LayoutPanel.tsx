@@ -314,16 +314,6 @@ export function LayoutPanel({
               </div>
             </Section>
 
-            <Section title="Paragraphe">
-              <Select
-                label="Interligne"
-                fullWidth
-                clearable={false}
-                options={lineHeightOptions}
-                value={String(layout.lineHeight)}
-                onChange={(e) => set({ lineHeight: Number(e.target.value) })}
-              />
-            </Section>
           </TabPanel>
 
           <TabPanel uid={uid} tab="text" activeTab={activeTab}>
@@ -338,6 +328,9 @@ export function LayoutPanel({
                   onToggle={() => setOpenTextStyle((current) => (current === key ? null : key))}
                   onChange={(patch) => setTextStyle(key, patch)}
                   onSizeChange={(raw) => setTextStyleSize(key, raw)}
+                  lineHeight={key === "body" ? layout.lineHeight : undefined}
+                  lineHeightOptions={key === "body" ? lineHeightOptions : undefined}
+                  onLineHeightChange={key === "body" ? (value) => set({ lineHeight: value }) : undefined}
                 />
               ))}
             </div>
@@ -549,6 +542,9 @@ function TextStyleSection({
   onToggle,
   onChange,
   onSizeChange,
+  lineHeight,
+  lineHeightOptions,
+  onLineHeightChange,
 }: {
   id: string;
   label: string;
@@ -557,19 +553,15 @@ function TextStyleSection({
   onToggle: () => void;
   onChange: (patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>) => void;
   onSizeChange: (raw: string) => void;
+  lineHeight?: number;
+  lineHeightOptions?: Option[];
+  onLineHeightChange?: (value: number) => void;
 }) {
   return (
     <section className="le-style">
-      <button
-        type="button"
-        className="le-style__toggle"
-        aria-expanded={open}
-        aria-controls={`${id}-body`}
-        onClick={onToggle}
-      >
-        <span>{label}</span>
-        {open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
-      </button>
+      <SectionToggle open={open} controls={`${id}-body`} onToggle={onToggle}>
+        {label}
+      </SectionToggle>
       {open && (
         <div id={`${id}-body`} className="le-style__body">
           <div className="le-style__row">
@@ -596,6 +588,19 @@ function TextStyleSection({
               onChange={(e) => onSizeChange(e.target.value)}
             />
           </div>
+          {lineHeight !== undefined && lineHeightOptions && onLineHeightChange && (
+            <div className="le-style__row">
+              <span className="le-style__label">Interligne</span>
+              <Select
+                label="Interligne"
+                fullWidth
+                clearable={false}
+                options={lineHeightOptions}
+                value={String(lineHeight)}
+                onChange={(e) => onLineHeightChange(Number(e.target.value))}
+              />
+            </div>
+          )}
           <div className="le-style__row">
             <span className="le-style__label">Color</span>
             <span className="le-style__color">
@@ -672,20 +677,36 @@ function Section({ id, title, children }: { id?: string; title: string; children
   const [open, setOpen] = useState(true);
   return (
     <section id={id} className="le-section">
-      <Button
-        variant="tertiary"
-        color="neutral"
-        fullWidth
-        className="le-section__toggle"
-        aria-expanded={open}
-        icon={open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
-        iconPosition="right"
-        onClick={() => setOpen(!open)}
-      >
+      <SectionToggle open={open} onToggle={() => setOpen(!open)}>
         {title}
-      </Button>
+      </SectionToggle>
       {open && <div className="le-section__body">{children}</div>}
     </section>
+  );
+}
+
+function SectionToggle({
+  open,
+  controls,
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  controls?: string;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="le-section__toggle"
+      aria-expanded={open}
+      aria-controls={controls}
+      onClick={onToggle}
+    >
+      <span>{children}</span>
+      {open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+    </button>
   );
 }
 

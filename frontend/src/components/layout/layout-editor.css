@@ -239,17 +239,33 @@
 .le-section {
   border-bottom: 1px solid var(--c--globals--colors--gray-100);
 }
-/* Bouton tertiaire du kit, mais titre à gauche et chevron à droite */
-.le-section__toggle.c__button {
+/* Titre accordéon commun à toutes les sous-sections du panneau. */
+.le-section__toggle {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  width: 100%;
   height: 44px;
   padding: 0 12px 0 16px;
+  border: 0;
   border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
   font-size: var(--c--globals--font--sizes--sm);
   font-weight: var(--c--globals--font--weights--bold);
   color: inherit;
+  text-align: left;
 }
-.le-section__toggle .c__button__icon {
+.le-section__toggle:hover {
+  background: var(--c--globals--colors--gray-050);
+}
+.le-section__toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--c--contextuals--border--semantic--brand--primary);
+}
+.le-section__toggle svg {
+  flex: 0 0 auto;
   color: var(--c--globals--colors--gray-500);
 }
 .le-section__body {
@@ -339,46 +355,15 @@
 .le-text-styles {
   display: flex;
   flex-direction: column;
-  padding: 20px 0 8px;
 }
 .le-style {
-  border-bottom: 0;
-}
-.le-style__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 54px;
-  padding: 0 28px 0 52px;
-  border: 0;
-  background: transparent;
-  color: var(--c--globals--colors--gray-950);
-  font: inherit;
-  font-size: var(--c--globals--font--sizes--ml);
-  line-height: 1.2;
-  text-align: left;
-  cursor: pointer;
-}
-.le-style__toggle:hover {
-  background: var(--c--globals--colors--gray-050);
-}
-.le-style__toggle:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--c--contextuals--border--semantic--brand--primary);
-}
-.le-style__toggle[aria-expanded="true"] {
-  font-weight: var(--c--globals--font--weights--bold);
-}
-.le-style__toggle svg {
-  flex: 0 0 auto;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
 }
 .le-style__body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 28px 28px 52px;
+  padding: 12px 16px 20px;
 }
 .le-style__row {
   display: grid;
