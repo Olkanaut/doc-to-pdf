@@ -2,7 +2,7 @@ import { expect, test, type APIRequestContext, type Locator, type Page } from "@
 
 // Écran ② — liste des gabarits et gabarit par défaut.
 // Composants : pages/TemplatesListPage.tsx, components/templates/TemplateBrowser.tsx,
-// components/templates/ViewSwitcher.tsx, components/shell/LeftPanel.tsx.
+// components/templates/ViewSwitcher.tsx.
 // L'état partagé (gabarit par défaut, gabarit créé) est remis via l'API en afterEach.
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
@@ -37,17 +37,17 @@ function badge(scope: Page | Locator): Locator {
  *  l'id du gabarit. Par id et non par nom : le backend partagé peut porter plusieurs
  *  gabarits homonymes (« Nouveau gabarit »), et le nom seul viole le mode strict. */
 function itemOf(page: Page, t: Pick<TemplateSummary, "id">): Locator {
-  return page.getByRole("listitem").filter({ has: page.locator(`a[href="/templates/${t.id}/layout"]`) });
+  return page.getByRole("listitem").filter({ has: page.locator(`a[href="/t/${t.id}/layout"]`) });
 }
 
 async function gotoTemplates(page: Page): Promise<void> {
-  await page.goto("/templates");
+  await page.goto("/");
   await expect(page.getByRole("heading", { name: "Gabarits", level: 1 })).toBeVisible();
   // La liste est rendue une fois « Chargement… » parti.
   await expect(page.getByRole("status")).toHaveCount(0);
 }
 
-test("/templates : coque, au moins trois gabarits, un seul badge « Par défaut »", async ({
+test("/ : coque, au moins trois gabarits, un seul badge « Par défaut »", async ({
   page,
   request,
 }) => {
@@ -176,7 +176,7 @@ test.describe("création depuis le panneau", () => {
     createdId = null;
   });
 
-  test("« Nouveau gabarit » crée un gabarit et ouvre /templates/<uuid>/layout", async ({
+  test("« Nouveau gabarit » crée un gabarit et ouvre /t/<uuid>/layout", async ({
     page,
     request,
   }) => {
@@ -195,7 +195,7 @@ test.describe("création depuis le panneau", () => {
     expect(created.name).toBe("Nouveau gabarit");
 
     // Redirection vers l'éditeur de mise en page du gabarit créé.
-    await expect(page).toHaveURL(new RegExp(`/templates/${created.id}/layout$`));
+    await expect(page).toHaveURL(new RegExp(`/t/${created.id}/layout$`));
     await expect(page).toHaveURL(
       /\/templates\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/layout$/i,
     );
@@ -236,7 +236,12 @@ test("basculer grille/liste conserve les gabarits", async ({ page, request }) =>
     await expect(row).toContainText(t.name);
     await expect(row).toContainText(t.description || "Sans description");
     await expect(row.getByRole("link", { name: `Code Typst du gabarit ${t.name}` })).toBeVisible();
-    await expect(row.getByRole("link", { name: `Utiliser le gabarit ${t.name}` })).toBeVisible();
+    // La cible compte autant que la présence : « Utiliser » a déjà pointé vers une
+    // adresse qui redirigeait sur l'accueil, en perdant le gabarit choisi.
+    await expect(row.getByRole("link", { name: `Utiliser le gabarit ${t.name}` })).toHaveAttribute(
+      "href",
+      `/compose?template=${t.id}`,
+    );
   }
   await expect(badge(page)).toHaveCount(1);
 

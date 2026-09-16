@@ -70,7 +70,7 @@ test("liste simulée : lignes, badges, compteur, recherche avec débounce, « Vo
   await expect(page.getByRole("status")).toHaveCount(0);
 
   const first = rows(page).nth(0);
-  await expect(first.getByRole("link")).toHaveAttribute("href", `/documents/new?doc=${PAGE_1[0].id}`);
+  await expect(first.getByRole("link")).toHaveAttribute("href", `/docs/${PAGE_1[0].id}`);
   await expect(first).toContainText("Note de service");
   await expect(first).toContainText("Propriétaire");
   await expect(first).toContainText("modifié il y a 10 min");
@@ -114,15 +114,15 @@ test("liste simulée : lignes, badges, compteur, recherche avec débounce, « Vo
   // Une ligne mène à la page Rendu sur ce document.
   await searchField(page).fill("note");
   await rows(page).first().getByRole("link").click();
-  await expect(page).toHaveURL(/\/documents\/new\?doc=11111111-1111-4111-8111-111111111111$/);
+  await expect(page).toHaveURL(/\/docs\/11111111-1111-4111-8111-111111111111$/);
 });
 
 test("coller une URL Docs puis Ouvrir mène au rendu de ce document", async ({ page }) => {
   await page.route(isDocsList, fakeDocs);
   await page.goto("/");
-  await searchField(page).fill(`http://localhost:3011/docs/${DOC_ID}/`);
+  await searchField(page).fill(`http://localhost:3000/docs/${DOC_ID}/`);
   await openButton(page).click();
-  await expect(page).toHaveURL(new RegExp(`/documents/new\\?doc=${DOC_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/docs/${DOC_ID}$`));
 });
 
 test("/docs (sans identifiant) affiche l'accueil ; /docs/<uuid>/ redirige toujours vers le rendu", async ({ page }) => {
@@ -130,5 +130,5 @@ test("/docs (sans identifiant) affiche l'accueil ; /docs/<uuid>/ redirige toujou
   await expect(page.getByRole("heading", { level: 1, name: "Un doc, un PDF" })).toBeVisible();
   await expect(page).toHaveURL(/\/docs$/);
   await page.goto(`/docs/${DOC_ID}/`);
-  await expect(page).toHaveURL(new RegExp(`/documents/new\\?doc=${DOC_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/docs/${DOC_ID}$`));
 });

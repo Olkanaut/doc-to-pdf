@@ -10,3 +10,6 @@ backend/data/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+
+# Session Playwright enregistrée par e2e/auth.setup.ts
+frontend/e2e/.auth/

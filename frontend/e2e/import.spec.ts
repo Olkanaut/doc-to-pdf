@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 
 // Écran ① — import d'un .typ (ImportTemplateModal, ouverte depuis le menu du
 // bouton scindé « Nouveau gabarit » du panneau gauche).
-// Tourne contre les serveurs déjà lancés : Vite :5173 (UI), Fastify :4000 (API).
+// Tourne contre les serveurs déjà lancés par `make dev` : Vite :3002 (UI), Fastify :4000 (API).
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const TYP = "/Users/abel/Documents/doc-to-pdf/backend/templates/collectivite.typ";
@@ -17,7 +17,7 @@ async function defaultTemplateId(request: APIRequestContext): Promise<string | n
 
 /** Ouvre la modale depuis /templates et renvoie son locator. */
 async function openImportModal(page: Page) {
-  await page.goto("/templates");
+  await page.goto("/");
   await page.getByRole("button", { name: "Autres façons de créer un gabarit" }).click();
   await page.getByRole("menuitem", { name: "Importer un .typ" }).click();
   const dialog = page.getByRole("dialog", { name: "Importer un gabarit Typst" });
@@ -87,7 +87,7 @@ test.describe("Import d'un gabarit .typ", () => {
     expect(created.id).toMatch(UUID_RE);
     expect(created.name).toBe(IMPORTED_NAME);
 
-    await expect(page).toHaveURL(new RegExp(`/templates/${created.id}/layout$`));
+    await expect(page).toHaveURL(new RegExp(`/t/${created.id}/layout$`));
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue(IMPORTED_NAME);

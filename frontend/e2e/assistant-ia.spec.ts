@@ -28,7 +28,7 @@ test.describe("assistant IA — éditeur de mise en page", () => {
     saved = { name: t.name, description: t.description ?? "", source: t.source };
 
     page = await browser.newPage();
-    await page.goto(`/templates/${TEMPLATE_ID}/layout`);
+    await page.goto(`/t/${TEMPLATE_ID}/layout`);
     await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue(saved.name);
   });
 

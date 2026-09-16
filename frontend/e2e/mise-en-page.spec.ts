@@ -5,7 +5,7 @@ import { expect, test, type Page, type Response } from "@playwright/test";
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const ID = "minimal";
-const LAYOUT_URL = `/templates/${ID}/layout`;
+const LAYOUT_URL = `/t/${ID}/layout`;
 
 let original: { name: string; description: string; source: string };
 
@@ -46,7 +46,7 @@ test("① en-tête, avis « pas encore de bloc », état Enregistré, aperçu re
 
   const nav = page.getByRole("navigation", { name: "Mode d'édition" });
   await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute("href", `/templates/${ID}`);
+  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute("href", `/t/${ID}`);
 
   await expect(page.getByText("Ce gabarit n'a pas encore de bloc de mise en page")).toBeVisible();
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
@@ -96,24 +96,24 @@ test("② marge Haut = 30 → non enregistré, recompilé ; Enregistrer → sour
   expect(detail.source).toContain('#include "body.typ"');
 });
 
-test("③ « Code Typst » mène à /templates/minimal ; « Mise en page » ramène", async ({ page }) => {
+test("③ « Code Typst » mène à /t/minimal ; « Mise en page » ramène", async ({ page }) => {
   await openLayoutEditor(page);
 
   const nav = page.getByRole("navigation", { name: "Mode d'édition" });
   await nav.getByRole("link", { name: "Code Typst" }).click();
-  await expect(page).toHaveURL(/\/templates\/minimal$/);
+  await expect(page).toHaveURL(/\/t\/minimal$/);
   await expect(page.getByRole("heading", { name: "Modifier le gabarit", level: 1 })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute("aria-current", "page");
 
   await nav.getByRole("link", { name: "Mise en page" }).click();
-  await expect(page).toHaveURL(/\/templates\/minimal\/layout$/);
+  await expect(page).toHaveURL(/\/t\/minimal\/layout$/);
   await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue("Minimal");
 });
 
-test("④ /template/editor?id=minimal redirige vers /templates/minimal/layout", async ({ page }) => {
+test("④ /template/editor?id=minimal redirige vers /t/minimal/layout", async ({ page }) => {
   await page.goto(`/template/editor?id=${ID}`);
-  await expect(page).toHaveURL(/\/templates\/minimal\/layout$/);
+  await expect(page).toHaveURL(/\/t\/minimal\/layout$/);
   await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue("Minimal");
   await expect(
     page.getByRole("navigation", { name: "Mode d'édition" }).getByRole("link", { name: "Mise en page" }),

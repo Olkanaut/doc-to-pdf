@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Locator, type Page, type Request } from "@playwright/test";
 
-// Écran ③ — rendu d'un document (/documents/new) : ComposePage, DocsUrlField, TemplateTiles.
+// Écran ③ — rendu d'un document (/compose et /docs/:id) : ComposePage, DocsUrlField, TemplateTiles.
 // Ces scénarios ne font que lire l'API (fixtures, gabarits, rendu) ; par précaution le gabarit
 // par défaut est relevé avant chaque test et remis s'il avait bougé.
 
@@ -65,7 +65,7 @@ test("chargement : titre, tuiles avec le défaut présélectionné, aperçu rend
   expect(templates.length).toBeGreaterThan(1);
 
   const firstRender = nextRender(page);
-  await page.goto("/documents/new");
+  await page.goto("/compose");
 
   // Le titre est le nom du premier document d'exemple, sélectionné d'office.
   await expect(page.getByRole("heading", { level: 1, name: fixtures[0].name })).toBeVisible();
@@ -107,7 +107,7 @@ test("document avec callouts : bandeau d'avertissement, puis absent sur un docum
   expect(plain.id).not.toBe(roadmap!.id);
 
   const firstRender = nextRender(page);
-  await page.goto("/documents/new");
+  await page.goto("/compose");
   expect((await firstRender).status()).toBe(200);
   await expect(unsupportedNotice(page)).toHaveCount(0);
 
@@ -134,7 +134,7 @@ test("choisir une autre tuile de gabarit relance le rendu avec ce gabarit", asyn
   expect(other, "il faut au moins un gabarit non défaut").toBeTruthy();
 
   const firstRender = nextRender(page);
-  await page.goto("/documents/new");
+  await page.goto("/compose");
   expect((await firstRender).status()).toBe(200);
   const download = page.getByRole("link", { name: "Télécharger le PDF" });
   await expect(download).toHaveAttribute("href", /^blob:/);
@@ -156,7 +156,7 @@ test("choisir une autre tuile de gabarit relance le rendu avec ce gabarit", asyn
   // Nouvel aperçu : un nouvel object URL remplace l'ancien.
   await expect(download).not.toHaveAttribute("href", hrefBefore!);
   await expect(download).toHaveAttribute("href", /^blob:/);
-  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/templates/${other!.id}/layout`);
+  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/t/${other!.id}/layout`);
 });
 
 const urlField = (page: Page) => page.getByRole("textbox", { name: "Coller l'URL d'un document Docs" });
@@ -164,7 +164,7 @@ const urlField = (page: Page) => page.getByRole("textbox", { name: "Coller l'URL
 const openButton = (page: Page) => page.getByRole("button", { name: "Ouvrir", exact: true });
 
 test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", async ({ page }) => {
-  await page.goto("/documents/new");
+  await page.goto("/compose");
   const field = urlField(page);
   const open = openButton(page);
   await expect(field).toBeVisible();
@@ -189,7 +189,7 @@ test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", a
   expect(docsCalls).toEqual([]);
 });
 
-// Document Docs public (lien partagé), ex. E2E_DOCS_URL=http://localhost:3011/docs/<uuid>/
+// Document Docs public (lien partagé), ex. E2E_DOCS_URL=http://localhost:3000/docs/<uuid>/
 const DOCS_URL = process.env.E2E_DOCS_URL;
 const DOCS_TITLE = "Note de service — test dots";
 const docIdOf = (url: string) => /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(url)![1];
@@ -200,7 +200,7 @@ test("champ URL Docs : coller l'URL d'un document public, l'ouvrir, le rendre, p
   const { def, fixtures } = await readState(request);
 
   const firstRender = nextRender(page);
-  await page.goto("/documents/new");
+  await page.goto("/compose");
   expect((await firstRender).status()).toBe(200);
   const download = page.getByRole("link", { name: "Télécharger le PDF" });
   await expect(download).toHaveAttribute("href", /^blob:/);
@@ -247,7 +247,7 @@ test("?doc=<uuid> précharge ce document Docs, sans rendre d'exemple avant", asy
     if (isRender(r)) renders.push(r);
   });
   const firstRender = nextRender(page);
-  await page.goto(`/documents/new?doc=${docId}`);
+  await page.goto(`/docs/${docId}`);
 
   await expect(page.getByRole("heading", { level: 1, name: DOCS_TITLE })).toBeVisible();
   const response = await firstRender;
@@ -264,7 +264,7 @@ test("?template=<id> présélectionne ce gabarit", async ({ page, request }) => 
   expect(other, "il faut au moins un gabarit non défaut").toBeTruthy();
 
   const firstRender = nextRender(page);
-  await page.goto(`/documents/new?template=${encodeURIComponent(other!.id)}`);
+  await page.goto(`/compose?template=${encodeURIComponent(other!.id)}`);
 
   const group = tiles(page);
   await expect(radioOf(group, other!.id)).toBeChecked();
@@ -273,5 +273,5 @@ test("?template=<id> présélectionne ce gabarit", async ({ page, request }) => 
   const response = await firstRender;
   expect(response.status()).toBe(200);
   expect(response.request().postDataJSON()).toEqual({ fixtureId: fixtures[0].id, templateId: other!.id });
-  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/templates/${other!.id}/layout`);
+  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/t/${other!.id}/layout`);
 });
