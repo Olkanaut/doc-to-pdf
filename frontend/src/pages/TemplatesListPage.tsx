@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  createTemplate,
   deleteTemplate,
   fetchDefaultTemplate,
   fetchTemplates,
   setDefaultTemplate,
   type TemplateSummary,
 } from "../api/client";
+import { ImportTemplateModal } from "../components/templates/ImportTemplateModal";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
 import { IconStar } from "../components/shell/icons";
@@ -22,11 +24,14 @@ function loadStoredView(): TemplateView {
   }
 }
 
-/** Liste des gabarits. Création et import vivent dans le panneau gauche (LeftPanel). */
+/** Liste des gabarits utilisateur. */
 export function TemplatesListPage() {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
+  const [creating, setCreating] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function reload() {
@@ -63,6 +68,19 @@ export function TemplatesListPage() {
     }
   }
 
+  async function handleCreate() {
+    setCreating(true);
+    setError(null);
+    try {
+      const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
+      navigate(`/t/${created.id}/layout`);
+    } catch (e) {
+      setError(`Création impossible : ${(e as Error).message}`);
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function handleDelete(id: string, name: string) {
     if (!window.confirm(`Supprimer le gabarit « ${name} » ?`)) return;
     await deleteTemplate(id);
@@ -78,6 +96,17 @@ export function TemplatesListPage() {
         </div>
         <div className="dots-actions">
           <ViewSwitcher view={view} onChange={handleViewChange} />
+          <button type="button" className="dots-btn" onClick={() => setImportOpen(true)}>
+            Importer un .typ
+          </button>
+          <button
+            type="button"
+            className="dots-btn dots-btn--brand"
+            disabled={creating}
+            onClick={handleCreate}
+          >
+            {creating ? "Création…" : "Nouveau gabarit"}
+          </button>
         </div>
       </div>
 
@@ -132,6 +161,8 @@ export function TemplatesListPage() {
         <IconStar size={14} />
         Le gabarit par défaut s'applique à tout document ouvert tant qu'un autre n'est pas choisi.
       </p>
+
+      {importOpen && <ImportTemplateModal onClose={() => setImportOpen(false)} />}
     </div>
   );
 }

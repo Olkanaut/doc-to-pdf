@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
-import { LeftPanel } from "./components/shell/LeftPanel";
+import { HomeLayout } from "./layouts/HomeLayout";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -41,24 +41,21 @@ function guarded(element: ReactElement) {
 
 export default function App() {
   return (
-    <div className="dots-shell">
-      <LeftPanel />
-      <main className="dots-main">
-        <Routes>
-          <Route path="/" element={guarded(<TemplatesListPage />)} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/docs" element={guarded(<HomePage />)} />
-          <Route path="/docs/:id" element={guarded(<ComposePage />)} />
-          <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
-          <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
-          <Route path="/templates" element={<Navigate to="/" replace />} />
-          <Route path="/templates/:id" element={<TemplateRedirect />} />
-          <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />
-          <Route path="/template/editor" element={<LegacyEditorRedirect />} />
-          <Route path="/documents/new" element={guarded(<DocumentsNewRedirect />)} />
-        </Routes>
-      </main>
-    </div>
+    <HomeLayout>
+      <Routes>
+        <Route path="/" element={guarded(<TemplatesListPage />)} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/docs" element={guarded(<HomePage />)} />
+        <Route path="/docs/:id" element={guarded(<ComposePage />)} />
+        <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
+        <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
+        <Route path="/templates" element={<Navigate to="/" replace />} />
+        <Route path="/templates/:id" element={<TemplateRedirect />} />
+        <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />
+        <Route path="/template/editor" element={<LegacyEditorRedirect />} />
+        <Route path="/documents/new" element={guarded(<DocumentsNewRedirect />)} />
+      </Routes>
+    </HomeLayout>
   );
 }
