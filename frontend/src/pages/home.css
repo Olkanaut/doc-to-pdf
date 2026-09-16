@@ -1,114 +1,159 @@
-/* Accueil : recherche d'un document Docs et liste des derniers documents. Champ, bouton,
-   badge, avis et spinner viennent du kit ; ne restent ici que la structure. */
-
-/* ── Recherche ───────────────────────────────────────────────────────────── */
-
-.home-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.home-search .c__field {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-/* Loupe inline (le kit n'a pas d'icône de recherche), à la teinte du libellé. */
-.home-search .c__input__icon-left {
-  color: var(--dots-grey-500);
-}
-
-/* ── Liste ───────────────────────────────────────────────────────────────── */
-
-.home-list {
+.home-entry {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-.home-list__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.home-list__head h2 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-.home-list > .c__button {
-  align-self: flex-start;
-}
-/* « Chargement… » : spinner du kit et texte sur une ligne. */
-.home-status {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-.home-list > p {
-  margin: 0;
-}
-.home-docs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--dots-grey-100);
-  border-radius: var(--dots-radius);
-  overflow: hidden;
-}
-.home-docs li + li {
-  border-top: 1px solid var(--dots-grey-100);
-}
-.home-doc {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 8px 12px;
-  color: var(--dots-grey-900);
-  text-decoration: none;
-}
-.home-doc:hover {
-  background: var(--dots-grey-025);
-}
-.home-doc:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--dots-brand-500);
-}
-.home-doc__icon {
-  flex: 0 0 auto;
-  color: var(--dots-grey-500);
-}
-.home-doc__title {
-  /* Base 0 : en étroit (retour à la ligne), le titre reste sur la ligne de l'icône. */
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-.home-doc .c__badge,
-.home-doc__date {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-.home-doc__chevron {
-  flex: 0 0 auto;
-  color: var(--dots-grey-400);
+  justify-content: center;
+  min-height: 100%;
+  padding: 32px 20px 24vh;
+  background: var(--dots-grey-000);
 }
 
-/* Écran étroit : la date passe sous le titre, le chevron reste sur la première ligne. */
-@media (max-width: 600px) {
-  .home-doc {
-    flex-wrap: wrap;
-    gap: 4px 12px;
+.home-entry__logo {
+  width: min(280px, 68vw);
+  height: auto;
+  margin-bottom: 18px;
+}
+
+.home-entry__logo-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: home-logo-dot-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.home-entry__logo-dot--1 {
+  animation-delay: 80ms;
+}
+
+.home-entry__logo-dot--2 {
+  animation-delay: 180ms;
+}
+
+.home-entry__logo-dot--3 {
+  animation-delay: 260ms;
+}
+
+.home-entry__logo-dot--4 {
+  animation-delay: 340ms;
+}
+
+.home-entry__logo-letter {
+  opacity: 0;
+  animation: home-logo-letter-in 520ms ease-out forwards;
+}
+
+.home-entry__logo-letter--1 {
+  animation-delay: 420ms;
+}
+
+.home-entry__logo-letter--2 {
+  animation-delay: 500ms;
+}
+
+.home-entry__logo-letter--3 {
+  animation-delay: 580ms;
+}
+
+.home-entry__logo-letter--4 {
+  animation-delay: 660ms;
+}
+
+.home-entry__tagline {
+  max-width: min(100%, 520px);
+  margin: 0 0 32px;
+  color: var(--dots-grey-600);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.home-entry__form {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) auto;
+  gap: 8px;
+  width: min(100%, 488px);
+}
+
+.home-entry__form input {
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--dots-grey-150);
+  border-radius: 8px;
+  background: var(--dots-grey-000);
+  color: var(--dots-grey-900);
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+}
+
+.home-entry__form input::placeholder {
+  color: var(--dots-grey-500);
+}
+
+.home-entry__form input:focus {
+  border-color: var(--dots-brand-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dots-brand-500), transparent 84%);
+}
+
+.home-entry__form button {
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dots-grey-900);
+  color: var(--dots-grey-000);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-entry__form button:hover {
+  background: var(--dots-grey-600);
+}
+
+.home-entry__form button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dots-grey-900), transparent 82%);
+}
+
+.home-entry__error {
+  width: min(100%, 488px);
+  margin: 10px 0 0;
+  color: var(--c--contextuals--content--semantic--error--primary);
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+@media (max-width: 560px) {
+  .home-entry__form {
+    grid-template-columns: 1fr;
   }
-  .home-doc__date {
-    order: 1;
-    flex-basis: 100%;
-    padding-left: 32px;
+}
+
+@keyframes home-logo-dot-in {
+  0% {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes home-logo-letter-in {
+  0% {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-entry__logo-dot,
+  .home-entry__logo-letter {
+    opacity: 1;
+    animation: none;
   }
 }
