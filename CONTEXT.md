@@ -83,6 +83,6 @@ Routes: `/templates` (library — list/create/delete), `/templates/:id` (editor 
 
 ```bash
 cd backend && npm install && npm run dev   # Fastify API on :4000
-cd frontend && npm install && npm run dev  # Vite dev server on :5173
+cd frontend && npm install && npm run dev  # Vite dev server on :3002
 ```
-Open http://localhost:5173. Requires the `typst` CLI on `PATH` (`brew install typst`).
+Open http://localhost:3002. Requires the `typst` CLI on `PATH` (`brew install typst`).
