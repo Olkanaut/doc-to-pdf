@@ -173,13 +173,6 @@ export function LayoutPanel({
           aria-label="Retour aux gabarits"
           onClick={onBack}
         />
-        <input
-          className="le-panel__name"
-          aria-label="Nom du gabarit"
-          value={templateName}
-          onChange={(e) => onTemplateNameChange(e.target.value)}
-        />
-        {isDefault && <span className="le-panel__badge">Par défaut</span>}
       </div>
 
       <nav className="le-panel__tabs" aria-label="Réglages du gabarit" role="tablist">
@@ -217,6 +210,16 @@ export function LayoutPanel({
         )}
         <fieldset className="le-panel__fields" disabled={disabled}>
           <TabPanel uid={uid} tab="format" activeTab={activeTab}>
+            <Section title="Gabarit">
+              <Input
+                label="Nom du gabarit"
+                fullWidth
+                value={templateName}
+                onChange={(e) => onTemplateNameChange(e.target.value)}
+              />
+              {isDefault && <span className="le-panel__badge">Par défaut</span>}
+            </Section>
+
             <Section title="Page">
               <Select
                 label="Format"
