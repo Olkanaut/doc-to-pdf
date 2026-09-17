@@ -117,22 +117,24 @@ export function TemplatesListPage() {
           <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination.</p>
         </div>
         <div className="dots-actions">
-          {/* Entrée unique : le type du fichier déposé choisit la suite. */}
-          <Button
-            variant="secondary"
-            icon={<Upload aria-hidden="true" />}
-            onClick={() => setImportOpen(true)}
-          >
-            Importer un document
-          </Button>
-          <Button
-            color="brand"
-            icon={<Plus aria-hidden="true" />}
-            disabled={creating}
-            onClick={() => void handleCreate()}
-          >
-            Nouveau gabarit
-          </Button>
+          <div className="dots-actions-buttons">
+            {/* Entrée unique : le type du fichier déposé choisit la suite. */}
+            <Button
+              variant="secondary"
+              icon={<Upload aria-hidden="true" />}
+              onClick={() => setImportOpen(true)}
+            >
+              Importer un document
+            </Button>
+            <Button
+              color="brand"
+              icon={<Plus aria-hidden="true" />}
+              disabled={creating}
+              onClick={() => void handleCreate()}
+            >
+              Nouveau gabarit
+            </Button>
+          </div>
           <ViewSwitcher view={view} onChange={handleViewChange} />
         </div>
       </div>
