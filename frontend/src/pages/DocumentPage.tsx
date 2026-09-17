@@ -272,6 +272,8 @@ function DocumentView({ documentId }: { documentId: string }) {
               variant="tertiary"
               color="neutral"
               href={documentUrl}
+              target="_blank"
+              rel="noreferrer"
             >
               Ouvrir dans Docs
             </Button>
