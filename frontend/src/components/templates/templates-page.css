@@ -555,6 +555,243 @@
 
 /* ── Recadrage (ImportDocumentModal + CropCanvas) ─────────────────────────── */
 
+.import-template-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  padding: 16px 20px 20px;
+}
+
+.import-template-page__topbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 320px) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #fff;
+}
+
+.import-template-page__title {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.import-template-page__title h1 {
+  margin: 0;
+  color: var(--c--globals--colors--gray-850);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.import-template-page__title span {
+  display: block;
+  max-width: 48vw;
+  overflow: hidden;
+  color: var(--c--globals--colors--gray-550);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-template-page__name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--c--globals--colors--gray-700);
+  font-size: 0.75rem;
+  font-weight: var(--c--globals--font--weights--medium);
+}
+
+.import-template-page__name input {
+  min-height: 34px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  color: var(--c--globals--colors--gray-850);
+  font: inherit;
+}
+
+.import-template-page__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.import-template-page__state {
+  display: flex;
+  min-height: 320px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.import-template-page__alert {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-template-page .import-editor {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.import-template-page .import-editor__page {
+  width: min(100%, 820px);
+}
+
+.import-template-assets {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(360px, 1fr);
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.import-template-assets__panel,
+.import-template-assets__preview {
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: var(--c--globals--colors--gray-025);
+}
+
+.import-template-assets__panel h2 {
+  margin: 0 0 10px;
+  color: var(--c--globals--colors--gray-850);
+  font-size: 0.875rem;
+}
+
+.import-template-assets__preview {
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  background: #f3f5f8;
+}
+
+.import-template-assets__preview img {
+  max-width: min(100%, 760px);
+  max-height: calc(100vh - 210px);
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
+}
+
+.import-page-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.import-page-selection__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--c--globals--colors--gray-700);
+}
+
+.import-page-selection__summary h2 {
+  margin: 0;
+  color: var(--c--globals--colors--gray-850);
+  font-size: 0.9375rem;
+}
+
+.import-page-selection__summary span {
+  font-size: 0.8125rem;
+  font-weight: var(--c--globals--font--weights--medium);
+}
+
+.import-page-selection__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.import-page-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #fff;
+}
+
+.import-page-card--on {
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
+  box-shadow: 0 0 0 1px var(--dots-primary);
+}
+
+.import-page-card--blocked {
+  opacity: 0.55;
+}
+
+.import-page-card__preview {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #f3f5f8;
+  color: var(--c--globals--colors--gray-550);
+  font: inherit;
+  cursor: pointer;
+}
+
+.import-page-card__preview:disabled {
+  cursor: not-allowed;
+}
+
+.import-page-card__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.import-page-card__preview:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 0 4px var(--dots-primary);
+}
+
+.import-page-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import-page-card__meta strong {
+  color: var(--c--globals--colors--gray-850);
+  font-size: 0.8125rem;
+}
+
+.import-page-card__meta small {
+  color: var(--c--globals--colors--gray-550);
+  font-size: 0.75rem;
+}
+
+.import-page-card__meta select {
+  min-height: 32px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #fff;
+  color: var(--c--globals--colors--gray-850);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
 .c__modal:has(.import-modal__body--editor) {
   width: min(1480px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
@@ -736,17 +973,17 @@
 }
 
 /* Choix d'un visuel sorti d'un .docx : ni page rendue, ni recadrage. */
-.c__modal .asset-stage {
+:where(.c__modal, .import-template-page) .asset-stage {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.c__modal .asset-stage__grid {
+:where(.c__modal, .import-template-page) .asset-stage__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
 }
-.c__modal .asset-tile {
+:where(.c__modal, .import-template-page) .asset-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -759,23 +996,23 @@
   font: inherit;
   cursor: pointer;
 }
-.c__modal .asset-tile--on {
+:where(.c__modal, .import-template-page) .asset-tile--on {
   border-color: var(--dots-primary);
   background: var(--dots-primary-soft);
   box-shadow: 0 0 0 1px var(--dots-primary);
 }
-.c__modal .asset-tile:focus-visible {
+:where(.c__modal, .import-template-page) .asset-tile:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 1px #fff,
     0 0 0 4px var(--dots-primary);
 }
-.c__modal .asset-tile img {
+:where(.c__modal, .import-template-page) .asset-tile img {
   width: 100%;
   height: 72px;
   object-fit: contain;
 }
-.c__modal .asset-tile__name {
+:where(.c__modal, .import-template-page) .asset-tile__name {
   font-family: var(--dots-mono);
   font-size: 0.75rem;
   color: var(--c--globals--colors--gray-850);
@@ -784,18 +1021,18 @@
   white-space: nowrap;
   max-width: 100%;
 }
-.c__modal .asset-tile__meta {
+:where(.c__modal, .import-template-page) .asset-tile__meta {
   font-size: 0.6875rem;
   color: var(--c--globals--colors--gray-550);
 }
 
-.c__modal .import-page-tabs {
+:where(.c__modal, .import-template-page) .import-page-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
 }
-.c__modal .import-page-tab {
+:where(.c__modal, .import-template-page) .import-page-tab {
   min-height: 30px;
   padding: 0 10px;
   border: 1px solid var(--c--globals--colors--gray-150);
@@ -807,16 +1044,16 @@
   font-weight: var(--c--globals--font--weights--medium);
   cursor: pointer;
 }
-.c__modal .import-page-tab:hover {
+:where(.c__modal, .import-template-page) .import-page-tab:hover {
   border-color: var(--c--contextuals--border--semantic--neutral--secondary);
 }
-.c__modal .import-page-tab--on {
+:where(.c__modal, .import-template-page) .import-page-tab--on {
   border-color: var(--dots-primary);
   background: var(--dots-primary-soft);
   color: var(--c--globals--colors--gray-850);
   box-shadow: 0 0 0 1px var(--dots-primary);
 }
-.c__modal .import-page-tab:focus-visible {
+:where(.c__modal, .import-template-page) .import-page-tab:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 1px #fff,
@@ -824,28 +1061,28 @@
 }
 
 /* Éditeur visuel d'import : page au centre, calques à gauche, propriétés à droite. */
-.c__modal .import-editor {
+:where(.c__modal, .import-template-page) .import-editor {
   display: flex;
   flex-direction: column;
   gap: 12px;
   height: min(820px, calc(100vh - 180px));
   min-height: 0;
 }
-.c__modal .import-editor__toolbar {
+:where(.c__modal, .import-template-page) .import-editor__toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
-.c__modal .import-editor__grid {
+:where(.c__modal, .import-template-page) .import-editor__grid {
   display: grid;
   grid-template-columns: minmax(160px, 220px) minmax(320px, 1fr) minmax(220px, 280px);
   gap: 14px;
   flex: 1 1 auto;
   min-height: 0;
 }
-.c__modal .import-editor__layers,
-.c__modal .import-editor__props {
+:where(.c__modal, .import-template-page) .import-editor__layers,
+:where(.c__modal, .import-template-page) .import-editor__props {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -854,20 +1091,20 @@
   border: 1px solid var(--c--globals--colors--gray-150);
   background: var(--c--globals--colors--gray-025);
 }
-.c__modal .import-editor__panel-title {
+:where(.c__modal, .import-template-page) .import-editor__panel-title {
   margin-bottom: 8px;
   font-size: 0.75rem;
   font-weight: var(--c--globals--font--weights--bold);
   color: var(--c--globals--colors--gray-850);
   text-transform: uppercase;
 }
-.c__modal .import-editor__layers-list {
+:where(.c__modal, .import-template-page) .import-editor__layers-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
   overflow: auto;
 }
-.c__modal .import-editor__layer {
+:where(.c__modal, .import-template-page) .import-editor__layer {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -881,68 +1118,68 @@
   text-align: left;
   cursor: pointer;
 }
-.c__modal .import-editor__layer small {
+:where(.c__modal, .import-template-page) .import-editor__layer small {
   color: var(--c--globals--colors--gray-550);
 }
-.c__modal .import-editor__layer--on {
+:where(.c__modal, .import-template-page) .import-editor__layer--on {
   border-color: var(--dots-primary);
   background: var(--dots-primary-soft);
 }
-.c__modal .import-editor__layer--hidden {
+:where(.c__modal, .import-template-page) .import-editor__layer--hidden {
   opacity: 0.48;
 }
-.c__modal .import-editor__page-wrap {
+:where(.c__modal, .import-template-page) .import-editor__page-wrap {
   overflow: auto;
   padding: 12px;
   border: 1px solid var(--c--globals--colors--gray-150);
   background: #f3f5f8;
 }
-.c__modal .import-editor__page {
+:where(.c__modal, .import-template-page) .import-editor__page {
   position: relative;
   width: min(100%, 760px);
   margin: 0 auto;
   background: #fff;
   box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
 }
-.c__modal .import-editor__page-img,
-.c__modal .import-editor__overlay {
+:where(.c__modal, .import-template-page) .import-editor__page-img,
+:where(.c__modal, .import-template-page) .import-editor__overlay {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-.c__modal .import-editor__page-img {
+:where(.c__modal, .import-template-page) .import-editor__page-img {
   object-fit: fill;
 }
-.c__modal .import-editor__overlay {
+:where(.c__modal, .import-template-page) .import-editor__overlay {
   z-index: 1;
 }
-.c__modal .import-editor__box {
+:where(.c__modal, .import-template-page) .import-editor__box {
   fill: rgb(17 103 212 / 10%);
   stroke: rgb(17 103 212 / 82%);
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
   cursor: pointer;
 }
-.c__modal .import-editor__box--image {
+:where(.c__modal, .import-template-page) .import-editor__box--image {
   fill: rgb(37 137 72 / 12%);
   stroke: rgb(37 137 72 / 84%);
 }
-.c__modal .import-editor__box--shape,
-.c__modal .import-editor__box--line {
+:where(.c__modal, .import-template-page) .import-editor__box--shape,
+:where(.c__modal, .import-template-page) .import-editor__box--line {
   fill: rgb(232 133 30 / 12%);
   stroke: rgb(181 92 5 / 88%);
 }
-.c__modal .import-editor__box--field {
+:where(.c__modal, .import-template-page) .import-editor__box--field {
   fill: rgb(112 63 190 / 12%);
   stroke: rgb(112 63 190 / 88%);
 }
-.c__modal .import-editor__box--on {
+:where(.c__modal, .import-template-page) .import-editor__box--on {
   fill: rgb(17 103 212 / 22%);
   stroke: var(--dots-primary);
   stroke-width: 2;
 }
-.c__modal .import-editor__box-label {
+:where(.c__modal, .import-template-page) .import-editor__box-label {
   fill: #111827;
   paint-order: stroke;
   stroke: #fff;
@@ -950,13 +1187,13 @@
   font-size: 9px;
   pointer-events: none;
 }
-.c__modal .import-editor__form {
+:where(.c__modal, .import-template-page) .import-editor__form {
   display: flex;
   flex-direction: column;
   gap: 10px;
   overflow: auto;
 }
-.c__modal .import-editor__form label {
+:where(.c__modal, .import-template-page) .import-editor__form label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -964,8 +1201,8 @@
   font-weight: var(--c--globals--font--weights--medium);
   color: var(--c--globals--colors--gray-700);
 }
-.c__modal .import-editor__form select,
-.c__modal .import-editor__form input {
+:where(.c__modal, .import-template-page) .import-editor__form select,
+:where(.c__modal, .import-template-page) .import-editor__form input {
   min-height: 34px;
   box-sizing: border-box;
   border: 1px solid var(--c--globals--colors--gray-150);
@@ -973,28 +1210,28 @@
   color: var(--c--globals--colors--gray-850);
   font: inherit;
 }
-.c__modal .import-editor__field-box {
+:where(.c__modal, .import-template-page) .import-editor__field-box {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--c--globals--colors--gray-150);
 }
-.c__modal .import-editor__inline {
+:where(.c__modal, .import-template-page) .import-editor__inline {
   display: flex;
   gap: 8px;
   align-items: center;
 }
-.c__modal .import-editor__inline input {
+:where(.c__modal, .import-template-page) .import-editor__inline input {
   min-width: 0;
   flex: 1 1 auto;
 }
-.c__modal .import-editor__empty {
+:where(.c__modal, .import-template-page) .import-editor__empty {
   margin: 0;
   color: var(--c--globals--colors--gray-550);
   font-size: 0.875rem;
 }
-.c__modal .import-editor__preview-status {
+:where(.c__modal, .import-template-page) .import-editor__preview-status {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1002,7 +1239,7 @@
   color: var(--c--globals--colors--gray-700);
   font-size: 0.8125rem;
 }
-.c__modal .import-editor__preview {
+:where(.c__modal, .import-template-page) .import-editor__preview {
   width: 100%;
   height: 240px;
   margin-top: 10px;
@@ -1011,11 +1248,16 @@
 }
 
 @media (max-width: 980px) {
-  .c__modal .import-editor__grid {
+  .import-template-page__topbar,
+  .import-template-assets {
     grid-template-columns: 1fr;
   }
-  .c__modal .import-editor__layers,
-  .c__modal .import-editor__props {
+
+  :where(.c__modal, .import-template-page) .import-editor__grid {
+    grid-template-columns: 1fr;
+  }
+  :where(.c__modal, .import-template-page) .import-editor__layers,
+  :where(.c__modal, .import-template-page) .import-editor__props {
     max-height: 260px;
   }
 }

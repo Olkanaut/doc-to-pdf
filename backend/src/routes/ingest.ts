@@ -2,7 +2,10 @@
  * Import d'un PDF ou d'un .docx comme template Typst.
  *
  * Trois temps, un dossier de travail par import (ingest/jobs.ts) :
+ *   POST /api/ingest/prepare        → dépôt, inspection légère, vignettes
  *   POST /api/ingest                → dépôt, analyse, zones proposées
+ *   GET  /api/ingest/:id            → reprise d'un import déjà analysé
+ *   POST /api/ingest/:id/analyze    → analyse des pages sélectionnées
  *   GET  /api/ingest/:id/preview    → rendu de la première page (compatibilité)
  *   GET  /api/ingest/:id/preview/:pageIndex → rendu d'une page analysée
  *   POST /api/ingest/:id/fragment   → découpe une zone, la range dans les assets
@@ -26,9 +29,11 @@ import { getAuthSession, type AuthSession } from "./auth.js";
 import {
   analyzeDocument,
   cropRegion,
+  inspectDocument,
   SidecarError,
   takeAsset,
   type Analysis,
+  type PreparedAnalysis,
   type Region,
 } from "../ingest/sidecar.js";
 import {
@@ -55,6 +60,15 @@ const BODY_LIMIT = 16 * 1024 * 1024;
 interface IngestBody {
   fileBase64?: string;
   filename?: string;
+}
+
+interface SelectedPageBody {
+  pageIndex?: number;
+  role?: string;
+}
+
+interface AnalyzeSelectionBody {
+  selectedPages?: SelectedPageBody[];
 }
 
 interface Rect {
@@ -87,6 +101,12 @@ interface PreviewTemplateBody {
   templateModel?: TemplateModelV2;
 }
 
+type ImportSource = { kind?: "pdf" | "docx" | "unknown"; name?: string };
+type PreparedIngest = PreparedAnalysis & {
+  source?: ImportSource;
+};
+type CachedIngest = Analysis | PreparedIngest;
+
 function importSource(filename: unknown): { kind?: "pdf" | "docx" | "unknown"; name?: string } {
   const name = typeof filename === "string" ? filename : undefined;
   const lower = name?.toLowerCase() ?? "";
@@ -96,6 +116,27 @@ function importSource(filename: unknown): { kind?: "pdf" | "docx" | "unknown"; n
       ? "docx"
       : undefined;
   return { kind, name };
+}
+
+function isPreparedIngest(value: CachedIngest | null): value is PreparedIngest {
+  return Boolean(value && "prepared" in value && value.prepared === true);
+}
+
+function selectedPageIndexes(raw: unknown): number[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length < 1 || raw.length > 3) return null;
+  const pages: number[] = [];
+  for (const item of raw) {
+    const value = typeof item === "object" && item !== null
+      ? (item as SelectedPageBody).pageIndex
+      : item;
+    const pageIndex = Number(value);
+    if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex > 10_000) {
+      return null;
+    }
+    if (!pages.includes(pageIndex)) pages.push(pageIndex);
+  }
+  return pages.length ? pages : null;
 }
 
 /** Points d'injection, comme documentRoutes : les tests branchent une session et Docs. */
@@ -148,6 +189,37 @@ function sanitizeRect(raw: unknown, analysis: Analysis, pageIndex = 0): Rect | n
   return { x, y, width: clampedW, height: clampedH };
 }
 
+type UploadBytes =
+  | { ok: true; bytes: Buffer }
+  | { ok: false; error: Record<string, unknown>; status: number };
+
+function bytesFromBody(body: IngestBody | undefined): UploadBytes {
+  const { fileBase64 } = body ?? {};
+  if (typeof fileBase64 !== "string" || !fileBase64) {
+    return { ok: false, status: 400, error: { ok: false, error: "fileBase64 requis" } };
+  }
+  const data = fileBase64.replace(/^data:[^,]*,/, "").replace(/\s/g, "");
+  if (!/^[A-Za-z0-9+/]+=*$/.test(data)) {
+    return { ok: false, status: 400, error: { ok: false, error: "fileBase64 n'est pas du base64" } };
+  }
+  const bytes = Buffer.from(data, "base64");
+  if (bytes.length === 0) {
+    return { ok: false, status: 400, error: { ok: false, error: "Fichier vide" } };
+  }
+  if (bytes.length > MAX_BYTES) {
+    return {
+      ok: false,
+      status: 413,
+      error: {
+        ok: false,
+        code: "too_large",
+        error: "Fichier trop volumineux : 10 Mo au plus",
+      },
+    };
+  }
+  return { ok: true, bytes };
+}
+
 function sendSidecarError(reply: FastifyReply, error: unknown): FastifyReply {
   if (error instanceof SidecarError) {
     // Format refusé ou LibreOffice absent : la demande est recevable, le fichier non.
@@ -183,6 +255,54 @@ export async function ingestRoutes(
     return session;
   }
 
+  /** Préparation : dépôt + vignettes, sans extraire tout le contenu. */
+  app.post<{ Body: IngestBody }>(
+    "/api/ingest/prepare",
+    { bodyLimit: BODY_LIMIT },
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const upload = bytesFromBody(req.body);
+      if (!upload.ok) {
+        return reply.code(upload.status).send(upload.error);
+      }
+
+      const source = importSource(req.body?.filename);
+      const job = await createJob(
+        upload.bytes,
+        typeof req.body?.filename === "string" ? req.body.filename : "source.pdf",
+      );
+      try {
+        // Un .docx à médias explicites peut déjà produire une proposition utile
+        // sans choix de pages ; on garde ce chemin pour ne pas régresser l'import Word.
+        if (source.kind === "docx") {
+          const analysis = await analyzeDocument(job.input, job.dir);
+          const importModel = analysisToImportModel(analysis, source);
+          const enriched = { ...analysis, importModel };
+          await cacheAnalysis(job, enriched);
+          return {
+            ok: true,
+            jobId: job.id,
+            ...enriched,
+            templateModel: importModelToTemplateModelV2(importModel, sanitizeLayout(analysis.layout)),
+          };
+        }
+
+        const prepared = await inspectDocument(job.input, job.dir);
+        const cached = { ...prepared, source };
+        await cacheAnalysis(job, cached);
+        return {
+          ok: true,
+          jobId: job.id,
+          ...cached,
+        };
+      } catch (error) {
+        return sendSidecarError(reply, error);
+      }
+    },
+  );
+
   /** Analyse : dépose le fichier, rend la page 1, propose les zones. */
   app.post<{ Body: IngestBody }>(
     "/api/ingest",
@@ -191,40 +311,103 @@ export async function ingestRoutes(
       const session = await requireSession(req, reply);
       if (!session) return;
 
-      const { fileBase64, filename } = req.body ?? {};
-      if (typeof fileBase64 !== "string" || !fileBase64) {
-        return reply.code(400).send({ ok: false, error: "fileBase64 requis" });
-      }
-      const data = fileBase64.replace(/^data:[^,]*,/, "").replace(/\s/g, "");
-      if (!/^[A-Za-z0-9+/]+=*$/.test(data)) {
-        return reply
-          .code(400)
-          .send({ ok: false, error: "fileBase64 n'est pas du base64" });
-      }
-      const bytes = Buffer.from(data, "base64");
-      if (bytes.length === 0)
-        return reply.code(400).send({ ok: false, error: "Fichier vide" });
-      if (bytes.length > MAX_BYTES) {
-        return reply.code(413).send({
-          ok: false,
-          code: "too_large",
-          error: "Fichier trop volumineux : 10 Mo au plus",
-        });
+      const { filename } = req.body ?? {};
+      const upload = bytesFromBody(req.body);
+      if (!upload.ok) {
+        return reply.code(upload.status).send(upload.error);
       }
 
       const job = await createJob(
-        bytes,
+        upload.bytes,
         typeof filename === "string" ? filename : "source.pdf",
       );
       try {
         const analysis = await analyzeDocument(job.input, job.dir);
-        await cacheAnalysis(job, analysis);
         const importModel = analysisToImportModel(analysis, importSource(filename));
+        const enriched = { ...analysis, importModel };
+        await cacheAnalysis(job, enriched);
+        return {
+          ok: true,
+          jobId: job.id,
+          ...enriched,
+          templateModel: importModelToTemplateModelV2(importModel, sanitizeLayout(analysis.layout)),
+        };
+      } catch (error) {
+        return sendSidecarError(reply, error);
+      }
+    },
+  );
+
+  /** Reprise : la page d'import dédiée peut être rafraîchie sans perdre son état. */
+  app.get<{ Params: { id: string } }>(
+    "/api/ingest/:id",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const job = await findJob(req.params.id);
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+
+      try {
+        const cached = await readCachedAnalysis<CachedIngest>(job);
+        if (isPreparedIngest(cached)) {
+          return { ok: true, jobId: job.id, ...cached };
+        }
+        const analysis = cached ?? await loadAnalysis(job);
+        const importModel = analysisToImportModel(analysis);
         return {
           ok: true,
           jobId: job.id,
           ...analysis,
           importModel,
+          templateModel: importModelToTemplateModelV2(importModel, sanitizeLayout(analysis.layout)),
+        };
+      } catch (error) {
+        return sendSidecarError(reply, error);
+      }
+    },
+  );
+
+  /** Analyse riche, limitée aux pages choisies par l'utilisateur. */
+  app.post<{ Params: { id: string }; Body: AnalyzeSelectionBody }>(
+    "/api/ingest/:id/analyze",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const job = await findJob(req.params.id);
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+
+      const pageIndexes = selectedPageIndexes(req.body?.selectedPages);
+      if (!pageIndexes) {
+        return reply.code(400).send({
+          ok: false,
+          error: "Choisissez entre 1 et 3 pages à analyser",
+        });
+      }
+
+      try {
+        const cached = await readCachedAnalysis<CachedIngest>(job);
+        if (isPreparedIngest(cached)) {
+          const allowed = new Set(cached.pages.map((page) => page.pageIndex));
+          if (pageIndexes.some((pageIndex) => !allowed.has(pageIndex))) {
+            return reply.code(400).send({ ok: false, error: "Page invalide" });
+          }
+        }
+        const analysis = await analyzeDocument(job.input, job.dir, pageIndexes);
+        const importModel = analysisToImportModel(analysis, isPreparedIngest(cached) ? cached.source : {});
+        const enriched = { ...analysis, importModel };
+        await cacheAnalysis(job, enriched);
+        return {
+          ok: true,
+          jobId: job.id,
+          ...enriched,
           templateModel: importModelToTemplateModelV2(importModel, sanitizeLayout(analysis.layout)),
         };
       } catch (error) {
@@ -266,6 +449,26 @@ export async function ingestRoutes(
         return reply.code(400).send({ ok: false, error: "Page invalide" });
       }
       return sendPreview(reply, job, pageIndex);
+    },
+  );
+
+  /** Vignette basse résolution d'une page, générée à la préparation. */
+  app.get<{ Params: { id: string; pageIndex: string } }>(
+    "/api/ingest/:id/thumb/:pageIndex",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const job = await findJob(req.params.id);
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+      const pageIndex = Number(req.params.pageIndex);
+      if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex > 10_000) {
+        return reply.code(400).send({ ok: false, error: "Page invalide" });
+      }
+      return sendPng(reply, job, `thumb-${pageIndex + 1}.png`, "Vignette indisponible");
     },
   );
 
@@ -504,7 +707,10 @@ export async function ingestRoutes(
 
 /** Relevé de l'import, mis en cache au dépôt ; refait si le cache a disparu. */
 async function loadAnalysis(job: Job): Promise<Analysis> {
-  const cached = await readCachedAnalysis<Analysis>(job);
+  const cached = await readCachedAnalysis<CachedIngest>(job);
+  if (isPreparedIngest(cached)) {
+    throw new SidecarError("Analyse des pages requise", "not_analyzed");
+  }
   if (cached) return cached;
   const analysis = await analyzeDocument(job.input, job.dir);
   await cacheAnalysis(job, analysis);
@@ -516,13 +722,20 @@ async function sendPreview(
   job: Job,
   pageIndex: number,
 ): Promise<FastifyReply> {
-  const bytes = await readFile(path.join(job.dir, `page-${pageIndex + 1}.png`)).catch(
-    () => null,
-  );
+  return sendPng(reply, job, `page-${pageIndex + 1}.png`, "Aperçu indisponible");
+}
+
+async function sendPng(
+  reply: FastifyReply,
+  job: Job,
+  file: string,
+  missingMessage: string,
+): Promise<FastifyReply> {
+  const bytes = await readFile(path.join(job.dir, file)).catch(() => null);
   if (!bytes)
     return reply
       .code(404)
-      .send({ ok: false, error: "Aperçu indisponible" });
+      .send({ ok: false, error: missingMessage });
   return reply
     .type("image/png")
     .header("Cache-Control", "private, max-age=600")

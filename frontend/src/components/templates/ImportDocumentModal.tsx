@@ -19,6 +19,7 @@ import {
   extractFragment,
   ingestAssetUrl,
   ingestPreviewUrl,
+  prepareDocument,
   previewTemplateFromIngest,
   type IngestAnalysis,
   type IngestAsset,
@@ -104,6 +105,8 @@ interface Props {
   onClose: () => void;
   /** template créé (ou .typ importé) : son identifiant. */
   onTemplate?: (id: string) => void;
+  /** Import analysé, à reprendre dans une page dédiée. */
+  onImportReady?: (jobId: string) => void;
   /** Visuel découpé, à poser dans la section d'où la fenêtre a été ouverte. */
   onFragment?: (file: string) => void;
 }
@@ -122,6 +125,7 @@ export function ImportDocumentModal({
   target = "template",
   onClose,
   onTemplate,
+  onImportReady,
   onFragment,
 }: Props) {
   const [stage, setStage] = useState<Stage>("drop");
@@ -209,8 +213,21 @@ export function ImportDocumentModal({
 
     setStage("loading");
     try {
-      const result = await analyzeDocument(file);
+      const result = target === "template" && onImportReady
+        ? await prepareDocument(file)
+        : await analyzeDocument(file);
       if (id !== run.current) return;
+
+      if (target === "template" && onImportReady) {
+        onImportReady(result.jobId);
+        return;
+      }
+
+      if (result.mode === "prepared") {
+        fail("Sélection de pages requise pour analyser ce document.");
+        return;
+      }
+
       setAnalysis(result);
       setTemplateModel(result.templateModel);
       setCropPageIndex(0);

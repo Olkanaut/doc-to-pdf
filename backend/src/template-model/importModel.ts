@@ -85,6 +85,7 @@ export interface ImportModelV1 {
   objects: ImportObject[];
   assets: ImportAsset[];
   warnings: ImportWarning[];
+  raw?: Record<string, unknown>;
 }
 
 const SOURCE_KINDS: readonly ImportSourceKind[] = ["pdf", "docx", "image", "unknown"];
@@ -221,6 +222,7 @@ export function sanitizeImportModel(input: unknown): ImportModelV1 {
         objectId: warning.objectId === undefined ? undefined : id(warning.objectId, ""),
       };
     }),
+    raw: plainRecord(raw.raw),
   };
 }
 

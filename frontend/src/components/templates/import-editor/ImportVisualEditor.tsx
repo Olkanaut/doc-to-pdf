@@ -47,6 +47,7 @@ interface Props {
   previewPdfUrl: string | null;
   previewLoading: boolean;
   previewError: string | null;
+  showPreviewButton?: boolean;
 }
 
 export function ImportVisualEditor({
@@ -59,6 +60,7 @@ export function ImportVisualEditor({
   previewPdfUrl,
   previewLoading,
   previewError,
+  showPreviewButton = true,
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const pages = analysis.importModel.pages.length
@@ -323,9 +325,11 @@ export function ImportVisualEditor({
         <Button type="button" size="small" color="error" variant="tertiary" disabled={!selected.length} onClick={deleteSelection}>
           Supprimer
         </Button>
-        <Button type="button" size="small" disabled={previewLoading} onClick={() => void onPreview()}>
-          {previewLoading ? "Preview…" : "Preview Typst"}
-        </Button>
+        {showPreviewButton && (
+          <Button type="button" size="small" disabled={previewLoading} onClick={() => void onPreview()}>
+            {previewLoading ? "Preview…" : "Preview Typst"}
+          </Button>
+        )}
       </div>
 
       <div className="import-editor__grid">

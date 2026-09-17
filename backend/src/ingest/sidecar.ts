@@ -98,6 +98,29 @@ export interface Analysis {
   importModel?: ImportModelV1;
 }
 
+export interface PreparedPage {
+  id: string;
+  pageIndex: number;
+  widthPt: number;
+  heightPt: number;
+  rotation: 0 | 90 | 180 | 270;
+  thumbnail?: string | null;
+}
+
+export interface PreparedAnalysis {
+  prepared: true;
+  mode: "prepared";
+  page: {
+    widthPt: number;
+    heightPt: number;
+    count: number;
+    previewScale: number;
+    preview: string | null;
+  };
+  pages: PreparedPage[];
+  warnings: Array<{ code: string; message: string }>;
+}
+
 export interface Fragment {
   file: string;
   widthPt: number;
@@ -144,8 +167,18 @@ function parse(raw: string): (Record<string, unknown> & { ok?: unknown }) | null
   }
 }
 
-export async function analyzeDocument(input: string, outDir: string): Promise<Analysis> {
-  return run<Analysis>(["analyze", "--input", input, "--out", outDir]);
+export async function inspectDocument(input: string, outDir: string): Promise<PreparedAnalysis> {
+  return run<PreparedAnalysis>(["inspect", "--input", input, "--out", outDir]);
+}
+
+export async function analyzeDocument(
+  input: string,
+  outDir: string,
+  pageIndexes?: readonly number[],
+): Promise<Analysis> {
+  const args = ["analyze", "--input", input, "--out", outDir];
+  if (pageIndexes?.length) args.push("--pages", pageIndexes.join(","));
+  return run<Analysis>(args);
 }
 
 /** Sort un visuel d'un .docx sans le recoder ni composer le document. */

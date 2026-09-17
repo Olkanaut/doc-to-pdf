@@ -153,6 +153,10 @@ export function TemplatesListPage() {
             reload();
           }}
           onTemplate={(id) => navigate(`/t/${id}/layout`)}
+          onImportReady={(jobId) => {
+            setImportOpen(false);
+            navigate(`/templates/import/${encodeURIComponent(jobId)}`);
+          }}
         />
       )}
 

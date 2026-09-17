@@ -193,6 +193,18 @@ describe.skipIf(!enabled)("routes d'import", () => {
     });
     expect(body.templateModel.nodes.length).toBeGreaterThan(0);
 
+    const resumed = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}`,
+    });
+    expect(resumed.statusCode).toBe(200);
+    expect(resumed.json()).toMatchObject({
+      ok: true,
+      jobId: body.jobId,
+      importModel: { model: "import", version: 1 },
+      templateModel: { model: "template", version: 2 },
+    });
+
     const preview = await app.inject({
       method: "GET",
       url: `/api/ingest/${body.jobId}/preview`,
@@ -208,6 +220,83 @@ describe.skipIf(!enabled)("routes d'import", () => {
     expect(indexedPreview.statusCode).toBe(200);
     expect(indexedPreview.headers["content-type"]).toBe("image/png");
     expect(indexedPreview.rawPayload.subarray(1, 4).toString()).toBe("PNG");
+
+    await app.close();
+  });
+
+  it("prépare un PDF puis analyse uniquement les pages choisies", async () => {
+    const app = await buildApp();
+    const prepared = await app.inject({
+      method: "POST",
+      url: "/api/ingest/prepare",
+      payload: { fileBase64: pdfBase64, filename: "lettre.pdf" },
+    });
+    expect(prepared.statusCode).toBe(200);
+    const body = prepared.json();
+    expect(body).toMatchObject({
+      ok: true,
+      prepared: true,
+      mode: "prepared",
+      source: { kind: "pdf", name: "lettre.pdf" },
+    });
+    expect(body.templateModel).toBeUndefined();
+    expect(body.pages).toHaveLength(1);
+    expect(body.pages[0]).toMatchObject({
+      pageIndex: 0,
+      thumbnail: "thumb-1.png",
+    });
+
+    const resumed = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}`,
+    });
+    expect(resumed.statusCode).toBe(200);
+    expect(resumed.json()).toMatchObject({
+      ok: true,
+      jobId: body.jobId,
+      prepared: true,
+      mode: "prepared",
+    });
+
+    const thumb = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}/thumb/0`,
+    });
+    expect(thumb.statusCode).toBe(200);
+    expect(thumb.headers["content-type"]).toBe("image/png");
+    expect(thumb.rawPayload.subarray(1, 4).toString()).toBe("PNG");
+
+    const tooMany = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${body.jobId}/analyze`,
+      payload: {
+        selectedPages: [
+          { pageIndex: 0 },
+          { pageIndex: 1 },
+          { pageIndex: 2 },
+          { pageIndex: 3 },
+        ],
+      },
+    });
+    expect(tooMany.statusCode).toBe(400);
+
+    const analyzed = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${body.jobId}/analyze`,
+      payload: { selectedPages: [{ pageIndex: 0, role: "first" }] },
+    });
+    expect(analyzed.statusCode).toBe(200);
+    expect(analyzed.json()).toMatchObject({
+      ok: true,
+      jobId: body.jobId,
+      mode: "page",
+      importModel: {
+        model: "import",
+        version: 1,
+        raw: { selectedPages: [0] },
+      },
+      templateModel: { model: "template", version: 2 },
+    });
 
     await app.close();
   });

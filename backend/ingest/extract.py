@@ -3,7 +3,8 @@
 Called by the Node backend with execFile (array args, never a shell string).
 Two subcommands, both printing a single JSON object on stdout:
 
-    extract.py analyze --input FILE --out DIR
+    extract.py inspect --input FILE --out DIR
+    extract.py analyze --input FILE --out DIR [--pages 0,2,9]
     extract.py crop    --input FILE --out DIR --rect x0,y0,x1,y1 [--vector] --name BASE
 
 Everything the page hides stays hidden: text and shapes painted over by a
@@ -42,9 +43,11 @@ KNOWN_FONTS = {
 }
 PREVIEW_SCALE = 2.0
 CROP_SCALE = 4.0
+THUMBNAIL_SCALE = 0.35
 # Garde-fou : l'éditeur peut naviguer entre plusieurs pages, sans transformer
 # un gros PDF en travail d'extraction interminable.
-MAX_PREVIEW_PAGES = 20
+MAX_SELECTED_PAGES = 3
+MAX_THUMBNAIL_PAGES = 80
 # A shape covering this much of the page is background, not content.
 BACKGROUND_AREA_RATIO = 0.9
 # Vertical gap (pt) that separates one band of content from the next.
@@ -435,11 +438,11 @@ def pdf_import_model(
     *,
     pages: list[dict],
     page_count: int,
+    selected_pages: list[int],
     zones: list[dict],
     objects: list[dict],
     assets: list[dict],
     font_substitution: str | None,
-    rendered_pages: int,
 ) -> dict:
     warnings = []
     if font_substitution:
@@ -449,11 +452,11 @@ def pdf_import_model(
                 "message": f"{font_substitution} was replaced by the fallback font.",
             }
         )
-    if rendered_pages < page_count:
+    if len(selected_pages) < page_count:
         warnings.append(
             {
-                "code": "preview-pages-limited",
-                "message": f"Only the first {rendered_pages} pages were extracted for editing.",
+                "code": "selected-pages-only",
+                "message": f"Only {len(selected_pages)} selected page(s) were extracted for template sampling.",
             }
         )
 
@@ -466,14 +469,79 @@ def pdf_import_model(
         "objects": objects,
         "assets": assets,
         "warnings": warnings,
-        "raw": {"pageCount": page_count, "renderedPages": rendered_pages},
+        "raw": {"pageCount": page_count, "selectedPages": selected_pages},
     }
 
 
 # ---------------------------------------------------------------- analyze
 
 
-def analyze(input_path: Path, out_dir: Path) -> dict:
+def inspect(input_path: Path, out_dir: Path) -> dict:
+    """Lecture légère : dimensions et vignettes, sans extraction riche."""
+    doc = open_document(input_path, out_dir)
+    if doc.page_count == 0:
+        fail("Document vide", "empty_document")
+
+    pages = []
+    for page_index in range(doc.page_count):
+        page = doc[page_index]
+        thumbnail = None
+        if page_index < MAX_THUMBNAIL_PAGES:
+            pix = page.get_pixmap(matrix=pymupdf.Matrix(THUMBNAIL_SCALE, THUMBNAIL_SCALE), alpha=False)
+            thumbnail = f"thumb-{page_index + 1}.png"
+            pix.save(out_dir / thumbnail)
+        pages.append(
+            {
+                "id": f"page-{page_index + 1}",
+                "pageIndex": page_index,
+                "widthPt": round(page.rect.width, 2),
+                "heightPt": round(page.rect.height, 2),
+                "rotation": 0,
+                "thumbnail": thumbnail,
+            }
+        )
+
+    return {
+        "ok": True,
+        "prepared": True,
+        "mode": "prepared",
+        "page": {
+            "widthPt": pages[0]["widthPt"],
+            "heightPt": pages[0]["heightPt"],
+            "count": doc.page_count,
+            "previewScale": THUMBNAIL_SCALE,
+            "preview": None,
+        },
+        "pages": pages,
+        "warnings": (
+            [{
+                "code": "thumbnail-pages-limited",
+                "message": f"Only the first {MAX_THUMBNAIL_PAGES} pages have thumbnails.",
+            }]
+            if doc.page_count > MAX_THUMBNAIL_PAGES else []
+        ),
+    }
+
+
+def selected_page_indexes(page_count: int, selected_pages: list[int] | None) -> list[int]:
+    raw = selected_pages if selected_pages else [0]
+    if len(raw) > MAX_SELECTED_PAGES:
+        fail(f"Choisissez {MAX_SELECTED_PAGES} pages au maximum", "too_many_pages")
+    seen: set[int] = set()
+    pages = []
+    for page_index in raw:
+        if page_index in seen:
+            continue
+        if page_index < 0 or page_index >= page_count:
+            fail("Page introuvable", "unknown_page")
+        seen.add(page_index)
+        pages.append(page_index)
+    if not pages:
+        fail("Aucune page à analyser", "empty_pages")
+    return pages
+
+
+def analyze(input_path: Path, out_dir: Path, selected_pages: list[int] | None = None) -> dict:
     """Relevé de la première page.
 
     Deux modes selon ce que le fichier permet :
@@ -493,7 +561,7 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     doc = open_document(input_path, out_dir)
     if doc.page_count == 0:
         fail("Document vide", "empty_document")
-    rendered_pages = min(doc.page_count, MAX_PREVIEW_PAGES)
+    pages_to_extract = selected_page_indexes(doc.page_count, selected_pages)
     pages: list[dict] = []
     zones: list[dict] = []
     objects: list[dict] = []
@@ -512,7 +580,7 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     first_header_band: pymupdf.Rect | None = None
     first_footer_band: pymupdf.Rect | None = None
 
-    for page_index in range(rendered_pages):
+    for page_index in pages_to_extract:
         page = doc[page_index]
         page_rect = page.rect
         spans, shapes = visible_items(page)
@@ -650,13 +718,13 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     regions.append(region("page", page_rect))
     import_model = pdf_import_model(
         pages=pages,
-        page_count=doc.page_count,
-        zones=zones,
-        objects=objects,
-        assets=list(assets_by_id.values()),
-        font_substitution=substituted,
-        rendered_pages=rendered_pages,
-    )
+            page_count=doc.page_count,
+            selected_pages=pages_to_extract,
+            zones=zones,
+            objects=objects,
+            assets=list(assets_by_id.values()),
+            font_substitution=substituted,
+        )
 
     return {
         "ok": True,
@@ -848,13 +916,31 @@ def parse_rect(raw: str) -> pymupdf.Rect:
     return pymupdf.Rect(x0, y0, x1, y1)
 
 
+def parse_pages(raw: str | None) -> list[int] | None:
+    if raw is None or not raw.strip():
+        return None
+    pages = []
+    try:
+        for value in raw.split(","):
+            if value.strip():
+                pages.append(int(value))
+    except ValueError:
+        fail("--pages attend une liste d'index séparés par des virgules", "bad_pages")
+    return pages
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
+    inspect_cmd = sub.add_parser("inspect")
+    inspect_cmd.add_argument("--input", required=True)
+    inspect_cmd.add_argument("--out", required=True)
+
     analyze_cmd = sub.add_parser("analyze")
     analyze_cmd.add_argument("--input", required=True)
     analyze_cmd.add_argument("--out", required=True)
+    analyze_cmd.add_argument("--pages")
 
     asset_cmd = sub.add_parser("asset")
     asset_cmd.add_argument("--input", required=True)
@@ -877,8 +963,10 @@ def main() -> None:
     if not input_path.is_file():
         fail("Fichier introuvable", "missing_input")
 
-    if args.command == "analyze":
-        result = analyze(input_path, out_dir)
+    if args.command == "inspect":
+        result = inspect(input_path, out_dir)
+    elif args.command == "analyze":
+        result = analyze(input_path, out_dir, parse_pages(args.pages))
     elif args.command == "asset":
         result = take_asset(input_path, out_dir, args.entry, args.name)
     else:

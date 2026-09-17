@@ -712,6 +712,7 @@ function importObjectToTemplateNodeV2(
     : undefined;
   const region = zone ? importZoneKindToTemplateRegion(zone.kind) : "body";
   const regionId = object.zoneId ? (zoneRegionIds.get(object.zoneId) ?? regionIdV2(region)) : regionIdV2(region);
+  const styleSample = object.type === "text" && region === "body";
   const source = {
     kind: provenanceToTemplateSource(object.provenance),
     objectIds: [object.id],
@@ -731,10 +732,14 @@ function importObjectToTemplateNodeV2(
       width: object.bbox.width,
       height: object.bbox.height,
     },
-    style: object.style,
+    style: {
+      ...(object.style ?? {}),
+      purpose: styleSample ? "style-sample" : "template-object",
+      hidden: styleSample ? true : object.style?.hidden,
+    },
     source,
     confidence: object.confidence,
-    locked: false,
+    locked: styleSample,
     order: index,
   };
 

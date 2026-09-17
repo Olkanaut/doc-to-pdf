@@ -352,6 +352,30 @@ export interface IngestAnalysis {
   templateModel: TemplateModelV2;
 }
 
+export interface IngestPreparedPage extends ImportPage {
+  thumbnail?: string | null;
+}
+
+export interface IngestPrepared {
+  jobId: string;
+  prepared: true;
+  mode: "prepared";
+  source?: {
+    kind?: ImportSourceKind;
+    name?: string;
+  };
+  page: {
+    widthPt: number;
+    heightPt: number;
+    count: number;
+    previewScale: number;
+  };
+  pages: IngestPreparedPage[];
+  warnings: Array<{ code: string; message: string }>;
+}
+
+export type IngestResume = IngestAnalysis | IngestPrepared;
+
 export interface IngestFragment {
   file: string;
   widthPt: number;
@@ -698,10 +722,43 @@ export async function analyzeDocument(file: File): Promise<IngestAnalysis> {
   );
 }
 
+/** Dépose le fichier sans extraction riche : la page dédiée choisira ensuite 1 à 3 pages. */
+export async function prepareDocument(file: File): Promise<IngestResume> {
+  const fileBase64 = await toBase64(file);
+  return asJson(
+    await apiFetch("/api/ingest/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileBase64, filename: file.name }),
+    }),
+  );
+}
+
+export async function fetchIngestAnalysis(jobId: string): Promise<IngestResume> {
+  return asJson(await apiFetch(`/api/ingest/${jobId}`));
+}
+
+export async function analyzePreparedIngest(
+  jobId: string,
+  selectedPages: Array<{ pageIndex: number; role?: string }>,
+): Promise<IngestAnalysis> {
+  return asJson(
+    await apiFetch(`/api/ingest/${jobId}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ selectedPages }),
+    }),
+  );
+}
+
 export function ingestPreviewUrl(jobId: string, pageIndex = 0): string {
   return pageIndex === 0
     ? `/api/ingest/${jobId}/preview`
     : `/api/ingest/${jobId}/preview/${pageIndex}`;
+}
+
+export function ingestThumbnailUrl(jobId: string, pageIndex: number): string {
+  return `/api/ingest/${jobId}/thumb/${pageIndex}`;
 }
 
 /** Vignette d'un visuel sorti d'un .docx, désigné par son rang dans `assets`. */

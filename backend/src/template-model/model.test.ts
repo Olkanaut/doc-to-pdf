@@ -515,6 +515,7 @@ describe("template model contracts", () => {
         }],
         assets: [],
         warnings: [],
+        raw: { selectedPages: [0] },
       },
     };
 
@@ -522,5 +523,6 @@ describe("template model contracts", () => {
 
     expect(importModel.source).toMatchObject({ kind: "pdf", name: "source.pdf" });
     expect(importModel.objects).toEqual(analysis.importModel!.objects);
+    expect(importModel.raw).toEqual({ selectedPages: [0] });
   });
 });
