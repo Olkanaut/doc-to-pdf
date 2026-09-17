@@ -5,9 +5,22 @@ la vitesse, la cohérence avec les contrôles, le garde-fou, puis la limite assu
 
 ## Avant de commencer
 
+Deux réglages sont nécessaires, et ils ne sont **pas** actifs par défaut. Au choix :
+
 ```bash
+# le temps d'une commande, sans rien laisser derrière
 cd backend && DOTS_AI_PATCH=1 DOTS_AI_EFFORT=low npm run dev
 ```
+
+```bash
+# ou durablement, deux lignes dans backend/.env (fichier ignoré par git)
+DOTS_AI_PATCH=1
+DOTS_AI_EFFORT=low
+```
+
+La première forme ne pose les variables que pour ce processus : elles ne sont pas exportées
+dans le shell, et un `npm run dev` lancé ensuite sans elles repart en mode normal. Pour une
+démo, `.env` est plus sûr — on ne peut pas oublier le préfixe.
 
 Ouvre un gabarit **géré** (qui contient un bloc `// dots:layout` — tout gabarit créé depuis
 l'éditeur en a un), panneau de mise en page visible à gauche, panneau Assistant ouvert à

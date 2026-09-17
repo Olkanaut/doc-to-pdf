@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { mergePatch, parseAiReply } from "./parse.js";
 import { systemPrompt } from "./prompt.js";
 import { defaultLayout } from "../layout/layoutConfig.js";
@@ -110,5 +110,25 @@ describe("le prompt décrit le type réel", () => {
     expect(prompt).toContain("numberingScope: BlockScope");
     expect(prompt).not.toContain("PageBandMode");
     expect(prompt).not.toContain("first: HeaderContent");
+  });
+});
+
+/**
+ * `server.ts` charge `backend/.env` dans son corps, donc APRÈS l'évaluation de ses
+ * imports. Tant que le contrat vivait dans une constante de module, `DOTS_AI_PATCH`
+ * posé dans `.env` n'avait aucun effet — seule la ligne de commande marchait.
+ */
+describe("DOTS_AI_PATCH est lu à chaque appel, pas au chargement du module", () => {
+  const avant = process.env.DOTS_AI_PATCH;
+  afterEach(() => {
+    if (avant === undefined) delete process.env.DOTS_AI_PATCH;
+    else process.env.DOTS_AI_PATCH = avant;
+  });
+
+  it("posé après l'import, il prend quand même effet", () => {
+    delete process.env.DOTS_AI_PATCH;
+    expect(systemPrompt([])).not.toContain("<layout>");
+    process.env.DOTS_AI_PATCH = "1";
+    expect(systemPrompt([])).toContain("<layout>");
   });
 });

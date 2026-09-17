@@ -117,7 +117,8 @@ interface LayoutConfig {
  * octets renvoyés sont une recopie à l'identique. Sous `DOTS_AI_PATCH` tant que le banc
  * complet n'a pas tranché.
  */
-const PATCH_CONTRACT = process.env.DOTS_AI_PATCH
+function patchContract(): string {
+  return process.env.DOTS_AI_PATCH
   ? `
 Puis EXACTEMENT UNE des deux balises suivantes — jamais les deux, et jamais aucune :
 <layout>{ … uniquement les champs du JSON qui changent … }</layout>
@@ -126,8 +127,9 @@ Puis EXACTEMENT UNE des deux balises suivantes — jamais les deux, et jamais au
 PRÉFÈRE <layout> dès qu'il s'applique. C'est un correctif fusionné en profondeur sur le JSON actuel du bloc ; le serveur régénère le Typst lui-même, tu n'as pas à le réécrire. Un objet est fusionné clé par clé ; un tableau remplace l'ancien EN ENTIER (donc si un bloc d'en-tête change, réécris \`header.blocks\` complet).
 <layout> n'est possible que si le bloc \`// dots:layout\` existe ET que la demande tient entièrement dans le type. Sinon — template libre, ou surcharge Typst nécessaire — réponds <typst> comme avant.
 Le raccourci ne dispense de RIEN : <summary> et <changes> restent obligatoires, avec les mêmes exigences, y compris nommer ce que la modification fait perdre.`
-  : `
+    : `
 <typst>la source complète de la template, prête à compiler</typst>`;
+}
 
 /** @param assets chemins relatifs des images disponibles (ex. "assets/logo-ministere.png"). */
 export function systemPrompt(assets: string[]): string {
@@ -170,7 +172,7 @@ Si un réglage que tu modifies en pilote un autre, dis-le aussi. Le piège le pl
 Format de réponse — réponds UNIQUEMENT avec ces balises, sans texte autour ni bloc de code Markdown.
 TOUJOURS ces deux-là, quelle que soit la réponse :
 <summary>une phrase en français résumant la modification, qui ne décrit que ce que tu as réellement écrit — aucun effet annoncé qui ne soit pas dans la source rendue</summary>
-<changes><item>un changement</item><item>un autre changement</item></changes>${PATCH_CONTRACT}`;
+<changes><item>un changement</item><item>un autre changement</item></changes>${patchContract()}`;
 }
 
 export function editUserText(source: string, instruction: string): string {
