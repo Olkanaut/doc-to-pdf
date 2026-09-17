@@ -356,6 +356,12 @@
   flex: 0 0 auto;
 }
 
+.dots-page .template-tile:has(.template-actions-menu__trigger[aria-expanded="true"]),
+.dots-page .template-row:has(.template-actions-menu__trigger[aria-expanded="true"]) {
+  position: relative;
+  z-index: 40;
+}
+
 .dots-page .template-actions-menu__trigger {
   display: inline-flex;
   align-items: center;
