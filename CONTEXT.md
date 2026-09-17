@@ -99,7 +99,7 @@ The same modal is the only import entry point: a `.typ` goes straight through th
 
 **Python is required for this path only.** PyMuPDF gives the real vector geometry and paint order that a JS PDF library does not; `backend/ingest/README.md` covers installation and the AGPL question. Without Python the ingest routes return 422 and nothing else is affected.
 
-A `.docx` takes a shorter route: `backend/ingest/docx.py` reads the zip, so paper size, margins, default font and the embedded images come out exactly, without composing anything, and the original image file is reused rather than a crop of a rendered page. There is then no page image, so the modal skips the crop step and offers the visuals it found. LibreOffice enters only for a letterhead drawn as DrawingML shapes, where no file exists to extract.
+A `.docx` is always composed by LibreOffice: extracting a loose file from `word/media/` loses the text, shapes and placement that Word combines around it. `backend/ingest/docx.py` creates a second, three-page probe with an empty body and the first section intact; pages 1 and 3 isolate the first and following-page header/footer variants, while page 2 detects an unsupported even-page difference. The resulting full-width bands are 288 DPI PNGs. Dynamic `PAGE`/`NUMPAGES` paragraphs are removed from the visual probe and returned as pagination metadata rather than frozen into a bitmap.
 
 Template management:
 
@@ -126,7 +126,7 @@ AI assistant:
 - Remote Docs images are not downloaded yet. Real Docs documents containing body images return `422` during render.
 - Import fragments land in the shared `backend/templates/assets` folder rather than being scoped per template, so every user's gallery shows every fragment. Fine for a demo, wrong for more than one administration.
 - Import reads the first page only, by design. Header/footer text is rasterised with its band rather than reconstructed as Typst text — doable via `get_text("dict")`, but font substitution then shifts the metrics, so the image is the faithful option.
-- `.docx` import reads the zip directly — page geometry from `sectPr`, fonts from `styles.xml`/`theme1.xml`, and the images from `word/media/` byte for byte (a real embedded SVG wins over its mandatory PNG fallback). No rendering, so no crop step either: the modal offers the visuals it found. LibreOffice is needed **only** when the letterhead is drawn in the XML and there is no file to take, which is the one case a zip cannot serve.
+- `.docx` import currently exposes the rendered first page through the existing crop modal. Its composed first/following header and footer bands are already produced by the backend, but the one-click UI and automatic `LayoutConfig` wiring belong to the next import change. Multiple sections and distinct even-page bands are reported but deliberately flattened to the first section and the normal odd-page variant.
 - Docker/deploy packaging still needs a final decision, especially Typst binary and fonts (`--font-path` / `TYPST_FONT_PATHS` in containers).
 - Docs' Resource Server API is still treated as beta/evolving; keep `documentation/DOCS-FETCH.md` and `documentation/EXTERNAL-API.md` close to the actual upstream contract.
 - The AI assistant is optional and depends on external API configuration; do not make the core PDF flow depend on it.
@@ -145,7 +145,6 @@ Open http://localhost:3002. Requires the `typst` CLI on `PATH` (`brew install ty
 `make install` also sets up `backend/ingest/.venv` for the PDF/DOCX import
 feature (`make install-ingest`, best-effort — skipped with a note if
 `python3` isn't found, and the rest of the app is unaffected either way).
-One further optional dependency for that feature: importing a `.docx` whose
-letterhead is drawn as shapes rather than stored as a file needs `soffice`/
-`libreoffice` on `PATH` (`brew install --cask libreoffice` on macOS) — see
-`backend/ingest/README.md` for the full breakdown of what needs what.
+Importing any `.docx` also needs `soffice`/`libreoffice` on `PATH`
+(`brew install --cask libreoffice` on macOS); the standard macOS application
+path is detected automatically. See `backend/ingest/README.md` for details.

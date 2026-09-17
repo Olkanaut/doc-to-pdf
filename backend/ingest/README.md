@@ -1,8 +1,9 @@
 # PDF / DOCX extraction
 
 `extract.py` reads a document's first page and crops regions from it, so
-`/api/ingest` can deduce a Typst template. The backend calls it as a
-subprocess (`src/ingest/sidecar.ts`).
+`/api/ingest` can deduce a Typst template. For DOCX it also renders a
+three-page header/footer probe. The backend calls it as a subprocess
+(`src/ingest/sidecar.ts`).
 
 ## Why Python
 
@@ -43,30 +44,32 @@ make install-ingest        # from the repo root
 cd backend/ingest && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-## .docx: the zip first, LibreOffice as a last resort
+## .docx: render the composition, not its loose media
 
-A .docx is a zip of XML, and most of what's needed reads straight out of it
-with nothing composed (`docx.py`):
+A header is not one file from `word/media/`: Word composes images, text,
+tables, lines and DrawingML using relationships and section rules. Every DOCX
+is therefore rendered by LibreOffice before analysis. The PDF path itself is
+unchanged and reads that rendered output for page geometry, margins, body font
+and the user preview.
 
-- **paper size, margins, orientation** — `w:pgSz` and `w:pgMar` from
-  `sectPr`, in twips;
-- **default font and body size** — `docDefaults` in `styles.xml`, the real
-  name resolved in `theme1.xml` when Word defers to the theme;
-- **visuals** — the files under `word/media/`, taken as-is. A real embedded
-  SVG (Office 365's `asvg:svgBlip` extension) wins over its mandatory PNG
-  fallback: that's the original vector, not an approximation.
+`docx.py` also creates a temporary three-page copy with an empty body and the
+first section left intact. Rendering that probe isolates the complete visual
+bands:
 
-This path gives **the original image, byte for byte** — strictly better than
-cropping a rendered page — and needs neither a rendering pass nor
-LibreOffice. There is then no page to crop: the analysis responds in `assets`
-mode and the user picks a visual instead of a region.
+1. page 1 carries the first-page variant;
+2. page 2 is used only to detect a distinct even-page variant;
+3. page 3 carries the normal following-page variant.
 
-**LibreOffice is needed only for case 3**: a letterhead drawn in the XML
-(DrawingML, SmartArt, VML) exists nowhere as a file, so the document has to be
-composed to see it. This case is recognized by the *absence* of any visual in
-`word/media/` — not by shape markers, which show up in almost every .docx,
-if only for a picture's own frame. Without `soffice` on the `PATH`, such a
-document is refused with the code `no_libreoffice`.
+PyMuPDF crops each full-width band as a 288 DPI PNG. Equal first and following
+bands collapse to scope `all`; different bands become `first` and
+`except-first`. `PAGE` and `NUMPAGES` paragraphs are removed from the probe and
+reported as dynamic pagination metadata, so their sample values are never
+baked into the image. Multiple sections, mixed pagination content and distinct
+even-page bands produce explicit warnings.
+
+LibreOffice is consequently required for every DOCX import. Without
+`soffice`/`libreoffice` on `PATH`, the route responds with `no_libreoffice`.
+On macOS the standard application path is detected as well.
 
 ```bash
 brew install --cask libreoffice   # macOS

@@ -262,23 +262,21 @@ def line_height(spans: list[dict], body_size: float) -> float:
 
 
 def analyze(input_path: Path, out_dir: Path) -> dict:
-    """Relevé de la première page.
+    """Analyse a PDF as-is, or a DOCX after LibreOffice has composed it."""
+    kind = sniff(input_path)
+    if kind == "docx":
+        return analyze_docx(input_path, out_dir)
+    if kind != "pdf":
+        fail("Format non reconnu : seuls .pdf et .docx sont acceptés", "unsupported_format")
+    try:
+        doc = pymupdf.open(input_path)
+    except Exception as error:  # noqa: BLE001 - reported to the caller as JSON
+        fail(f"PDF illisible : {error}", "unreadable_pdf")
+    return analyze_rendered(doc, out_dir)
 
-    Deux modes selon ce que le fichier permet :
 
-    * ``page`` — une page est rendue et des bandes y sont proposées ; c'est le
-      cas de tout PDF, et d'un .docx dont le papier à en-tête est dessiné dans
-      le XML (il faut alors composer le document pour le voir).
-    * ``assets`` — les visuels sont sortis du .docx tels quels et la géométrie
-      lue dans son XML : rien n'est rendu, donc rien n'est à recadrer, et
-      l'image reprise est l'originale plutôt qu'un découpage approché.
-    """
-    if sniff(input_path) == "docx":
-        from_zip = analyze_docx(input_path)
-        if from_zip is not None:
-            return from_zip
-
-    doc = open_document(input_path, out_dir)
+def analyze_rendered(doc: pymupdf.Document, out_dir: Path) -> dict:
+    """Existing PDF analysis. DOCX rendering deliberately feeds this same path."""
     if doc.page_count == 0:
         fail("Document vide", "empty_document")
     page = doc[0]
@@ -391,51 +389,139 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     }
 
 
-def analyze_docx(input_path: Path) -> dict | None:
-    """Relevé lu dans le zip, ou ``None`` s'il n'y a aucun visuel à en tirer.
+def probe_page_items(page: pymupdf.Page) -> list[pymupdf.Rect]:
+    """Visible rectangles from a blank probe page."""
+    spans, shapes = visible_items(page)
+    image_rects: list[pymupdf.Rect] = []
+    for info in page.get_images(full=True):
+        image_rects.extend(r for r in page.get_image_rects(info[0]) if not r.is_empty)
+    page_rect = page.rect
+    raw = [span["rect"] for span in spans] + [shape["rect"] for shape in shapes] + image_rects
+    items = [inside for rect in raw if (inside := clip(rect, page_rect)) is not None]
+    return items
 
-    Sans visuel, le papier à en-tête est dessiné dans le XML (cas 3) : aucun
-    unzip ne le sortira, il faut composer le document — c'est le seul cas où
-    LibreOffice est nécessaire.
-    """
-    try:
-        with zipfile.ZipFile(input_path) as zf:
-            assets = docx_zip.media(zf)
-            if not assets:
-                return None
-            geometry = docx_zip.page_geometry(zf)
-            raw_font, size = docx_zip.default_font(zf)
-    except (zipfile.BadZipFile, KeyError):
+
+def probe_band(page: pymupdf.Page, kind: str) -> pymupdf.Rect | None:
+    """Measure a composed header/footer on a page whose body is empty."""
+    items = probe_page_items(page)
+    height = page.rect.height
+    if kind == "header":
+        candidates = [rect for rect in items if rect.y0 < height * SEARCH_ZONE and rect.y1 <= height / 2]
+    else:
+        candidates = [rect for rect in items if rect.y1 > height * (1 - SEARCH_ZONE) and rect.y0 >= height / 2]
+    if not candidates:
         return None
 
-    font, substituted = map_font(raw_font or "")
-    paper, orientation = guess_paper(geometry["widthPt"], geometry["heightPt"])
+    content = pymupdf.Rect(candidates[0])
+    for rect in candidates[1:]:
+        content |= rect
+    if kind == "header":
+        band = pymupdf.Rect(0, 0, page.rect.width, content.y1 + BAND_PAD)
+    else:
+        band = pymupdf.Rect(0, content.y0 - BAND_PAD, page.rect.width, height)
+    band &= page.rect
+    return band if MIN_BAND < band.height <= height * MAX_BAND else None
+
+
+def matching_bands(
+    first_page: pymupdf.Page,
+    first_rect: pymupdf.Rect | None,
+    other_page: pymupdf.Page,
+    other_rect: pymupdf.Rect | None,
+    kind: str,
+) -> bool:
+    """Compare equal-sized edge strips; identical rendering collapses to scope all."""
+    if first_rect is None or other_rect is None:
+        return first_rect is None and other_rect is None
+    if first_page.rect.width != other_page.rect.width or first_page.rect.height != other_page.rect.height:
+        return False
+    extent = max(first_rect.height, other_rect.height)
+    if kind == "header":
+        rect = pymupdf.Rect(0, 0, first_page.rect.width, extent)
+    else:
+        rect = pymupdf.Rect(0, first_page.rect.height - extent, first_page.rect.width, first_page.rect.height)
+    matrix = pymupdf.Matrix(PREVIEW_SCALE, PREVIEW_SCALE)
+    first = first_page.get_pixmap(matrix=matrix, clip=rect, alpha=False)
+    other = other_page.get_pixmap(matrix=matrix, clip=rect, alpha=False)
+    return first.width == other.width and first.height == other.height and first.samples == other.samples
+
+
+def save_probe_band(
+    page: pymupdf.Page,
+    rect: pymupdf.Rect,
+    out_dir: Path,
+    kind: str,
+    scope: str,
+) -> dict:
+    """Rasterize a full-width composed band at 288 DPI."""
+    target = out_dir / f"docx-{kind}-{scope}.png"
+    pixmap = page.get_pixmap(matrix=pymupdf.Matrix(CROP_SCALE, CROP_SCALE), clip=rect, alpha=False)
+    pixmap.save(target)
     return {
-        "ok": True,
-        "mode": "assets",
-        "page": {
-            "widthPt": geometry["widthPt"],
-            "heightPt": geometry["heightPt"],
-            "count": 1,
-            "previewScale": 1.0,
-            "preview": None,
-        },
-        "regions": [],
-        "assets": assets,
-        "layout": {
-            "paper": paper,
-            "orientation": orientation,
-            "margins": geometry["margins"],
-            "font": font,
-            "fontSize": size,
-            # Word donne l'interligne par style, pas globalement : la valeur par
-            # défaut du template vaut mieux qu'une moyenne inventée.
-            "lineHeight": 1.2,
-            "headings": {"scale": "normal", "color": "#0659c5"},
-        },
-        "fontSubstitution": substituted,
-        "counts": {"text": 0, "shapes": 0, "images": len(assets)},
+        "kind": kind,
+        "scope": scope,
+        "file": target.name,
+        "widthPt": round(rect.width, 2),
+        "heightPt": round(rect.height, 2),
+        "bytes": target.stat().st_size,
     }
+
+
+def extract_probe_bands(doc: pymupdf.Document, out_dir: Path, metadata: dict) -> tuple[list[dict], bool]:
+    if doc.page_count < 3:
+        fail("LibreOffice n'a pas produit les trois pages de controle du DOCX", "docx_probe_failed")
+
+    first, even, rest = doc[0], doc[1], doc[2]
+    bands: list[dict] = []
+    even_odd_different = False
+    for kind in ("header", "footer"):
+        first_rect = probe_band(first, kind)
+        even_rect = probe_band(even, kind)
+        rest_rect = probe_band(rest, kind)
+        same_first = matching_bands(first, first_rect, rest, rest_rect, kind)
+        if metadata.get("evenAndOddHeaders"):
+            even_odd_different = even_odd_different or not matching_bands(even, even_rect, rest, rest_rect, kind)
+
+        if same_first:
+            if rest_rect is not None:
+                bands.append(save_probe_band(rest, rest_rect, out_dir, kind, "all"))
+            continue
+        if first_rect is not None:
+            bands.append(save_probe_band(first, first_rect, out_dir, kind, "first"))
+        if rest_rect is not None:
+            bands.append(save_probe_band(rest, rest_rect, out_dir, kind, "except-first"))
+    return bands, even_odd_different
+
+
+def analyze_docx(input_path: Path, out_dir: Path) -> dict:
+    """Render the original document plus a body-free three-page probe."""
+    probe_path = out_dir / "probe.docx"
+    try:
+        metadata = docx_zip.create_probe(input_path, probe_path)
+    except zipfile.BadZipFile:
+        fail("Document DOCX illisible", "unreadable_docx")
+    except KeyError as error:
+        fail(f"Structure DOCX incomplete : {error.args[0]}", "unreadable_docx")
+
+    original_pdf = docx_to_pdf(input_path, out_dir, "source.pdf")
+    result = analyze_rendered(pymupdf.open(original_pdf), out_dir)
+    probe_pdf = docx_to_pdf(probe_path, out_dir, "probe.pdf")
+    bands, even_odd_different = extract_probe_bands(pymupdf.open(probe_pdf), out_dir, metadata)
+
+    warnings = list(metadata.get("warnings", []))
+    if even_odd_different:
+        warnings.append(
+            "Les pages paires ont un bandeau distinct ; la variante impaire est retenue pour les pages suivantes."
+        )
+    result["docx"] = {
+        "bands": bands,
+        "pagination": metadata.get("pagination", []),
+        "differentFirstPage": any(band["scope"] != "all" for band in bands),
+        "evenOddDifferent": even_odd_different,
+        "sectionCount": metadata.get("sectionCount", 1),
+        "warnings": list(dict.fromkeys(warnings)),
+    }
+    return result
 
 
 def take_asset(input_path: Path, out_dir: Path, entry: str, name: str) -> dict:
@@ -520,18 +606,30 @@ def sniff(path: Path) -> str:
     return "unknown"
 
 
-def docx_to_pdf(input_path: Path, out_dir: Path) -> Path:
+def docx_to_pdf(input_path: Path, out_dir: Path, target_name: str = "source.pdf") -> Path:
     soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    macos = Path("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+    if not soffice and macos.is_file():
+        soffice = str(macos)
     if not soffice:
         fail(
             "Conversion .docx indisponible : LibreOffice n'est pas installé sur le serveur. "
             "Exportez le document en PDF et réimportez-le.",
             "no_libreoffice",
         )
-    with tempfile.TemporaryDirectory() as work:
+    with tempfile.TemporaryDirectory() as work, tempfile.TemporaryDirectory() as profile:
         try:
             subprocess.run(
-                [soffice, "--headless", "--convert-to", "pdf", "--outdir", work, str(input_path)],
+                [
+                    soffice,
+                    "--headless",
+                    f"-env:UserInstallation={Path(profile).as_uri()}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    work,
+                    str(input_path),
+                ],
                 check=True,
                 capture_output=True,
                 timeout=120,
@@ -543,7 +641,7 @@ def docx_to_pdf(input_path: Path, out_dir: Path) -> Path:
         produced = next(Path(work).glob("*.pdf"), None)
         if produced is None:
             fail("Conversion .docx sans résultat", "docx_failed")
-        target = out_dir / "source.pdf"
+        target = out_dir / target_name
         shutil.copyfile(produced, target)
         return target
 

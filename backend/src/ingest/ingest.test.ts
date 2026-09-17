@@ -9,7 +9,7 @@
  */
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -19,6 +19,9 @@ import { INLINE_LOGO_HEIGHT_MM } from "../layout/layoutConfig.js";
 import { buildLayout, buildSource } from "./templateFromAnalysis.js";
 
 const execFileAsync = promisify(execFile);
+const INGEST_DIR = path.resolve(process.cwd(), "ingest");
+const VENV_PYTHON = path.join(INGEST_DIR, ".venv", "bin", "python3");
+const INGEST_PYTHON = process.env.DOTS_PYTHON ?? (existsSync(VENV_PYTHON) ? VENV_PYTHON : "python3");
 
 /** Bandeau coloré en haut, corps de texte, numéro de page : une lettre type. */
 const SOURCE_DOC = `#set page(
@@ -38,10 +41,9 @@ Un second paragraphe, pour la même raison.
 `;
 
 async function available(): Promise<boolean> {
-  const python = process.env.DOTS_PYTHON ?? "python3";
   const checks = [
     execFileAsync("typst", ["--version"]),
-    execFileAsync(python, ["-c", "import pymupdf"]),
+    execFileAsync(INGEST_PYTHON, ["-c", "import pymupdf"]),
   ];
   return Promise.all(checks).then(
     () => true,
@@ -202,140 +204,237 @@ describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
   });
 });
 
-/**
- * Un .docx qui porte ses visuels en clair ne passe par aucune composition :
- * ni LibreOffice, ni rendu de page. Le fichier de test est fabriqué ici — un
- * .docx est un zip, ses parties se posent à la main.
- */
-describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
-  let dir = "";
+const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
-  /** PNG 2×1 valide : l'extracteur en lit les dimensions dans l'en-tête IHDR. */
-  const PNG = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEklEQVR4nGP8z4AATAxQxrBhAgCr2QP2N3AikwAAAABJRU5ErkJggg==",
-    "base64",
-  );
-
-  const DOCUMENT_XML = `<?xml version="1.0"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+function docxParts(): Record<string, string> {
+  return {
+    "[Content_Types].xml": `<?xml version="1.0"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/header2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/header3.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
+</Types>`,
+    "_rels/.rels": `<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`,
+    "word/document.xml": `<?xml version="1.0"?>
+<w:document xmlns:w="${W_NS}" xmlns:r="${R_NS}">
   <w:body>
+    <w:p><w:r><w:t>CE CORPS DOIT DISPARAITRE</w:t></w:r></w:p>
     <w:sectPr>
-      <w:pgSz w:w="11909" w:h="16834" w:orient="portrait"/>
+      <w:headerReference w:type="default" r:id="rId1"/>
+      <w:headerReference w:type="first" r:id="rId2"/>
+      <w:headerReference w:type="even" r:id="rId3"/>
+      <w:footerReference w:type="default" r:id="rId4"/>
+      <w:pgSz w:w="11909" w:h="16834"/>
       <w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="1134"/>
+      <w:titlePg/>
     </w:sectPr>
   </w:body>
-</w:document>`;
+</w:document>`,
+    "word/_rels/document.xml.rels": `<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="${R_NS}/header" Target="header1.xml"/>
+  <Relationship Id="rId2" Type="${R_NS}/header" Target="header2.xml"/>
+  <Relationship Id="rId3" Type="${R_NS}/header" Target="header3.xml"/>
+  <Relationship Id="rId4" Type="${R_NS}/footer" Target="footer1.xml"/>
+</Relationships>`,
+    "word/settings.xml": `<?xml version="1.0"?><w:settings xmlns:w="${W_NS}"><w:evenAndOddHeaders/></w:settings>`,
+    "word/header1.xml": `<?xml version="1.0"?><w:hdr xmlns:w="${W_NS}"><w:p><w:r><w:t>SUITE</w:t></w:r></w:p></w:hdr>`,
+    "word/header2.xml": `<?xml version="1.0"?><w:hdr xmlns:w="${W_NS}"><w:p><w:r><w:t>PREMIERE</w:t></w:r></w:p></w:hdr>`,
+    "word/header3.xml": `<?xml version="1.0"?><w:hdr xmlns:w="${W_NS}"><w:p><w:r><w:t>PAIRE</w:t></w:r></w:p></w:hdr>`,
+    "word/footer1.xml": `<?xml version="1.0"?>
+<w:ftr xmlns:w="${W_NS}"><w:p><w:pPr><w:jc w:val="right"/></w:pPr>
+  <w:r><w:t>Page </w:t></w:r>
+  <w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>
+  <w:r><w:t> sur </w:t></w:r>
+  <w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>3</w:t></w:r></w:fldSimple>
+</w:p></w:ftr>`,
+  };
+}
 
-  const STYLES_XML = `<?xml version="1.0"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:docDefaults><w:rPrDefault><w:rPr>
-    <w:rFonts w:ascii="Helvetica"/><w:sz w:val="24"/>
-  </w:rPr></w:rPrDefault></w:docDefaults>
-</w:styles>`;
-
-  /** Zip sans dépendance : « store » seul, ce que zipfile relit sans peine. */
-  async function buildDocx(
-    parts: Record<string, Buffer | string>,
-  ): Promise<string> {
-    const target = path.join(
-      dir,
-      `made-${Math.random().toString(16).slice(2)}.docx`,
-    );
-    const staging = path.join(dir, `staging-${path.basename(target)}`);
-    for (const [name, content] of Object.entries(parts)) {
-      const file = path.join(staging, name);
-      await execFileAsync("mkdir", ["-p", path.dirname(file)]);
-      await writeFile(file, content as never);
-    }
-    await execFileAsync("zip", ["-r", "-X", "-q", target, "."], {
-      cwd: staging,
-    });
-    return target;
+async function buildDocx(
+  dir: string,
+  parts: Record<string, string> = docxParts(),
+): Promise<string> {
+  const target = path.join(dir, `made-${Math.random().toString(16).slice(2)}.docx`);
+  const staging = path.join(dir, `staging-${path.basename(target)}`);
+  for (const [name, content] of Object.entries(parts)) {
+    const file = path.join(staging, name);
+    await execFileAsync("mkdir", ["-p", path.dirname(file)]);
+    await writeFile(file, content, "utf8");
   }
+  await execFileAsync("zip", ["-r", "-X", "-q", target, "."], { cwd: staging });
+  return target;
+}
+
+async function createProbe(input: string, target: string): Promise<Record<string, any>> {
+  const script = [
+    "import json, sys",
+    "from pathlib import Path",
+    "import docx",
+    "print(json.dumps(docx.create_probe(Path(sys.argv[1]), Path(sys.argv[2]))))",
+  ].join("; ");
+  const { stdout } = await execFileAsync(INGEST_PYTHON, ["-c", script, input, target], {
+    cwd: INGEST_DIR,
+  });
+  return JSON.parse(stdout);
+}
+
+const PROBE_SOURCE = `#set page(
+  paper: "a4",
+  margin: (top: 35mm, bottom: 25mm, left: 20mm, right: 20mm),
+  header: context {
+    let n = counter(page).get().first()
+    if n == 1 [PREMIERE] else if n == 2 [PAIRE] else [SUITE]
+  },
+  footer: align(right)[PIED],
+)
+#box(width: 0pt, height: 0pt)
+#pagebreak()
+#box(width: 0pt, height: 0pt)
+#pagebreak()
+#box(width: 0pt, height: 0pt)
+`;
+
+describe.skipIf(!enabled)("import d'un DOCX rendu", () => {
+  let dir = "";
+  let previousPath: string | undefined;
 
   beforeAll(async () => {
     dir = await mkdtemp(path.join(tmpdir(), "dots-docx-"));
+    const sourceTyp = path.join(dir, "source-fixture.typ");
+    const probeTyp = path.join(dir, "probe-fixture.typ");
+    const sourcePdf = path.join(dir, "source-fixture.pdf");
+    const probePdf = path.join(dir, "probe-fixture.pdf");
+    await writeFile(sourceTyp, SOURCE_DOC, "utf8");
+    await writeFile(probeTyp, PROBE_SOURCE, "utf8");
+    await execFileAsync("typst", ["compile", "--root", dir, sourceTyp, sourcePdf]);
+    await execFileAsync("typst", ["compile", "--root", dir, probeTyp, probePdf]);
+
+    const bin = path.join(dir, "bin");
+    await execFileAsync("mkdir", ["-p", bin]);
+    const soffice = path.join(bin, "soffice");
+    await writeFile(
+      soffice,
+      `#!/bin/sh
+out=""
+input=""
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--outdir" ]; then shift; out="$1"
+  elif [ "\${1##*.}" = "docx" ]; then input="$1"
+  fi
+  shift
+done
+name="$(basename "$input" .docx)"
+if [ "$name" = "probe" ]; then source="$DOTS_FAKE_PROBE_PDF"; else source="$DOTS_FAKE_SOURCE_PDF"; fi
+cp "$source" "$out/$name.pdf"
+`,
+      "utf8",
+    );
+    await chmod(soffice, 0o755);
+    previousPath = process.env.PATH;
+    process.env.PATH = `${bin}:${previousPath ?? ""}`;
+    process.env.DOTS_FAKE_SOURCE_PDF = sourcePdf;
+    process.env.DOTS_FAKE_PROBE_PDF = probePdf;
   });
 
   afterAll(async () => {
+    process.env.PATH = previousPath;
+    delete process.env.DOTS_FAKE_SOURCE_PDF;
+    delete process.env.DOTS_FAKE_PROBE_PDF;
     if (dir) await rm(dir, { recursive: true, force: true });
   });
 
-  it("lit le format, les marges et la police dans le XML, sans rendre la page", async () => {
-    const docx = await buildDocx({
-      "word/document.xml": DOCUMENT_XML,
-      "word/styles.xml": STYLES_XML,
-      "word/media/image1.png": PNG,
+  it("fabrique trois pages avec la première section et retire la pagination dynamique", async () => {
+    const input = await buildDocx(dir);
+    const probe = path.join(dir, "unit-probe.docx");
+    const metadata = await createProbe(input, probe);
+
+    expect(metadata).toMatchObject({
+      differentFirstPage: true,
+      evenAndOddHeaders: true,
+      sectionCount: 1,
+      pagination: [
+        {
+          kind: "footer",
+          scope: "except-first",
+          numbering: "page-n-of-total",
+          align: "right",
+        },
+      ],
+    });
+    expect(metadata.parts.header).toEqual({
+      default: "word/header1.xml",
+      first: "word/header2.xml",
+      even: "word/header3.xml",
     });
 
-    const analysis = await analyzeDocument(docx, dir);
-
-    expect(analysis.mode).toBe("assets");
-    // Aucune page rendue : il n'y a rien à recadrer, donc aucune zone proposée.
-    expect(analysis.page.preview).toBeNull();
-    expect(analysis.regions).toEqual([]);
-
-    expect(analysis.layout.paper).toBe("a4");
-    // 1701 twips = 30 mm, 1134 = 20 mm : lus, pas mesurés.
-    expect(analysis.layout.margins.top).toBeCloseTo(30, 1);
-    expect(analysis.layout.margins.left).toBeCloseTo(20, 1);
-    expect(analysis.layout.font).toBe("Helvetica");
-    expect(analysis.layout.fontSize).toBe(12);
-
-    expect(analysis.assets).toHaveLength(1);
-    expect(analysis.assets![0]).toMatchObject({
-      name: "image1.png",
-      vector: false,
-      widthPt: 2,
-    });
+    const document = (await execFileAsync("unzip", ["-p", probe, "word/document.xml"])).stdout;
+    const footer = (await execFileAsync("unzip", ["-p", probe, "word/footer1.xml"])).stdout;
+    const sourceHeader = (await execFileAsync("unzip", ["-p", input, "word/header1.xml"])).stdout;
+    const probeHeader = (await execFileAsync("unzip", ["-p", probe, "word/header1.xml"])).stdout;
+    expect(document).not.toContain("CE CORPS DOIT DISPARAITRE");
+    expect(document.match(/w:type="page"/g)).toHaveLength(2);
+    expect(document).toContain("w:titlePg");
+    expect(footer).not.toMatch(/PAGE|NUMPAGES/);
+    expect(probeHeader).toBe(sourceHeader);
   });
 
-  it("préfère le vrai SVG à son repli PNG obligatoire", async () => {
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40"></svg>';
-    const docx = await buildDocx({
-      "word/document.xml": DOCUMENT_XML,
-      "word/media/image1.png": PNG,
-      "word/media/image1.svg": svg,
-    });
+  it("accepte un DOCX sans relations quand il n'a aucun bandeau", async () => {
+    const parts = docxParts();
+    parts["word/document.xml"] = `<?xml version="1.0"?>
+<w:document xmlns:w="${W_NS}"><w:body><w:p/><w:sectPr>
+  <w:pgSz w:w="11909" w:h="16834"/>
+</w:sectPr></w:body></w:document>`;
+    delete parts["word/_rels/document.xml.rels"];
+    const input = await buildDocx(dir, parts);
+    const metadata = await createProbe(input, path.join(dir, "probe-without-relations.docx"));
 
-    const analysis = await analyzeDocument(docx, dir);
-
-    // Le PNG est le repli du même visuel : il ne doit pas être proposé deux fois.
-    expect(analysis.assets).toHaveLength(1);
-    expect(analysis.assets![0]).toMatchObject({
-      name: "image1.svg",
-      vector: true,
-      widthPt: 120,
-      heightPt: 40,
-    });
+    expect(metadata.parts).toEqual({ header: {}, footer: {} });
+    expect(metadata.pagination).toEqual([]);
+    expect(metadata.warnings).toEqual([]);
   });
 
-  it("reconnaît un visuel posé dans une partie en-tête de Word", async () => {
-    const rels = `<?xml version="1.0"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
-</Relationships>`;
-    const docx = await buildDocx({
-      "word/document.xml": DOCUMENT_XML,
-      "word/header1.xml": "<w:hdr/>",
-      "word/_rels/header1.xml.rels": rels,
-      "word/media/image1.png": PNG,
-    });
+  it("rend le document et produit des bandeaux composés sans mode assets", async () => {
+    const input = await buildDocx(dir);
+    const output = path.join(dir, "analysis");
+    await execFileAsync("mkdir", ["-p", output]);
+    const analysis = await analyzeDocument(input, output);
 
-    const analysis = await analyzeDocument(docx, dir);
-    expect(analysis.assets![0].kind).toBe("header");
-  });
-
-  it("demande LibreOffice seulement quand le .docx n'a aucun visuel à extraire", async () => {
-    // Cas 3 : le papier à en-tête est dessiné dans le XML, rien dans word/media.
-    const docx = await buildDocx({
-      "word/document.xml": DOCUMENT_XML,
-      "word/styles.xml": STYLES_XML,
+    expect(analysis.mode).toBe("page");
+    expect(analysis.page.count).toBe(1);
+    expect(analysis.assets).toBeUndefined();
+    expect(analysis.docx).toMatchObject({
+      differentFirstPage: true,
+      evenOddDifferent: true,
+      sectionCount: 1,
+      pagination: [
+        {
+          kind: "footer",
+          scope: "except-first",
+          numbering: "page-n-of-total",
+          align: "right",
+        },
+      ],
     });
-
-    await expect(analyzeDocument(docx, dir)).rejects.toMatchObject({
-      code: "no_libreoffice",
-    });
+    expect(analysis.docx!.bands.map((band) => [band.kind, band.scope])).toEqual([
+      ["header", "first"],
+      ["header", "except-first"],
+      ["footer", "all"],
+    ]);
+    expect(analysis.docx!.warnings.join(" ")).toContain("pages paires");
+    for (const band of analysis.docx!.bands) {
+      const bytes = await readFile(path.join(output, band.file));
+      expect(bytes.subarray(1, 4).toString()).toBe("PNG");
+      expect(band.widthPt).toBeCloseTo(595.28, 1);
+      expect(band.bytes).toBe(bytes.length);
+    }
   });
 });

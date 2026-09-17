@@ -21,7 +21,8 @@ const BACKEND_DIR = path.resolve(HERE, "../..");
 const SCRIPT = path.join(BACKEND_DIR, "ingest", "extract.py");
 const VENV_PYTHON = path.join(BACKEND_DIR, "ingest", ".venv", "bin", "python3");
 
-const TIMEOUT_MS = 60_000;
+/** A DOCX analysis renders both the source and its three-page probe. */
+const TIMEOUT_MS = 260_000;
 const MAX_OUTPUT = 4 * 1024 * 1024;
 
 export class SidecarError extends Error {
@@ -51,7 +52,7 @@ export interface Region {
   vector: boolean;
 }
 
-/** Visuel sorti tel quel d'un .docx : aucun recadrage ne s'y applique. */
+/** Legacy contract kept until the old asset endpoints are removed in PR 2. */
 export interface DocxAsset {
   /** Chemin dans le zip, seule forme acceptée pour le ressortir. */
   id: string;
@@ -63,11 +64,40 @@ export interface DocxAsset {
   heightPt: number;
 }
 
+export type DocxBandScope = "all" | "first" | "except-first";
+
+/** Full-width visual composed by Word/LibreOffice, never a loose media file. */
+export interface DocxBand {
+  kind: "header" | "footer";
+  scope: DocxBandScope;
+  /** Private file in the ingest job, copied to template assets only on confirmation. */
+  file: string;
+  widthPt: number;
+  heightPt: number;
+  bytes: number;
+}
+
+export interface DocxPagination {
+  kind: "header" | "footer";
+  scope: DocxBandScope;
+  numbering: "n" | "n-of-total" | "page-n-of-total";
+  align: "left" | "center" | "right";
+}
+
+export interface DocxAnalysis {
+  bands: DocxBand[];
+  /** Dynamic fields removed from the raster probe; PR 2 maps these to LayoutConfig. */
+  pagination: DocxPagination[];
+  differentFirstPage: boolean;
+  evenOddDifferent: boolean;
+  sectionCount: number;
+  warnings: string[];
+}
+
 export interface Analysis {
   /**
-   * « page » : une page est rendue, des bandes y sont proposées, tout se joue
-   * au recadrage. « assets » : les visuels viennent du zip d'un .docx, il n'y a
-   * ni rendu ni recadrage — seulement un choix.
+   * Les nouvelles analyses renvoient toujours « page ». « assets » reste dans
+   * le type jusqu'au nettoyage du client historique en PR 2.
    */
   mode: "page" | "assets";
   page: {
@@ -78,8 +108,10 @@ export interface Analysis {
     preview: string | null;
   };
   regions: Region[];
-  /** Renseigné en mode « assets » seulement. */
+  /** Legacy field; new analyses never return it. */
   assets?: DocxAsset[];
+  /** Renseigné pour un DOCX rendu ; absent pour un PDF. */
+  docx?: DocxAnalysis;
   /** Sous-ensemble de LayoutConfig relevé sur la page : pas d'en-tête ni de pied. */
   layout: {
     paper: string;

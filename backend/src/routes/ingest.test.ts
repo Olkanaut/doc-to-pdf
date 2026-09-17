@@ -5,6 +5,7 @@
  * ingest/ingest.test.ts.
  */
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -17,6 +18,8 @@ import type { AuthSession } from "./auth.js";
 import { ingestRoutes } from "./ingest.js";
 
 const execFileAsync = promisify(execFile);
+const VENV_PYTHON = path.resolve(process.cwd(), "ingest/.venv/bin/python3");
+const INGEST_PYTHON = process.env.DOTS_PYTHON ?? (existsSync(VENV_PYTHON) ? VENV_PYTHON : "python3");
 
 const SESSION: AuthSession = {
   accessToken: "user-access-token",
@@ -40,10 +43,9 @@ Un second paragraphe, pour la même raison.
 `;
 
 async function available(): Promise<boolean> {
-  const python = process.env.DOTS_PYTHON ?? "python3";
   return Promise.all([
     execFileAsync("typst", ["--version"]),
-    execFileAsync(python, ["-c", "import pymupdf"]),
+    execFileAsync(INGEST_PYTHON, ["-c", "import pymupdf"]),
   ]).then(
     () => true,
     () => false,
