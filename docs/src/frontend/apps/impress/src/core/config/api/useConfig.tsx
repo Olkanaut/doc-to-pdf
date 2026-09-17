@@ -56,6 +56,7 @@ export interface ConfigResponse {
   CONVERSION_UPLOAD_ENABLED?: boolean;
   ENVIRONMENT: string;
   FRONTEND_CSS_URL?: string;
+  FRONTEND_DOTS_URL?: string;
   FRONTEND_HOMEPAGE_FEATURE_ENABLED?: boolean;
   FRONTEND_JS_URL?: string;
   FRONTEND_SILENT_LOGIN_ENABLED?: boolean;

@@ -97,3 +97,6 @@ SEARCH_URL=http://find:8000/api/v1.0/documents/search/
 SEARCH_INDEXER_QUERY_LIMIT=50
 
 CONVERSION_UPLOAD_ENABLED=true
+
+# Dots, l'app compagnon de mise en page PDF
+FRONTEND_DOTS_URL=http://localhost:3002

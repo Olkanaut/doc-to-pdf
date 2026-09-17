@@ -7,6 +7,7 @@ import {
   getGridRow,
   goToGridDoc,
   mockedDocument,
+  overrideConfig,
   verifyDocName,
 } from './utils-common';
 import { writeInEditor } from './utils-editor';
@@ -483,6 +484,55 @@ test.describe('Doc Header', () => {
     await expect(memberCard.getByLabel('Document role text')).toBeVisible();
     await expect(
       memberCard.getByRole('button', { name: 'more_horiz' }),
+    ).toBeHidden();
+  });
+
+  test('it opens the doc in Dots when the companion app is configured', async ({
+    page,
+    browserName,
+  }) => {
+    await overrideConfig(page, { FRONTEND_DOTS_URL: 'http://localhost:3002' });
+
+    // Dots does not have to be running for this test: the tab it opens is stubbed.
+    await page
+      .context()
+      .route('http://localhost:3002/**', (route) =>
+        route.fulfill({ body: 'stub' }),
+      );
+
+    await page.goto('/');
+    await createDoc(page, 'doc-dots', browserName, 1);
+
+    const docId = page.url().match(/\/docs\/([^/]+)/)?.[1];
+    expect(docId).toBeTruthy();
+
+    await page.getByLabel('Open the document options').click();
+
+    const openInDots = page.getByRole('menuitem', { name: 'Format with Dots' });
+    await expect(openInDots).toBeVisible();
+
+    const popupPromise = page.context().waitForEvent('page');
+    await openInDots.click();
+    const popup = await popupPromise;
+    await popup.waitForLoadState();
+
+    expect(popup.url()).toBe(`http://localhost:3002/docs/${docId}`);
+    await popup.close();
+  });
+
+  test('it hides the Dots entry when the companion app is not configured', async ({
+    page,
+    browserName,
+  }) => {
+    await overrideConfig(page, { FRONTEND_DOTS_URL: null });
+
+    await page.goto('/');
+    await createDoc(page, 'doc-no-dots', browserName, 1);
+
+    await page.getByLabel('Open the document options').click();
+
+    await expect(
+      page.getByRole('menuitem', { name: 'Format with Dots' }),
     ).toBeHidden();
   });
 

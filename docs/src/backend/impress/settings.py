@@ -579,6 +579,11 @@ class Base(Configuration):
     FRONTEND_CSS_URL = values.Value(
         None, environ_name="FRONTEND_CSS_URL", environ_prefix=None
     )
+    # Companion app that lays a document out as a PDF. Unset means "not deployed
+    # here": the frontend then hides the menu entry pointing at it.
+    FRONTEND_DOTS_URL = values.Value(
+        None, environ_name="FRONTEND_DOTS_URL", environ_prefix=None
+    )
     FRONTEND_JS_URL = values.Value(
         None, environ_name="FRONTEND_JS_URL", environ_prefix=None
     )

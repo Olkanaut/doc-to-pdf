@@ -26,6 +26,8 @@ export const CONFIG = {
   CONVERSION_FILE_MAX_SIZE: 20971520,
   ENVIRONMENT: 'development',
   FRONTEND_CSS_URL: null,
+  // Mirrors env.d/development/common, which config.spec.ts compares strictly.
+  FRONTEND_DOTS_URL: 'http://localhost:3002',
   FRONTEND_JS_URL: null,
   FRONTEND_HOMEPAGE_FEATURE_ENABLED: true,
   FRONTEND_SILENT_LOGIN_ENABLED: false,
