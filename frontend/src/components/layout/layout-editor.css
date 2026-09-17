@@ -123,6 +123,24 @@
 .le-panel__top .c__button {
   flex: 0 0 auto;
 }
+.le-ai-toggle--action.c__button {
+  border-color: transparent;
+  background:
+    linear-gradient(
+        var(--c--globals--colors--gray-000),
+        var(--c--globals--colors--gray-000)
+      )
+      padding-box,
+    linear-gradient(135deg, var(--dots-primary), #00a6d6 45%, #8f5bff)
+      border-box;
+}
+.le-ai-toggle--action.c__button:hover {
+  background:
+    linear-gradient(var(--dots-primary-soft), var(--dots-primary-soft))
+      padding-box,
+    linear-gradient(135deg, var(--dots-primary), #00a6d6 45%, #8f5bff)
+      border-box;
+}
 .le-panel__top-spacer {
   flex: 1 1 auto;
 }

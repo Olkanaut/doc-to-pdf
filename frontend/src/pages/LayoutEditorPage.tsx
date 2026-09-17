@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Alert, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
-import { Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
   fetchFixtures,
@@ -15,6 +14,7 @@ import {
   type LayoutConfig,
   type RenderError,
 } from "../api/client";
+import { AiIcon } from "../components/AiIcon";
 import { PdfPreview } from "../components/PdfPreview";
 import { LayoutPanel } from "../components/layout/LayoutPanel";
 import { AiPanel } from "../components/layout/AiPanel";
@@ -394,9 +394,16 @@ export function LayoutEditorPage() {
       {/* Icône seule : l'en-tête du panneau loge déjà le nom du gabarit et le
           sélecteur de mode, le libellé n'y tiendrait pas. */}
       <Button
+        className={aiOpen ? "le-ai-toggle" : "le-ai-toggle le-ai-toggle--action"}
         variant={aiOpen ? "primary" : "tertiary"}
         size="small"
-        icon={<Sparkle aria-hidden="true" />}
+        icon={
+          <AiIcon
+            variant={aiOpen ? "flat" : "action"}
+            color={aiOpen ? "white" : undefined}
+            aria-hidden="true"
+          />
+        }
         aria-label="Assistant IA"
         title="Assistant IA"
         aria-pressed={aiOpen}

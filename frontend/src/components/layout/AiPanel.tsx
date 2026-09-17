@@ -16,7 +16,6 @@ import {
 import {
   Checkmark,
   Send,
-  Sparkle,
   XMark,
 } from "@gouvfr-lasuite/ui-components/icons";
 import {
@@ -24,6 +23,7 @@ import {
   aiTemplateFromPdf,
   type AiResult,
 } from "../../api/client";
+import { AiIcon } from "../AiIcon";
 
 const SUGGESTIONS = [
   "Logo en en-tête",
@@ -214,7 +214,7 @@ export function AiPanel({
   return (
     <aside className="le-ai" aria-label="Assistant IA" hidden={!open}>
       <div className="le-ai__header">
-        <Sparkle size={18} aria-hidden="true" />
+        <AiIcon size={18} aria-hidden="true" />
         Assistant IA
         <Button
           variant="tertiary"
@@ -359,7 +359,7 @@ function ProposalCard({
   return (
     <div className="ai-card">
       <div className="ai-card__title">
-        <Sparkle size={16} aria-hidden="true" />
+        <AiIcon size={16} aria-hidden="true" />
         {n} modification{n > 1 ? "s" : ""} proposée{n > 1 ? "s" : ""}
       </div>
       {result.summary && <p className="ai-card__summary">{result.summary}</p>}
