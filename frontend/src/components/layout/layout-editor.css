@@ -68,9 +68,9 @@
   min-width: 0;
   min-height: 0;
 }
-.le-shell__panel--settings,
-.le-shell__panel--preview,
-.le-shell__panel--ai {
+.le-shell__panel--left,
+.le-shell__panel--center,
+.le-shell__panel--right {
   overflow: hidden;
 }
 .le-resize-handle {
@@ -125,42 +125,70 @@
 .le-panel__top-spacer {
   flex: 1 1 auto;
 }
-.le-mode-menu {
-  position: relative;
-  flex: 0 0 auto;
-}
-.le-mode-menu__popover {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 6px);
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  min-width: 150px;
-  padding: 4px;
-  border: 1px solid var(--c--globals--colors--gray-100);
-  border-radius: 8px;
-  background: var(--c--globals--colors--gray-000);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-.le-mode-menu__popover a {
+.le-template-name {
   display: flex;
   align-items: center;
-  min-height: 36px;
-  padding: 0 10px;
-  border-radius: 6px;
-  color: var(--c--globals--colors--gray-950);
-  font-size: var(--c--globals--font--sizes--sm);
-  text-decoration: none;
-  white-space: nowrap;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.le-mode-menu__popover a:hover,
-.le-mode-menu__popover a:focus-visible {
-  outline: none;
+.le-template-name .c__field,
+.le-template-name .c__input {
+  min-width: 0;
+}
+.le-template-name .c__field {
+  height: 32px;
+}
+.le-template-name .c__input {
+  min-height: 32px;
+  height: 32px;
+}
+.le-template-name input {
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.le-mode-switcher {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  height: 32px;
+  border: 1px solid var(--c--globals--colors--gray-500);
+  border-radius: 999px;
+  background: var(--c--globals--colors--gray-000);
+  overflow: hidden;
+}
+.le-mode-switcher__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  min-width: 0;
+  border-left: 1px solid var(--c--globals--colors--gray-500);
+  color: var(--c--globals--colors--gray-950);
+  text-decoration: none;
+}
+.le-mode-switcher__item:first-child {
+  border-left: 0;
+}
+.le-mode-switcher__item:hover {
   background: var(--c--globals--colors--gray-050);
 }
-.le-mode-menu__popover a[aria-current="page"] {
-  font-weight: var(--c--globals--font--weights--bold);
+.le-mode-switcher__item:focus-visible {
+  z-index: 1;
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--c--contextuals--border--semantic--brand--primary);
+}
+.le-mode-switcher__item--active {
+  background: var(--c--globals--colors--brand-100);
+}
+.le-mode-switcher__item--active:hover {
+  background: var(--c--globals--colors--brand-100);
+}
+.le-mode-switcher__item svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
 }
 .le-panel__badge {
   align-self: flex-start;
@@ -349,6 +377,78 @@
 }
 .le-panel [role="tabpanel"][hidden] {
   display: none;
+}
+
+/* Panneau Typst : minimal, dense, orienté édition. */
+.le-code-panel__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--c--globals--colors--gray-100);
+}
+.le-code-panel__editor {
+  display: grid;
+  grid-template-columns: minmax(42px, auto) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 12px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  border-radius: 6px;
+  background: var(--c--globals--colors--gray-000);
+  overflow: hidden;
+}
+.le-code-panel__gutter,
+.le-code-panel__textarea {
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+.le-code-panel__gutter {
+  min-width: 42px;
+  padding-right: 10px;
+  padding-left: 8px;
+  border-right: 1px solid var(--c--globals--colors--gray-100);
+  background: var(--c--globals--colors--gray-025);
+  color: var(--c--globals--colors--gray-400);
+  text-align: right;
+  user-select: none;
+  overflow: hidden;
+}
+.le-code-panel__textarea {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding-right: 14px;
+  padding-left: 14px;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: var(--c--globals--colors--gray-950);
+  white-space: pre;
+  overflow: auto;
+}
+.le-code-panel__textarea:focus {
+  box-shadow: inset 0 0 0 2px var(--c--contextuals--border--semantic--brand--primary);
+}
+.le-code-panel__textarea:disabled {
+  color: var(--c--globals--colors--gray-500);
+  background: var(--c--globals--colors--gray-025);
+  cursor: not-allowed;
+}
+.le-code-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: 0 16px 12px;
+  color: var(--c--globals--colors--gray-500);
+  font-size: var(--c--globals--font--sizes--xs);
 }
 
 /* Onglet Text : liste sobre type panneau de design, avec détails alignés à droite. */

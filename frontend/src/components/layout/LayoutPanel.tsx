@@ -1,7 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
-  Button,
   Input,
   Label,
   Radio,
@@ -11,7 +10,7 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, ChevronDown, ChevronRight, More, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { ChevronDown, ChevronRight, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import {
   assetUrl,
   deleteTemplateAsset,
@@ -25,6 +24,7 @@ import {
   type TextStyleKey,
 } from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
+import { TemplateNameField } from "./TemplateNameField";
 
 type Option = { value: string; label: string };
 
@@ -116,12 +116,7 @@ interface Props {
   disabled?: boolean;
   onChange: (next: LayoutConfig) => void;
   onTemplateNameChange: (name: string) => void;
-  backHref: string;
-  onBack: (e: MouseEvent<HTMLElement>) => void;
-  layoutHref: string;
-  codeHref: string;
-  onNavigateLayout: (e: MouseEvent<HTMLElement>) => void;
-  onNavigateCode: (e: MouseEvent<HTMLElement>) => void;
+  modeMenu: ReactNode;
   /** A visual was just imported or deleted: the assets list needs re-reading. */
   onAssetsChanged?: () => void;
 }
@@ -136,12 +131,7 @@ export function LayoutPanel({
   disabled,
   onChange,
   onTemplateNameChange,
-  backHref,
-  onBack,
-  layoutHref,
-  codeHref,
-  onNavigateLayout,
-  onNavigateCode,
+  modeMenu,
   onAssetsChanged,
 }: Props) {
   const uid = useId();
@@ -149,8 +139,6 @@ export function LayoutPanel({
   const [importing, setImporting] = useState<Importing | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
   const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
-  const [modeMenuOpen, setModeMenuOpen] = useState(false);
-  const modeMenuRef = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
@@ -221,26 +209,6 @@ export function LayoutPanel({
     if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 0);
   }, []);
 
-  useEffect(() => {
-    if (!modeMenuOpen) return;
-
-    function closeOnOutsidePointer(event: PointerEvent) {
-      if (modeMenuRef.current?.contains(event.target as Node)) return;
-      setModeMenuOpen(false);
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setModeMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [modeMenuOpen]);
-
   const lineHeightOptions = useMemo<Option[]>(() => {
     const list = LINE_HEIGHTS.map(([v, l]) => ({ value: String(v), label: l }));
     return LINE_HEIGHTS.some(([v]) => v === layout.lineHeight)
@@ -251,51 +219,8 @@ export function LayoutPanel({
   return (
     <aside className="le-panel" aria-label="Réglages de mise en page">
       <div className="le-panel__top">
-        <Button
-          href={backHref}
-          variant="tertiary"
-          color="neutral"
-          icon={<ArrowLeft aria-hidden="true" />}
-          aria-label="Retour aux gabarits"
-          onClick={onBack}
-        />
-        <span className="le-panel__top-spacer" />
-        <div className="le-mode-menu" ref={modeMenuRef}>
-          <Button
-            type="button"
-            variant="tertiary"
-            color="neutral"
-            icon={<More aria-hidden="true" />}
-            aria-label="Changer de mode d'édition"
-            aria-expanded={modeMenuOpen}
-            onClick={() => setModeMenuOpen((open) => !open)}
-          />
-          {modeMenuOpen && (
-            <div className="le-mode-menu__popover" role="menu">
-              <a
-                href={layoutHref}
-                role="menuitem"
-                aria-current="page"
-                onClick={(e) => {
-                  setModeMenuOpen(false);
-                  onNavigateLayout(e);
-                }}
-              >
-                Mise en page
-              </a>
-              <a
-                href={codeHref}
-                role="menuitem"
-                onClick={(e) => {
-                  setModeMenuOpen(false);
-                  onNavigateCode(e);
-                }}
-              >
-                Code Typst
-              </a>
-            </div>
-          )}
-        </div>
+        <TemplateNameField value={templateName} isDefault={isDefault} onChange={onTemplateNameChange} />
+        {modeMenu}
       </div>
 
       <nav className="le-panel__tabs" aria-label="Réglages du gabarit" role="tablist">
@@ -333,16 +258,6 @@ export function LayoutPanel({
         )}
         <fieldset className="le-panel__fields" disabled={disabled}>
           <TabPanel uid={uid} tab="format" activeTab={activeTab}>
-            <Section title="Gabarit">
-              <Input
-                label="Nom du gabarit"
-                fullWidth
-                value={templateName}
-                onChange={(e) => onTemplateNameChange(e.target.value)}
-              />
-              {isDefault && <span className="le-panel__badge">Par défaut</span>}
-            </Section>
-
             <Section title="Page">
               <Select
                 label="Format"

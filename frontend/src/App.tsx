@@ -6,7 +6,6 @@ import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
-import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { LayoutEditorPage } from "./pages/LayoutEditorPage";
 import { DocumentPage } from "./pages/DocumentPage";
 import "./App.css";
@@ -40,6 +39,12 @@ function ShortDocRedirect() {
   return <Navigate to={id ? `/docs/${encodeURIComponent(id)}` : "/docs"} replace />;
 }
 
+/** Entrée canonique d'un gabarit : l'éditeur unifié s'ouvre en mode mise en page. */
+function TemplateEditorRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />;
+}
+
 function guarded(element: ReactElement) {
   return <ProtectedRoute>{element}</ProtectedRoute>;
 }
@@ -56,8 +61,8 @@ export default function App() {
           <Route path="/docs" element={guarded(<HomePage />)} />
           <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
           <Route path="/d/:id" element={<ShortDocRedirect />} />
-          <Route path="/t/:id" element={guarded(<TemplateEditorPage />)} />
-          <Route path="/t/:id/layout" element={guarded(<LayoutEditorPage />)} />
+          <Route path="/t/:id" element={guarded(<TemplateEditorRedirect />)} />
+          <Route path="/t/:id/:mode" element={guarded(<LayoutEditorPage />)} />
           <Route path="/templates" element={<Navigate to="/" replace />} />
           <Route path="/templates/:id" element={<TemplateRedirect />} />
           <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />

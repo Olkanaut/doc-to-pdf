@@ -6,75 +6,90 @@ import {
   useDefaultLayout,
   usePanelCallbackRef,
 } from "react-resizable-panels";
+import type { EditorMode } from "./EditorModeMenu";
+
+const LAYOUT_PANEL_MAX_PX = 520;
+const PANEL_TRANSITION = "flex 180ms ease";
 
 interface LayoutEditorShellProps {
-  leftPanel: ReactNode;
-  preview: ReactNode;
-  aiPanel: ReactNode;
-  aiOpen: boolean;
+  mode: EditorMode;
+  left: ReactNode;
+  center: ReactNode;
+  right?: ReactNode;
+  rightOpen?: boolean;
 }
 
 export function LayoutEditorShell({
-  leftPanel,
-  preview,
-  aiPanel,
-  aiOpen,
+  mode,
+  left,
+  center,
+  right,
+  rightOpen = false,
 }: LayoutEditorShellProps) {
-  const [aiPanelHandle, setAiPanelHandle] = usePanelCallbackRef();
+  const [rightPanelHandle, setRightPanelHandle] = usePanelCallbackRef();
   const layout = useDefaultLayout({
     id: "layout-editor-panels",
     onlySaveAfterUserInteractions: true,
-    panelIds: ["settings", "preview", "ai"],
+    panelIds: ["left", "center", "right"],
   });
 
   useEffect(() => {
-    if (aiOpen) {
-      aiPanelHandle?.expand();
+    if (rightOpen) {
+      rightPanelHandle?.expand();
     } else {
-      aiPanelHandle?.collapse();
+      rightPanelHandle?.collapse();
     }
-  }, [aiOpen, aiPanelHandle]);
+  }, [rightOpen, rightPanelHandle]);
 
   return (
     <Group
       id="layout-editor-panels"
       orientation="horizontal"
-      className={`le-body${aiOpen ? " le-body--ai" : ""}`}
+      className={`le-body le-body--${mode}${rightOpen ? " le-body--right" : ""}`}
       defaultLayout={layout.defaultLayout}
       onLayoutChanged={layout.onLayoutChanged}
     >
       <Panel
-        id="settings"
+        id="left"
         defaultSize="320px"
         minSize="260px"
-        maxSize="520px"
-        className="le-shell__panel le-shell__panel--settings"
+        maxSize={`${LAYOUT_PANEL_MAX_PX}px`}
+        className="le-shell__panel le-shell__panel--left"
+        style={{
+          transition: PANEL_TRANSITION,
+        }}
       >
-        {leftPanel}
+        {left}
       </Panel>
 
-      <ResizeHandle label="Redimensionner les réglages" />
+      <ResizeHandle label="Redimensionner le panneau d'édition" />
 
       <Panel
-        id="preview"
+        id="center"
         minSize="360px"
-        className="le-shell__panel le-shell__panel--preview"
+        className="le-shell__panel le-shell__panel--center"
+        style={{
+          transition: PANEL_TRANSITION,
+        }}
       >
-        {preview}
+        {center}
       </Panel>
 
-      {aiOpen && <ResizeHandle label="Redimensionner l'assistant" />}
+      {rightOpen && <ResizeHandle label="Redimensionner l'assistant" />}
       <Panel
-        panelRef={setAiPanelHandle}
-        id="ai"
+        panelRef={setRightPanelHandle}
+        id="right"
         collapsible
         collapsedSize={0}
         defaultSize="380px"
         minSize="300px"
         maxSize="560px"
-        className="le-shell__panel le-shell__panel--ai"
+        className="le-shell__panel le-shell__panel--right"
+        style={{
+          transition: PANEL_TRANSITION,
+        }}
       >
-        {aiPanel}
+        {right}
       </Panel>
     </Group>
   );

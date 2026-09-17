@@ -326,7 +326,7 @@ function DocumentView({ documentId }: { documentId: string }) {
         <div className="doc-acts">
           {activePdfState.status === "loading" && (
             <span className="dots-muted" role="status">
-              <Spinner size="small" /> Génération…
+              <Spinner size="sm" /> Génération…
             </span>
           )}
           {templateId && (
