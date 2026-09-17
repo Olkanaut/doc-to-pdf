@@ -29,7 +29,7 @@ function fullConfig(): LayoutConfig {
     header: {
       enabled: true,
       text: "= Ministère * # \" [x]\n- Direction _générale_",
-      logo: "logo-ministere.png",
+      logo: "logo-blason.svg",
       align: "right",
       rule: true,
     },
@@ -142,7 +142,7 @@ describe("deduceLayout", () => {
       enabled: true,
       mode: "all",
       text: "RÉPUBLIQUE FRANÇAISE\nMinistère de l'Exemple",
-      logo: "logo-ministere.png",
+      logo: "logo-blason.svg",
       fullBleed: false,
       align: "left",
       rule: true,
@@ -296,20 +296,20 @@ describe("bandeau bord à bord", () => {
     const d = defaultLayout();
     const bleedHeader = layoutToTypst({
       ...d,
-      header: { ...d.header, logo: "logo-ministere.png", fullBleed: true },
+      header: { ...d.header, logo: "logo-blason.svg", fullBleed: true },
     });
     expect(bleedHeader).toContain("header-ascent: 0%,");
     expect(bleedHeader).not.toContain("footer-descent: 0%,");
 
     const bleedFooter = layoutToTypst({
       ...d,
-      footer: { ...d.footer, logo: "logo-ministere.png", fullBleed: true },
+      footer: { ...d.footer, logo: "logo-blason.svg", fullBleed: true },
     });
     expect(bleedFooter).toContain("footer-descent: 0%,");
     expect(bleedFooter).not.toContain("header-ascent: 0%,");
 
     // Logo posé à hauteur fixe (pas bord à bord) : Typst garde sa réserve par défaut.
-    const inline = layoutToTypst({ ...d, header: { ...d.header, logo: "logo-ministere.png", fullBleed: false } });
+    const inline = layoutToTypst({ ...d, header: { ...d.header, logo: "logo-blason.svg", fullBleed: false } });
     expect(inline).not.toContain("header-ascent:");
   });
 });

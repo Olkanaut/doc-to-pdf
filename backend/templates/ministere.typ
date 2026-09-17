@@ -9,7 +9,7 @@
         *RÉPUBLIQUE FRANÇAISE* \
         Ministère de l'Exemple
       ],
-      image("assets/logo-ministere.png", width: 1.5cm),
+      image("assets/logo-blason.svg", width: 1.5cm),
     )
     #v(0.3cm)
     #line(length: 100%, stroke: 0.5pt + rgb("#002f6c"))

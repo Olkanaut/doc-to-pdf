@@ -109,6 +109,32 @@ function pageBand(defaultParts: string[], firstParts: string[], mode: PageBandMo
   );
 }
 
+/**
+ * Hauteur réellement posable pour un logo de bande, en millimètres.
+ *
+ * Typst réserve 30 % de la marge en ascent/descent : la bande utile vaut donc
+ * environ 0,7 × la marge, et il faut y loger le logo ET la ligne de texte posée
+ * à côté. Au-delà, le contenu qui dépasse n'est pas rogné, il est SUPPRIMÉ du
+ * PDF sans le moindre avertissement — mesuré : un logo de 12 mm sur une marge
+ * basse de 20 mm fait disparaître la mention et la pagination, compilation verte.
+ *
+ * On rapetisse donc le logo plutôt que de le laisser chasser le texte. Plancher
+ * à 4 mm : en dessous il ne reste rien de lisible, et une marge aussi étroite est
+ * un choix de l'utilisateur qu'on n'a pas à corriger davantage.
+ */
+function logoHeightMm(marginMm: number, cfg: LayoutConfig): number {
+  const bande = 0.7 * marginMm;
+  const ligne = (cfg.textStyles.body.fontSize * cfg.lineHeight) / MM_PER_PT;
+  return roundMm(Math.max(4, Math.min(INLINE_LOGO_HEIGHT_MM, bande - ligne)));
+}
+
+/** Points par millimètre, pour convertir une taille de police en hauteur de ligne. */
+const MM_PER_PT = 72 / 25.4;
+
+function roundMm(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
 function headerParts(h: HeaderContent, cfg: LayoutConfig): string[] {
   const parts: string[] = [];
   const body = `[${text(h.text)}]`;
@@ -117,7 +143,7 @@ function headerParts(h: HeaderContent, cfg: LayoutConfig): string[] {
     if (h.text) parts.push(`#align(${h.align})${body}`);
   } else if (h.logo) {
     parts.push(
-      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${h.align} + horizon), image("assets/${h.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm), ${body})`,
+      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${h.align} + horizon), image("assets/${h.logo}", height: ${logoHeightMm(cfg.margins.top, cfg)}mm), ${body})`,
     );
   } else if (h.text) {
     parts.push(`#align(${h.align})${body}`);
@@ -135,10 +161,20 @@ function header(cfg: LayoutConfig): string {
 function footerParts(f: FooterContent, cfg: LayoutConfig): string[] {
   const parts: string[] = [];
   if (f.logo && f.fullBleed) parts.push(bleed(f.logo, "bottom", cfg));
-  else if (f.logo) parts.push(`#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`);
   if (f.rule) parts.push(`#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`, "#v(0.2cm)");
   const pieces = [text(f.text), NUMBERING[f.numbering]].filter(Boolean);
-  if (pieces.length) parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
+  const body = `[${pieces.join("#h(1em)")}]`;
+  if (f.logo && !f.fullBleed) {
+    // Côte à côte, comme l'en-tête (headerParts). Empilés, le logo de 12 mm et la
+    // ligne de texte dépassent la bande utile (~0,7 × marge basse, soit 14 mm au
+    // réglage par défaut) : Typst laisse alors tomber le texte SANS AVERTIR —
+    // compilation verte, mention et pagination absentes du PDF.
+    parts.push(
+      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${f.align} + horizon), image("assets/${f.logo}", height: ${logoHeightMm(cfg.margins.bottom, cfg)}mm), ${body})`,
+    );
+  } else if (pieces.length) {
+    parts.push(`#align(${f.align})${body}`);
+  }
   return parts;
 }
 

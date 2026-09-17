@@ -62,6 +62,12 @@ const SEEDS: { id: string; name: string; description: string; file: string }[] =
     file: "republique-francaise.typ",
   },
   {
+    id: "page-de-garde",
+    name: "Page de garde",
+    description: "Première page sans en-tête ni pied, sur fond teinté et texte agrandi ; pages suivantes normales.",
+    file: "page-de-garde.typ",
+  },
+  {
     id: "ville-de-paris",
     name: "Ville de Paris",
     description: "Logo officiel de la Ville de Paris centré en tête, comme les arrêtés publiés.",

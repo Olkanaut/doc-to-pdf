@@ -3,6 +3,7 @@ import { getFixture, FIXTURES_DIR } from "../registry/fixtures.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import { blocksToTypst } from "../convert/blocksToTypst.js";
 import { compileToPdfDetailed, TypstCompileError } from "../compile/typstCompile.js";
+import { inkRatio, wordCount, type Ink } from "./ink.js";
 
 /** Même forme que CheckResult / CheckFailure dans frontend/src/api/client.ts. */
 export interface CheckResult {
@@ -10,6 +11,10 @@ export interface CheckResult {
   ms: number;
   pages: number;
   warnings: string[];
+  /** Parts de pixels encrés, page entière et bandes. `null` si la mesure a échoué. */
+  ink: Ink | null;
+  /** Mots extractibles du PDF. `null` si la mesure a échoué. */
+  words: number | null;
 }
 export interface CheckFailure {
   ok: false;
@@ -68,11 +73,14 @@ export async function checkTemplateSource(input: {
       bodyTypst: typst,
       bodyImages: images.map((img) => ({ ...img, src: path.resolve(FIXTURES_DIR, img.src) })),
     });
+    const [ink, words] = await Promise.all([inkRatio(bytes), wordCount(bytes)]);
     return {
       ok: true,
       ms: Math.round(performance.now() - t0),
       pages: countPdfPages(bytes),
       warnings: typstWarnings(stderr),
+      ink,
+      words,
     };
   } catch (err) {
     if (err instanceof TypstCompileError) {

@@ -24,7 +24,7 @@ interface TextStyle {
 
 interface HeaderContent {
   text: string;
-  /** Nom de fichier seul, sans "assets/" (ex. "logo-ministere.png") ; le Typst y accède par image("assets/<logo>"). */
+  /** Nom de fichier seul, sans "assets/" (ex. "logo-blason.svg") ; le Typst y accède par image("assets/<logo>"). */
   logo: string | null;
   fullBleed: boolean;
   align: Align;
@@ -81,7 +81,7 @@ interface LayoutConfig {
   };
 }`;
 
-/** @param assets chemins relatifs des images disponibles (ex. "assets/logo-ministere.png"). */
+/** @param assets chemins relatifs des images disponibles (ex. "assets/logo-blason.svg"). */
 export function systemPrompt(assets: string[]): string {
   const assetList = assets.length ? assets.join(", ") : "aucune";
   return `Tu es l'assistant d'un éditeur de gabarits Typst 0.15 servant à produire des PDF administratifs français (notes, courriers, rapports).
@@ -92,6 +92,7 @@ Contexte technique :
 - Polices utilisables dans \`#set text(font: ...)\` : ${TYPST_FONTS.join(", ")}. Donne toujours une liste de repli, par exemple \`font: ("Marianne", "Arial", "Helvetica")\`.
 - Typst 0.15 : pagination avec \`#context counter(page).display("1 / 1", both: true)\` ; couleurs avec \`rgb("#0659c5")\` ; page avec \`#set page(paper: "a4", margin: (top: 25mm, bottom: 20mm, x: 20mm), header: [...], footer: [...])\`.
 - Les règles \`#set\` postérieures l'emportent : place les tiennes après celles qu'elles doivent remplacer.
+- Dans un en-tête ou un pied, l'origine est DÉJÀ posée dans la marge : un \`#place(..., dy: -25mm)\` ou un \`dx\` négatif plus grand que la marge sort le contenu de la page, où il n'est pas rogné mais perdu. Typst n'avertit pas et le PDF compile. Pour un bandeau bord à bord, décale de la valeur EXACTE de la marge concernée et pas plus, et élargis d'autant : \`#place(top + left, dx: -20mm)[#box(width: 100% + 40mm, ...)]\` avec des marges latérales de 20 mm.
 - L'en-tête et le pied de page vivent DANS la marge : Typst réserve par défaut 30 % de la marge en ascent/descent, la bande utile vaut donc environ 0,7 × la marge. Avant de réduire \`margin.top\` ou \`margin.bottom\`, vérifie que la bande correspondante tient encore ; si la valeur demandée ne le permet pas, applique-la mais écris-le dans le <summary> — la bande ne chevauche pas le corps, elle sort de la page et disparaît du PDF.
 
 Bloc de mise en page géré (« dots:layout ») :

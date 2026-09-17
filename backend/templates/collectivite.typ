@@ -5,7 +5,7 @@
     #grid(
       columns: (auto, 1fr),
       align: (left + horizon, right + horizon),
-      image("assets/logo-collectivite.png", width: 1.3cm),
+      image("assets/logo-ville-fictive.svg", width: 1.3cm),
       [*Collectivité de l'Exemple*],
     )
     #v(0.3cm)
