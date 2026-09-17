@@ -50,6 +50,7 @@ export function LayoutEditorPage() {
   const [managed, setManaged] = useState(false);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
+  const [canDeleteAssets, setCanDeleteAssets] = useState(false);
   const [fixtureId, setFixtureId] = useState("");
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -98,7 +99,11 @@ export function LayoutEditorPage() {
       })
       .catch(() => {});
     fetchTemplateAssets()
-      .then((a) => !cancelled && setAssets(a.map((x) => x.file)))
+      .then((a) => {
+        if (cancelled) return;
+        setAssets(a.assets.map((x) => x.file));
+        setCanDeleteAssets(a.canDelete);
+      })
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -230,6 +235,7 @@ export function LayoutEditorPage() {
               isDefault={isDefault}
               managed={managed}
               assets={assets}
+              canDeleteAssets={canDeleteAssets}
               disabled={proposal !== null}
               onChange={handleLayoutChange}
               onTemplateNameChange={setName}
@@ -239,10 +245,13 @@ export function LayoutEditorPage() {
               codeHref={`/t/${id}`}
               onNavigateLayout={(e) => follow(e, `/t/${id}/layout`, false)}
               onNavigateCode={(e) => follow(e, `/t/${id}`)}
-              // Un visuel importé depuis le panneau s'ajoute aux assets : la liste est relue.
+              // A visual imported or deleted from the panel changes the assets: the list is re-read.
               onAssetsChanged={() => {
                 fetchTemplateAssets()
-                  .then((a) => setAssets(a.map((x) => x.file)))
+                  .then((a) => {
+                    setAssets(a.assets.map((x) => x.file));
+                    setCanDeleteAssets(a.canDelete);
+                  })
                   .catch(() => {});
               }}
             />

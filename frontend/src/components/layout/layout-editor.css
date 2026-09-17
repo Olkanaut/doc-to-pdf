@@ -664,13 +664,51 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.le-gallery__name {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: var(--c--globals--font--sizes--t);
+.le-thumb-wrap {
+  position: relative;
+}
+.le-thumb-wrap .le-thumb {
+  width: 100%;
+}
+/* Delete button: top-right corner, shown only on hover/focus so it doesn't
+   clutter the grid — but big enough (20px) to stay clickable. */
+.le-thumb-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  border-radius: 50%;
+  background: #fff;
   color: var(--c--globals--colors--gray-550);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  pointer-events: none;
+}
+.le-thumb-wrap:hover .le-thumb-delete,
+.le-thumb-wrap:focus-within .le-thumb-delete {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.le-thumb-delete:hover {
+  border-color: var(--c--contextuals--content--semantic--error--primary);
+  color: var(--c--contextuals--content--semantic--error--primary);
+}
+.le-thumb-delete:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  outline: none;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--c--contextuals--border--semantic--brand--primary);
 }
 .le-thumb {
   display: flex;
