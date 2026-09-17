@@ -9,6 +9,15 @@ import {
   templateModelToLayoutConfig,
   templateModelV2ToLayoutConfig,
 } from "./adapters.js";
+import {
+  BUILTIN_FIELD_DEFINITIONS,
+  fieldDefinitionForId,
+  isBuiltinFieldId,
+  isCustomFieldId,
+  sanitizeFieldCandidate,
+  sanitizeFieldDefinition,
+  sanitizeFieldId,
+} from "./fieldRegistry.js";
 import { sanitizeImportModel } from "./importModel.js";
 import {
   migrateTemplateModelToV2,
@@ -121,6 +130,45 @@ describe("template model contracts", () => {
     expect(projected.compatible).toBe(false);
   });
 
+  it("defines typed built-in fields while keeping custom fields namespaced", () => {
+    expect(BUILTIN_FIELD_DEFINITIONS.map((field) => field.id)).toEqual([
+      "document.title",
+      "document.reference",
+      "document.date",
+      "organization.name",
+      "organization.logo",
+      "recipient.name",
+      "recipient.address",
+      "signature.name",
+      "signature.image",
+    ]);
+    expect(isBuiltinFieldId("document.date")).toBe(true);
+    expect(isCustomFieldId("custom.invoice.total")).toBe(true);
+    expect(sanitizeFieldId("recipient.email", "custom.fallback")).toBe("custom.fallback");
+    expect(fieldDefinitionForId("custom.invoice.total")).toMatchObject({
+      id: "custom.invoice.total",
+      label: "Total",
+      type: "text",
+      required: false,
+    });
+    expect(sanitizeFieldDefinition({ id: "custom.amount", type: "number", required: true })).toMatchObject({
+      id: "custom.amount",
+      type: "number",
+      required: true,
+    });
+    expect(sanitizeFieldCandidate({
+      id: "candidate-ref",
+      fieldId: "document.reference",
+      type: "email",
+      sourceCandidate: { kind: "pdf-text", objectIds: ["text-1"], confidence: 0.6 },
+    })).toMatchObject({
+      id: "candidate-ref",
+      fieldId: "document.reference",
+      type: "text",
+      sourceObjectIds: ["text-1"],
+    });
+  });
+
   it("sanitizes TemplateModel v2 with editable nodes, richer scopes, and permissive fields", () => {
     const model = sanitizeTemplateModelV2({
       version: 2,
@@ -139,10 +187,10 @@ describe("template model contracts", () => {
           id: "recipient-mail",
           type: "field",
           region: "body",
-          fieldId: "recipient.email",
-          fieldType: "email",
-          label: "Email",
-          binding: { path: "recipient.email" },
+          fieldId: "recipient.address",
+          fieldType: "address",
+          label: "Adresse",
+          binding: { path: "recipient.address" },
         },
         {
           id: "watermark-logo",
@@ -172,10 +220,16 @@ describe("template model contracts", () => {
         },
       ],
       fields: [{
-        id: "recipient.email",
-        label: "Email destinataire",
-        type: "email",
-        aliases: ["mail", "courriel"],
+        id: "recipient.address",
+        label: "Adresse destinataire",
+        type: "address",
+        aliases: ["adresse", "domicile"],
+      }],
+      fieldCandidates: [{
+        id: "candidate-ref",
+        fieldId: "document.reference",
+        proposedValue: "ABC-123",
+        sourceCandidate: { kind: "pdf-text", objectIds: ["pdf-text-1"], confidence: 0.7 },
       }],
       assets: [{ id: "logo.png", file: "logo.png", source: { kind: "docx-media" } }],
       metadata: { layoutConfigCompatible: false },
@@ -200,13 +254,24 @@ describe("template model contracts", () => {
       source: { kind: "pdf-text", objectIds: ["pdf-text-1"] },
       layout: { mode: "absolute", x: 20 },
     });
-    expect(model.nodes[1]).toMatchObject({ fieldId: "recipient.email", fieldType: "email" });
+    expect(model.nodes[1]).toMatchObject({ fieldId: "recipient.address", fieldType: "address" });
     expect(model.nodes[2]).toMatchObject({
       region: "watermark",
       source: { kind: "docx-media", assetIds: ["logo.png"] },
     });
     expect(model.nodes[7]).toMatchObject({ scope: "last", numbering: "page-n-of-total" });
-    expect(model.fields[0]).toMatchObject({ id: "recipient.email", type: "email", aliases: ["mail", "courriel"] });
+    expect(model.fields[0]).toMatchObject({
+      id: "recipient.address",
+      type: "address",
+      aliases: ["adresse", "domicile"],
+      sourceCandidate: { kind: "user" },
+    });
+    expect(model.fieldCandidates[0]).toMatchObject({
+      id: "candidate-ref",
+      fieldId: "document.reference",
+      proposedValue: "ABC-123",
+      sourceCandidate: { kind: "pdf-text", objectIds: ["pdf-text-1"] },
+    });
   });
 
   it("migrates TemplateModel v1 to v2 while keeping the simple LayoutConfig projection", () => {
@@ -256,14 +321,55 @@ describe("template model contracts", () => {
       }],
       objects: [
         {
-          id: "pdf-text-1",
+          id: "pdf-title-1",
           type: "text",
           pageIndex: 0,
           bbox: { x: 20, y: 30, width: 120, height: 12 },
           provenance: "pdf-text",
           confidence: 0.98,
           zoneId: "zone-header",
-          text: "Reference",
+          text: "Convention cadre",
+          style: { font: "Arial", fontSize: 18 },
+        },
+        {
+          id: "pdf-ref-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 20, y: 54, width: 120, height: 12 },
+          provenance: "pdf-text",
+          confidence: 0.98,
+          zoneId: "zone-header",
+          text: "Reference: ABC-123",
+          style: { font: "Arial", fontSize: 11 },
+        },
+        {
+          id: "pdf-date-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 20, y: 100, width: 120, height: 12 },
+          provenance: "pdf-text",
+          confidence: 0.9,
+          text: "Paris, le 12/09/2026",
+          style: { font: "Arial", fontSize: 11 },
+        },
+        {
+          id: "pdf-address-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 20, y: 220, width: 160, height: 40 },
+          provenance: "pdf-text",
+          confidence: 0.8,
+          text: "12 rue Victor Hugo 75001 Paris",
+          style: { font: "Arial", fontSize: 11 },
+        },
+        {
+          id: "pdf-signature-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 360, y: 720, width: 120, height: 12 },
+          provenance: "pdf-text",
+          confidence: 0.7,
+          text: "Signature: Jean Dupont",
           style: { font: "Arial", fontSize: 11 },
         },
         {
@@ -294,24 +400,42 @@ describe("template model contracts", () => {
     const projected = templateModelV2ToLayoutConfig(model);
 
     expect(model.metadata.layoutConfigCompatible).toBe(false);
+    expect(model.fields).toEqual([]);
+    expect(model.fieldCandidates.map((candidate) => candidate.fieldId)).toEqual(expect.arrayContaining([
+      "document.date",
+      "document.reference",
+      "document.title",
+      "organization.logo",
+      "recipient.address",
+      "signature.name",
+    ]));
+    expect(model.fieldCandidates.find((candidate) => candidate.fieldId === "document.reference")).toMatchObject({
+      proposedValue: "ABC-123",
+      sourceCandidate: { kind: "pdf-text", objectIds: ["pdf-ref-1"] },
+    });
+    expect(model.fieldCandidates.find((candidate) => candidate.fieldId === "organization.logo")).toMatchObject({
+      proposedValue: "asset-logo",
+      sourceCandidate: { kind: "pdf-image", assetIds: ["asset-logo"] },
+    });
     expect(model.nodes[0]).toMatchObject({
       type: "text",
       region: "header",
-      text: "Reference",
-      source: { kind: "pdf-text", objectIds: ["pdf-text-1"] },
+      text: "Convention cadre",
+      source: { kind: "pdf-text", objectIds: ["pdf-title-1"] },
       layout: { mode: "absolute", x: 20 },
     });
-    expect(model.nodes[1]).toMatchObject({
+    expect(model.nodes.find((node) => node.type === "image")).toMatchObject({
       type: "image",
       imageKind: "embedded",
       assetId: "asset-logo",
       source: { kind: "pdf-image", assetIds: ["asset-logo"] },
     });
-    expect(model.nodes[2]).toMatchObject({
+    expect(model.nodes.find((node) => node.type === "table")).toMatchObject({
       type: "table",
       source: { kind: "docx-xml" },
     });
-    expect(model.nodes[2].type === "table" ? model.nodes[2].rows[0]?.[0]?.text : undefined).toBe("A");
+    const table = model.nodes.find((node) => node.type === "table");
+    expect(table?.type === "table" ? table.rows[0]?.[0]?.text : undefined).toBe("A");
     expect(projected.compatible).toBe(false);
   });
 

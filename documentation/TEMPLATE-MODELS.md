@@ -32,8 +32,10 @@ It can hold:
   custom regions;
 - editable nodes such as text, field, image, shape, line, group, table, and
   page number nodes;
-- permissive fields with stable ids, labels, custom field types, aliases,
-  validation metadata, source, and confidence;
+- typed fields with stable ids, labels, aliases, validation metadata, source,
+  and confidence;
+- field candidates proposed by extraction and kept separate from accepted
+  fields;
 - assets and source metadata.
 
 `TemplateModel` is versioned:
@@ -48,6 +50,39 @@ It can hold:
 
 New node kinds, scopes, regions, and field capabilities should be added by
 model migrations rather than by overloading `LayoutConfig`.
+
+## Field Registry
+
+Typed fields live in a registry independent from layout. A field can exist even
+when no node displays it, and a `FieldNode` only references an accepted field by
+id.
+
+Built-in field ids:
+
+- `document.title`
+- `document.reference`
+- `document.date`
+- `organization.name`
+- `organization.logo`
+- `recipient.name`
+- `recipient.address`
+- `signature.name`
+- `signature.image`
+
+Custom fields must use the `custom.*` namespace, for example
+`custom.invoice.total` or `custom.project.manager`.
+
+Supported field types are `text`, `date`, `image`, `address`, `number`, and
+`richText`.
+
+`TemplateModel v2` separates:
+
+- `fields`: accepted fields, either user-created or user-validated;
+- `fieldCandidates`: extraction proposals with `sourceCandidate`, confidence,
+  source objects, optional bbox, and proposed value.
+
+Extraction may populate `fieldCandidates`, but it must not automatically add
+those candidates to `fields`.
 
 ## LayoutConfig
 

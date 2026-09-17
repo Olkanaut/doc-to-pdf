@@ -1,6 +1,12 @@
 import { sanitizeLayout, type Block, type LayoutConfig } from "../layout/layoutConfig.js";
 import type { Analysis, Region } from "../ingest/sidecar.js";
 import {
+  fieldDefinitionForId,
+  importProvenanceToFieldSourceKind,
+  type FieldCandidate,
+  type RegistryFieldId,
+} from "./fieldRegistry.js";
+import {
   IMPORT_MODEL_KIND,
   IMPORT_MODEL_VERSION,
   sanitizeImportModel,
@@ -431,6 +437,7 @@ export function importModelToTemplateModelV2(
     })),
     nodes: model.objects.map((object, index) => importObjectToTemplateNodeV2(object, model, zoneRegionIds, index)),
     fields: [],
+    fieldCandidates: detectFieldCandidates(model),
     assets: model.assets.map((asset) => ({
       id: asset.id,
       file: asset.file,
@@ -509,6 +516,166 @@ function objectTypeToNodeType(type: ImportObject["type"]): TemplateNode["type"] 
   return "raster";
 }
 
+function detectFieldCandidates(model: ImportModelV1): FieldCandidate[] {
+  const candidates: FieldCandidate[] = [];
+  const textObjects = model.objects.filter((object) => object.type === "text" && object.text?.trim());
+  const imageObjects = model.objects.filter((object) => object.type === "image" && object.assetId);
+  const firstPage = model.pages.find((page) => page.pageIndex === 0) ?? model.pages[0];
+
+  for (const object of textObjects) {
+    const text = normalizeText(object.text ?? "");
+    if (!text) continue;
+
+    const date = extractDateCandidate(text);
+    if (date) {
+      candidates.push(fieldCandidate("document.date", object, model, 0.72 * object.confidence, "Date-like text.", date));
+    }
+
+    const reference = extractReferenceCandidate(text);
+    if (reference) {
+      candidates.push(fieldCandidate("document.reference", object, model, 0.82 * object.confidence, "Reference-like text.", reference));
+    }
+
+    if (looksLikeAddress(text)) {
+      candidates.push(fieldCandidate("recipient.address", object, model, 0.68 * object.confidence, "Address-like text.", text));
+    }
+
+    if (looksLikeRecipientName(text)) {
+      candidates.push(fieldCandidate("recipient.name", object, model, 0.58 * object.confidence, "Recipient-like label.", text));
+    }
+
+    if (looksLikeOrganizationName(text) && objectRegionKind(object, model) === "header") {
+      candidates.push(fieldCandidate("organization.name", object, model, 0.64 * object.confidence, "Organization-like header text.", text));
+    }
+
+    if (looksLikeSignatureText(text)) {
+      candidates.push(fieldCandidate("signature.name", object, model, 0.56 * object.confidence, "Signature-like text.", text));
+    }
+  }
+
+  const titleObject = textObjects
+    .filter((object) => object.pageIndex === 0)
+    .filter((object) => isTitleCandidate(object, model, firstPage?.heightPt))
+    .sort((a, b) =>
+      (styleNumber(b.style, "fontSize") ?? 0) - (styleNumber(a.style, "fontSize") ?? 0) ||
+      a.bbox.y - b.bbox.y
+    )[0];
+  if (titleObject?.text) {
+    candidates.push(fieldCandidate(
+      "document.title",
+      titleObject,
+      model,
+      0.62 * titleObject.confidence,
+      "Prominent first-page text.",
+      normalizeText(titleObject.text),
+    ));
+  }
+
+  for (const object of imageObjects) {
+    const region = objectRegionKind(object, model);
+    if (region === "header") {
+      candidates.push(fieldCandidate("organization.logo", object, model, 0.78 * object.confidence, "Header image.", object.assetId));
+    }
+    if (region === "footer" || isLowOnPage(object, firstPage?.heightPt)) {
+      candidates.push(fieldCandidate("signature.image", object, model, 0.48 * object.confidence, "Footer or low-page image.", object.assetId));
+    }
+  }
+
+  return bestFieldCandidates(candidates);
+}
+
+function fieldCandidate(
+  fieldId: RegistryFieldId,
+  object: ImportObject,
+  model: ImportModelV1,
+  confidence: number,
+  reason: string,
+  proposedValue?: string | number | boolean | null,
+): FieldCandidate {
+  const definition = fieldDefinitionForId(fieldId);
+  const objectIds = [object.id];
+  const assetIds = object.assetId ? [object.assetId] : [];
+  return {
+    id: `candidate-${fieldId.replace(/[^a-zA-Z0-9]+/g, "-")}-${object.id}`,
+    fieldId,
+    label: definition.label,
+    type: definition.type,
+    required: definition.required,
+    defaultValue: definition.defaultValue,
+    format: definition.format,
+    proposedValue,
+    sourceCandidate: {
+      kind: importProvenanceToFieldSourceKind(object.provenance),
+      objectIds,
+      assetIds,
+      confidence: Math.max(0, Math.min(1, confidence)),
+      importModelId: model.source.name,
+    },
+    sourceObjectIds: objectIds,
+    bbox: object.bbox,
+    confidence: Math.max(0, Math.min(1, confidence)),
+    reason,
+  };
+}
+
+function bestFieldCandidates(candidates: readonly FieldCandidate[]): FieldCandidate[] {
+  const byField = new Map<string, FieldCandidate>();
+  for (const candidate of candidates) {
+    const current = byField.get(candidate.fieldId);
+    if (!current || candidate.confidence > current.confidence) {
+      byField.set(candidate.fieldId, candidate);
+    }
+  }
+  return [...byField.values()].sort((a, b) => a.fieldId.localeCompare(b.fieldId));
+}
+
+function normalizeText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function extractDateCandidate(text: string): string | undefined {
+  return text.match(/\b(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\b/)?.[1];
+}
+
+function extractReferenceCandidate(text: string): string | undefined {
+  return text.match(/\b(?:ref(?:erence)?|no|numero|dossier|invoice|facture)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{2,})\b/i)?.[1];
+}
+
+function looksLikeAddress(text: string): boolean {
+  return /\b\d{1,5}\s+(?:rue|avenue|av\.?|boulevard|bd\.?|chemin|route|place|street|road)\b/i.test(text) ||
+    /\b\d{5}\s+[A-Za-z][A-Za-z -]{2,}\b/.test(text);
+}
+
+function looksLikeRecipientName(text: string): boolean {
+  return /\b(?:madame|monsieur|m\.|mme|destinataire|attention|attn)\b/i.test(text);
+}
+
+function looksLikeOrganizationName(text: string): boolean {
+  return /\b(?:ministere|mairie|commune|societe|company|association|direction|service)\b/i.test(text);
+}
+
+function looksLikeSignatureText(text: string): boolean {
+  return /\b(?:signature|signataire|signed by|pour accord)\b/i.test(text);
+}
+
+function styleNumber(style: Record<string, unknown> | undefined, key: string): number | undefined {
+  const value = style?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function isTitleCandidate(object: ImportObject, model: ImportModelV1, pageHeight?: number): boolean {
+  const text = normalizeText(object.text ?? "");
+  if (text.length < 3 || text.length > 140) return false;
+  if (extractDateCandidate(text) || extractReferenceCandidate(text) || looksLikeAddress(text)) return false;
+  const region = objectRegionKind(object, model);
+  if (region === "header") return true;
+  return pageHeight ? object.bbox.y < pageHeight * 0.25 : object.bbox.y < 220;
+}
+
+function isLowOnPage(object: ImportObject, pageHeight?: number): boolean {
+  return pageHeight ? object.bbox.y > pageHeight * 0.7 : object.bbox.y > 600;
+}
+
 function importZoneKindToTemplateRegion(kind: ImportModelV1["zones"][number]["kind"]): TemplateRegionKindV2 {
   if (kind === "header") return "header";
   if (kind === "footer") return "footer";
@@ -526,6 +693,12 @@ function shapeKindV2(value: unknown): TemplateShapeKindV2 {
   return ["rect", "ellipse", "polygon", "path", "unknown"].includes(String(value))
     ? (value as TemplateShapeKindV2)
     : "unknown";
+}
+
+function objectRegionKind(object: ImportObject, model: ImportModelV1): ImportModelV1["zones"][number]["kind"] | undefined {
+  return object.zoneId
+    ? model.zones.find((candidate) => candidate.id === object.zoneId)?.kind
+    : undefined;
 }
 
 function importObjectToTemplateNodeV2(

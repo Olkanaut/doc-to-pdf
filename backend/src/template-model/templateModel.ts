@@ -1,4 +1,16 @@
 import { defaultLayout, sanitizeLayout, type Align, type LayoutConfig, type Numbering } from "../layout/layoutConfig.js";
+import {
+  fieldDefinitionForId,
+  sanitizeFieldCandidate,
+  sanitizeFieldId,
+  sanitizeFieldSourceCandidate,
+  sanitizeFieldType,
+  type FieldCandidate,
+  type FieldSourceCandidate,
+  type FieldSourceCandidateKind,
+  type RegistryFieldId,
+  type TypedFieldType,
+} from "./fieldRegistry.js";
 import type { ImportBBox } from "./importModel.js";
 
 export const TEMPLATE_MODEL_KIND = "template" as const;
@@ -180,8 +192,8 @@ export interface TextNode extends TemplateBaseNodeV2 {
 
 export interface FieldNode extends TemplateBaseNodeV2 {
   type: "field";
-  fieldId: string;
-  fieldType: string;
+  fieldId: RegistryFieldId;
+  fieldType: TypedFieldType;
   label?: string;
   placeholder?: string;
   binding?: Record<string, unknown>;
@@ -229,7 +241,7 @@ export interface TemplateTableColumnV2 {
 export interface TemplateTableCellV2 {
   id?: string;
   text?: string;
-  fieldId?: string;
+  fieldId?: RegistryFieldId;
   rowSpan: number;
   colSpan: number;
   style?: Record<string, unknown>;
@@ -261,13 +273,14 @@ export type TemplateNodeV2 =
   | PageNumberNode;
 
 export interface TemplateFieldV2 {
-  id: string;
+  id: RegistryFieldId;
   label: string;
-  type: string;
+  type: TypedFieldType;
   required: boolean;
   defaultValue?: string | number | boolean | null;
   format?: string;
   source: TemplateSourceV2;
+  sourceCandidate: FieldSourceCandidate;
   confidence: number;
   aliases: string[];
   validation?: Record<string, unknown>;
@@ -291,6 +304,7 @@ export interface TemplateModelV2 {
   regions: TemplateRegionV2[];
   nodes: TemplateNodeV2[];
   fields: TemplateFieldV2[];
+  fieldCandidates: FieldCandidate[];
   assets: TemplateAssetV2[];
   styles: {
     layout: LayoutConfig;
@@ -471,6 +485,20 @@ function sourceObjectV2(
   };
 }
 
+function fieldSourceKindFromTemplateSource(kind: TemplateSourceKindV2): FieldSourceCandidateKind {
+  if (kind === "ocr") return "ai";
+  return [
+    "pdf-text",
+    "pdf-image",
+    "pdf-vector",
+    "docx-xml",
+    "docx-media",
+    "rendered-page",
+    "user",
+    "ai",
+  ].includes(kind) ? (kind as FieldSourceCandidateKind) : "user";
+}
+
 function layoutV2(input: unknown, fallbackBBox?: ImportBBox): TemplateNodeLayoutV2 | undefined {
   if (!input && !fallbackBBox) return undefined;
   const raw = object(input);
@@ -571,7 +599,7 @@ function tableCellsV2(input: unknown): TemplateTableCellV2[][] {
       return {
         id: cell.id === undefined ? undefined : id(cell.id, ""),
         text: cell.text === undefined ? undefined : str(cell.text, "", 10_000),
-        fieldId: cell.fieldId === undefined ? undefined : looseId(cell.fieldId, ""),
+        fieldId: cell.fieldId === undefined ? undefined : sanitizeFieldId(cell.fieldId),
         rowSpan: Math.trunc(num(cell.rowSpan, 1, 1, 1_000)),
         colSpan: Math.trunc(num(cell.colSpan, 1, 1, 1_000)),
         style: plainRecord(cell.style),
@@ -608,12 +636,14 @@ function sanitizeNodeV2(entry: unknown, index: number, regions: readonly Templat
   };
 
   if (type === "field") {
+    const registryFieldId = sanitizeFieldId(node.fieldId, `custom.field_${index + 1}`);
+    const definition = fieldDefinitionForId(registryFieldId);
     return {
       ...common,
       type,
-      fieldId: looseId(node.fieldId, `field-${index + 1}`),
-      fieldType: looseId(node.fieldType ?? node.valueType, "text"),
-      label: node.label === undefined ? undefined : str(node.label, "", 200),
+      fieldId: registryFieldId,
+      fieldType: sanitizeFieldType(node.fieldType ?? node.valueType, definition.type),
+      label: node.label === undefined ? definition.label : str(node.label, "", 200),
       placeholder: node.placeholder === undefined ? undefined : str(node.placeholder, "", 500),
       binding: plainRecord(node.binding),
     };
@@ -685,19 +715,29 @@ function sanitizeNodeV2(entry: unknown, index: number, regions: readonly Templat
 
 function sanitizeFieldV2(entry: unknown, index: number): TemplateFieldV2 {
   const field = object(entry);
+  const registryFieldId = sanitizeFieldId(field.id, `custom.field_${index + 1}`);
+  const definition = fieldDefinitionForId(registryFieldId);
+  const source = sourceObjectV2(field.source, {
+    kind: "user",
+    objectIds: stringIds(field.sourceObjectIds),
+    assetIds: [],
+  });
+  const confidence = num(field.confidence, 1, 0, 1);
   return {
-    id: looseId(field.id, `field-${index + 1}`),
-    label: str(field.label, str(field.id, `Champ ${index + 1}`, 120), 200),
-    type: looseId(field.type, "text"),
-    required: bool(field.required, false),
-    defaultValue: defaultValue(field.defaultValue),
-    format: field.format === undefined ? undefined : str(field.format, "", 120),
-    source: sourceObjectV2(field.source, {
-      kind: "user",
-      objectIds: stringIds(field.sourceObjectIds),
-      assetIds: [],
+    id: registryFieldId,
+    label: str(field.label, definition.label, 200),
+    type: sanitizeFieldType(field.type, definition.type),
+    required: bool(field.required, definition.required),
+    defaultValue: defaultValue(field.defaultValue === undefined ? definition.defaultValue : field.defaultValue),
+    format: field.format === undefined ? definition.format : str(field.format, "", 120),
+    source,
+    sourceCandidate: sanitizeFieldSourceCandidate(field.sourceCandidate, {
+      kind: fieldSourceKindFromTemplateSource(source.kind),
+      objectIds: source.objectIds,
+      assetIds: source.assetIds,
+      confidence,
     }),
-    confidence: num(field.confidence, 1, 0, 1),
+    confidence,
     aliases: array(field.aliases).map((alias) => str(alias, "", 200)).filter(Boolean),
     validation: plainRecord(field.validation),
     metadata: plainRecord(field.metadata),
@@ -811,6 +851,7 @@ export function sanitizeTemplateModelV2(input: unknown): TemplateModelV2 {
     regions,
     nodes: array(raw.nodes).map((entry, index) => sanitizeNodeV2(entry, index, regions)),
     fields: array(raw.fields).map((entry, index) => sanitizeFieldV2(entry, index)),
+    fieldCandidates: array(raw.fieldCandidates).map((entry, index) => sanitizeFieldCandidate(entry, index)),
     assets: array(raw.assets).map((entry, index) => sanitizeAssetV2(entry, index)),
     styles: {
       layout,
@@ -870,12 +911,14 @@ function v1NodeToV2(
   };
   if (node.type === "field") {
     const field = fields.find((candidate) => candidate.id === node.fieldId);
+    const registryFieldId = sanitizeFieldId(node.fieldId, `custom.field_${index + 1}`);
+    const definition = fieldDefinitionForId(registryFieldId);
     return {
       ...common,
       type: "field",
-      fieldId: node.fieldId ?? `field-${index + 1}`,
-      fieldType: field?.type ?? "text",
-      label: field?.label,
+      fieldId: registryFieldId,
+      fieldType: sanitizeFieldType(field?.type, definition.type),
+      label: field?.label ?? definition.label,
     };
   }
   if (node.type === "image" || node.type === "raster") {
@@ -928,9 +971,16 @@ export function templateModelV1ToV2(input: TemplateModelV1): TemplateModelV2 {
       defaultValue: field.defaultValue,
       format: field.format,
       source: { kind: "user", objectIds: field.sourceObjectIds, assetIds: [] },
+      sourceCandidate: {
+        kind: "user",
+        objectIds: field.sourceObjectIds,
+        assetIds: [],
+        confidence: field.confidence,
+      },
       confidence: field.confidence,
       aliases: [],
     })),
+    fieldCandidates: [],
     assets: v1.assets.map((asset) => ({
       id: asset.id,
       file: asset.file,
@@ -956,6 +1006,7 @@ export function isTemplateModelV1(input: unknown): input is TemplateModelV1 {
       Array.isArray(raw.regions) &&
       Array.isArray(raw.nodes) &&
       Array.isArray(raw.fields) &&
+      (!("fieldCandidates" in raw) || Array.isArray(raw.fieldCandidates)) &&
       Array.isArray(raw.assets) &&
       raw.styles,
   );
