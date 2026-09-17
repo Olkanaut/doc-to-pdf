@@ -455,9 +455,6 @@ export interface BlockRule {
   color: string;
   /** Points. */
   widthPt: number;
-  /** Millimetres. */
-  aboveMm: number;
-  belowMm: number;
 }
 
 /**
@@ -476,6 +473,9 @@ export interface Block {
   title: string;
   subtitle: string;
   align: Align;
+  /** Millimetres of clear space above/below, independent of whether rule.on draws a line in it. */
+  spaceAboveMm: number;
+  spaceBelowMm: number;
   rule: BlockRule;
 }
 
@@ -496,6 +496,7 @@ export interface Band {
 export interface FooterBand extends Band {
   numbering: Numbering;
   numberingAlign: Align;
+  numberingScope: BlockScope;
 }
 
 export interface LayoutConfig {
