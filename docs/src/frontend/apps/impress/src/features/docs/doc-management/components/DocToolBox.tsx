@@ -12,6 +12,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/Text';
+import { useConfig } from '@/core/config';
 import { useEditorStore } from '@/docs/doc-editor/stores/useEditorStore';
 import { getWordCount } from '@/docs/doc-editor/utils';
 import { printDocumentWithStyles } from '@/docs/doc-export/utils_print';
@@ -22,6 +23,7 @@ import { useAuth } from '@/features/auth';
 import ContentCopyIcon from '@/icons/copy.svg';
 import DocMoveInIcon from '@/icons/doc-move-in.svg';
 import DocMoveOutIcon from '@/icons/doc-move-out.svg';
+import DotsIcon from '@/icons/dots.svg';
 import DownloadIcon from '@/icons/download.svg';
 import HistoryIcon from '@/icons/history.svg';
 import LeaveIcon from '@/icons/leave.svg';
@@ -116,6 +118,8 @@ const DocToolBoxComponent = ({
   const router = useRouter();
   const isTopParent = !treeContext || doc.id === treeContext?.root?.id; // it can be a child but not for the current user
   const { authenticated } = useAuth();
+  const { data: config } = useConfig();
+  const dotsUrl = config?.FRONTEND_DOTS_URL;
   const [openDropdown, setOpenDropdown] = useState(false);
   const [isModalRemoveOpen, setIsModalRemoveOpen] = useState(false);
   const [isModalExportOpen, setIsModalExportOpen] = useState(false);
@@ -206,6 +210,24 @@ const DocToolBoxComponent = ({
         setIsModalExportOpen(true);
       },
       isHidden: !isCurrentDoc,
+    },
+    {
+      label: t('Format with Dots', {
+        description:
+          'Dropdown menu item to lay the document out as a PDF in the Dots companion app',
+      }),
+      icon: <DotsIcon width={18} height={18} aria-hidden="true" />,
+      callback: () => {
+        window.open(
+          `${dotsUrl}/docs/${doc.id}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      },
+      // No configured URL means Dots is not deployed next to this instance:
+      // the setting doubles as the feature flag.
+      isHidden: !dotsUrl || !isCurrentDoc,
+      testId: `docs-actions-dots-${doc.id}`,
     },
     {
       label: t('Print', {
