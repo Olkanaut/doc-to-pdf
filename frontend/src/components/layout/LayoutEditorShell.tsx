@@ -8,7 +8,7 @@ import {
 } from "react-resizable-panels";
 import type { EditorMode } from "./EditorModeMenu";
 
-const LAYOUT_PANEL_MAX_PX = 520;
+const LAYOUT_PANEL_MAX_SIZE = "50%";
 const PANEL_TRANSITION = "flex 180ms ease";
 
 interface LayoutEditorShellProps {
@@ -53,7 +53,7 @@ export function LayoutEditorShell({
         id="left"
         defaultSize="320px"
         minSize="260px"
-        maxSize={`${LAYOUT_PANEL_MAX_PX}px`}
+        maxSize={LAYOUT_PANEL_MAX_SIZE}
         className="le-shell__panel le-shell__panel--left"
         style={{
           transition: PANEL_TRANSITION,
