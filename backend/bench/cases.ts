@@ -144,12 +144,18 @@ export const CASES: Case[] = [
     id: "logo-entete-droite",
     base: "gere",
     instruction: "Mets le logo 42_Logo.png dans l'en-tête, aligné à droite.",
-    allowed: ["header.logo", "header.align", "header.enabled", "header.first"],
-    // Deux moyens acceptables : le JSON s'il savait l'exprimer, ou une surcharge
+    allowed: ["header.blocks"],
+    // Deux moyens acceptables : le JSON s'il sait l'exprimer, ou une surcharge
     // après le bloc — que la régénération du panneau conserve.
+    //
+    // Le contrôle visait `header.logo` / `header.align`, champs d'une version du
+    // type disparue depuis : il notait en échec la bonne réponse. Réécrit sur le
+    // résultat — un bloc qui porte l'image, posé à droite — le 17/09/2026.
     check: ({ layout, source }) => {
+      const bloc = layout.header.blocks.find((b) => b.image === "42_Logo.png");
       const parJson =
-        layout.header.logo === "42_Logo.png" && layout.header.align === "right";
+        !!bloc &&
+        (bloc.imagePosition === "right" || bloc.kind === "text-image");
       const apres =
         source
           .split("// dots:layout end")[1]
@@ -160,7 +166,7 @@ export const CASES: Case[] = [
         /right/.test(apres);
       if (parJson || parSurcharge) return ok();
       return no(
-        `ni JSON (logo=${JSON.stringify(layout.header.logo)}, align=${layout.header.align}) ni surcharge après le bloc`,
+        `ni JSON (bloc portant l'image : ${bloc ? `imagePosition=${bloc.imagePosition}, kind=${bloc.kind}` : "aucun"}) ni surcharge après le bloc`,
       );
     },
   },

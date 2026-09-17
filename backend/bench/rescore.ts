@@ -49,7 +49,6 @@ for (const f of readdirSync(`${DIR}/${OUT}`).sort()) {
   // en silence. On compare au JSON brut pour ne pas noter une valeur que
   // l'assistant n'a jamais écrite.
   const brut = (() => {
-    template;
     const l = /^\s*\/\/ dots:layout (\{.*\})\s*$/m.exec(src)?.[1];
     if (!l) return null;
     try {
@@ -63,7 +62,6 @@ for (const f of readdirSync(`${DIR}/${OUT}`).sort()) {
         .filter(
           ([k, v]) =>
             JSON.stringify(flat(sanitizeLayout(brut))[k]) !== JSON.stringify(v),
-          template,
         )
         .map(([k]) => k)
     : [];
