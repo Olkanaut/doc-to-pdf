@@ -14,6 +14,8 @@ import { randomBytes } from "node:crypto";
 import { copyFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { TypstCompileError, compileToPdfDetailed } from "../compile/typstCompile.js";
+import { sanitizeLayout } from "../layout/layoutConfig.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import {
   createExternalTemplate,
@@ -40,7 +42,8 @@ import {
   buildSource,
   type Placement,
 } from "../ingest/templateFromAnalysis.js";
-import { analysisToImportModel } from "../template-model/adapters.js";
+import { analysisToImportModel, importModelToTemplateModelV2 } from "../template-model/adapters.js";
+import { templateModelV2ToTypstSource, type TemplateModelV2 } from "../template-model/index.js";
 
 /** 10 Mo de fichier ≈ 13,4 Mo de base64 ; la limite Fastify laisse la marge. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -75,6 +78,11 @@ interface TemplateBody {
   /** Mode « assets » : visuel à poser en en-tête. */
   headerAsset?: string | null;
   vector?: boolean;
+  templateModel?: TemplateModelV2;
+}
+
+interface PreviewTemplateBody {
+  templateModel?: TemplateModelV2;
 }
 
 function importSource(filename: unknown): { kind?: "pdf" | "docx" | "unknown"; name?: string } {
@@ -191,11 +199,13 @@ export async function ingestRoutes(
       try {
         const analysis = await analyzeDocument(job.input, job.dir);
         await cacheAnalysis(job, analysis);
+        const importModel = analysisToImportModel(analysis, importSource(filename));
         return {
           ok: true,
           jobId: job.id,
           ...analysis,
-          importModel: analysisToImportModel(analysis, importSource(filename)),
+          importModel,
+          templateModel: importModelToTemplateModelV2(importModel, sanitizeLayout(analysis.layout)),
         };
       } catch (error) {
         return sendSidecarError(reply, error);
@@ -321,6 +331,49 @@ export async function ingestRoutes(
     },
   );
 
+  /** Compile une prévisualisation PDF depuis le TemplateModel édité, sans créer la template. */
+  app.post<{ Params: { id: string }; Body: PreviewTemplateBody }>(
+    "/api/ingest/:id/preview-template",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const job = await findJob(req.params.id);
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+      if (!req.body?.templateModel) {
+        return reply.code(400).send({ ok: false, error: "templateModel requis" });
+      }
+
+      try {
+        const result = templateModelV2ToTypstSource(req.body.templateModel);
+        const { bytes, stderr } = await compileToPdfDetailed({
+          templateSource: result.source,
+          templateAssetsDir: TEMPLATES_ASSETS_DIR,
+          bodyTypst: `= Aperçu\n\nCe contenu sert uniquement à vérifier la mise en page de la template importée.\n`,
+          bodyImages: [],
+        });
+        return reply
+          .type("application/pdf")
+          .header("Cache-Control", "no-store")
+          .header("X-Dots-Template-Warnings", encodeURIComponent(JSON.stringify(result.warnings)))
+          .header("X-Dots-Typst-Stderr", encodeURIComponent(stderr))
+          .send(bytes);
+      } catch (error) {
+        if (error instanceof TypstCompileError) {
+          return reply.code(422).send({
+            ok: false,
+            error: "typst compile failed",
+            details: error.stderr,
+          });
+        }
+        return sendSidecarError(reply, error);
+      }
+    },
+  );
+
   /** Crée le template : zones découpées + relevé de la page → .typ dans Docs. */
   app.post<{ Params: { id: string }; Body: TemplateBody }>(
     "/api/ingest/:id/template",
@@ -336,6 +389,27 @@ export async function ingestRoutes(
 
       try {
         const analysis = await loadAnalysis(job);
+
+        if (req.body?.templateModel) {
+          const result = templateModelV2ToTypstSource(req.body.templateModel);
+          const created = await createTemplate(
+            {
+              name: (req.body?.name ?? "").trim() || "Template importée",
+              description: "Déduit d'un document importé",
+              source: result.source,
+            },
+            session.accessToken,
+          );
+          return reply.code(201).send({
+            ok: true,
+            id: created.id,
+            layout: result.layout,
+            fragments: [],
+            warnings: result.warnings,
+            fontSubstitution: analysis.fontSubstitution,
+          });
+        }
+
         const vector = req.body?.vector === true;
         const headerRect = sanitizeRect(req.body?.header, analysis);
         const footerRect = sanitizeRect(req.body?.footer, analysis);

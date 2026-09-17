@@ -186,6 +186,12 @@ describe.skipIf(!enabled)("routes d'import", () => {
           o.type === "text" && o.provenance === "pdf-text",
       ),
     ).toBe(true);
+    expect(body.templateModel).toMatchObject({
+      model: "template",
+      version: 2,
+      metadata: { layoutConfigCompatible: false },
+    });
+    expect(body.templateModel.nodes.length).toBeGreaterThan(0);
 
     const preview = await app.inject({
       method: "GET",
@@ -194,6 +200,22 @@ describe.skipIf(!enabled)("routes d'import", () => {
     expect(preview.statusCode).toBe(200);
     expect(preview.headers["content-type"]).toBe("image/png");
     expect(preview.rawPayload.subarray(1, 4).toString()).toBe("PNG");
+
+    await app.close();
+  });
+
+  it("compile une preview Typst depuis le TemplateModel éditable", async () => {
+    const app = await buildApp();
+    const body = await ingest(app);
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${body.jobId}/preview-template`,
+      payload: { templateModel: body.templateModel },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toBe("application/pdf");
+    expect(res.rawPayload.subarray(0, 4).toString()).toBe("%PDF");
 
     await app.close();
   });
@@ -277,6 +299,23 @@ describe.skipIf(!enabled)("routes d'import", () => {
     // No region kept: the band holds no blocks, which is what makes it render as nothing.
     expect(res.json().layout.header.blocks).toEqual([]);
     expect(created?.source).not.toContain("image(");
+
+    await app.close();
+  });
+
+  it("crée un template depuis le TemplateModel édité", async () => {
+    const app = await buildApp();
+    const body = await ingest(app);
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${body.jobId}/template`,
+      payload: { name: "Import édité", templateModel: body.templateModel },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(created?.name).toBe("Import édité");
+    expect(created?.source).toContain("dots:layout");
+    expect(res.json().warnings).toEqual(expect.any(Array));
 
     await app.close();
   });

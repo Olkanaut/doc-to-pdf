@@ -348,6 +348,8 @@ export interface IngestAnalysis {
   counts: { text: number; shapes: number; images: number };
   /** Observation structurée du document importé, plus riche que les zones historiques. */
   importModel: ImportModelV1;
+  /** Proposition éditable initiale, construite côté backend depuis l'ImportModel. */
+  templateModel: TemplateModelV2;
 }
 
 export interface IngestFragment {
@@ -446,6 +448,243 @@ export interface ImportModelV1 {
   warnings: ImportWarning[];
 }
 
+export type TemplateRegionKindV2 =
+  | "header"
+  | "footer"
+  | "body"
+  | "sidebar"
+  | "watermark"
+  | "signature"
+  | "background"
+  | "custom";
+export type TemplateNodeTypeV2 =
+  | "text"
+  | "field"
+  | "image"
+  | "shape"
+  | "line"
+  | "group"
+  | "table"
+  | "pageNumber";
+export type TemplateScopeV2 = "all" | "first" | "except-first" | "odd" | "even" | "last";
+export type TemplateSourceKindV2 =
+  | "pdf-text"
+  | "pdf-image"
+  | "pdf-vector"
+  | "docx-xml"
+  | "docx-media"
+  | "ocr"
+  | "rendered-page"
+  | "user"
+  | "ai";
+export type TypedFieldType = "text" | "date" | "image" | "address" | "number" | "richText";
+export type RegistryFieldId =
+  | "document.title"
+  | "document.reference"
+  | "document.date"
+  | "organization.name"
+  | "organization.logo"
+  | "recipient.name"
+  | "recipient.address"
+  | "signature.name"
+  | "signature.image"
+  | `custom.${string}`;
+
+export interface TemplateSourceV2 {
+  kind: TemplateSourceKindV2;
+  objectIds: string[];
+  assetIds: string[];
+  importModelId?: string;
+  note?: string;
+}
+
+export interface FieldSourceCandidate {
+  kind:
+    | "pdf-text"
+    | "pdf-image"
+    | "pdf-vector"
+    | "docx-xml"
+    | "docx-media"
+    | "metadata"
+    | "filename"
+    | "rendered-page"
+    | "user"
+    | "ai";
+  objectIds: string[];
+  assetIds: string[];
+  confidence: number;
+  importModelId?: string;
+  note?: string;
+}
+
+export interface FieldCandidate {
+  id: string;
+  fieldId: RegistryFieldId;
+  label: string;
+  type: TypedFieldType;
+  required: boolean;
+  defaultValue?: string | number | boolean | null;
+  format?: string;
+  proposedValue?: string | number | boolean | null;
+  sourceCandidate: FieldSourceCandidate;
+  sourceObjectIds: string[];
+  bbox?: ImportBBox;
+  confidence: number;
+  reason?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TemplateRegionV2 {
+  id: string;
+  kind: TemplateRegionKindV2;
+  label: string;
+  bbox?: ImportBBox;
+  pageIndex?: number;
+  scope: TemplateScopeV2;
+  locked: boolean;
+  source: TemplateSourceV2;
+  confidence: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TemplateNodeLayoutV2 {
+  mode: "absolute" | "flow" | "anchored" | "inline" | "unknown";
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  zIndex?: number;
+  rotation?: number;
+  anchor?: string;
+  constraints?: Record<string, unknown>;
+  raw?: Record<string, unknown>;
+}
+
+export interface TemplateBaseNodeV2 {
+  id: string;
+  type: TemplateNodeTypeV2;
+  region: TemplateRegionKindV2;
+  regionId: string;
+  scope: TemplateScopeV2;
+  bbox?: ImportBBox;
+  layout?: TemplateNodeLayoutV2;
+  style?: Record<string, unknown>;
+  source: TemplateSourceV2;
+  confidence: number;
+  locked: boolean;
+  visibleWhen?: string;
+  order: number;
+}
+
+export interface TextNode extends TemplateBaseNodeV2 {
+  type: "text";
+  text: string;
+}
+export interface FieldNode extends TemplateBaseNodeV2 {
+  type: "field";
+  fieldId: RegistryFieldId;
+  fieldType: TypedFieldType;
+  label?: string;
+  placeholder?: string;
+  binding?: Record<string, unknown>;
+}
+export interface ImageNode extends TemplateBaseNodeV2 {
+  type: "image";
+  imageKind: "embedded" | "linked" | "raster-region" | "placeholder";
+  assetId?: string;
+  alt?: string;
+  fit?: "contain" | "cover" | "fill" | "none";
+  crop?: Record<string, unknown>;
+}
+export interface ShapeNode extends TemplateBaseNodeV2 {
+  type: "shape";
+  shape: "rect" | "ellipse" | "polygon" | "path" | "unknown";
+  path?: string;
+  fill?: string;
+  stroke?: string;
+}
+export interface LineNode extends TemplateBaseNodeV2 {
+  type: "line";
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+}
+export interface GroupNode extends TemplateBaseNodeV2 {
+  type: "group";
+  children: string[];
+  groupKind?: string;
+  clipping: boolean;
+}
+export interface TableNode extends TemplateBaseNodeV2 {
+  type: "table";
+  columns: Array<{ id: string; label?: string; width?: number; style?: Record<string, unknown> }>;
+  rows: Array<Array<{ text?: string; fieldId?: RegistryFieldId; rowSpan: number; colSpan: number }>>;
+}
+export interface PageNumberNode extends TemplateBaseNodeV2 {
+  type: "pageNumber";
+  numbering: Numbering;
+  align: Align;
+  format?: string;
+}
+export type TemplateNodeV2 =
+  | TextNode
+  | FieldNode
+  | ImageNode
+  | ShapeNode
+  | LineNode
+  | GroupNode
+  | TableNode
+  | PageNumberNode;
+
+export interface TemplateFieldV2 {
+  id: RegistryFieldId;
+  label: string;
+  type: TypedFieldType;
+  required: boolean;
+  defaultValue?: string | number | boolean | null;
+  format?: string;
+  source: TemplateSourceV2;
+  sourceCandidate: FieldSourceCandidate;
+  confidence: number;
+  aliases: string[];
+  validation?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TemplateAssetV2 {
+  id: string;
+  file?: string;
+  name?: string;
+  mimeType?: string;
+  bytes?: number;
+  source: TemplateSourceV2;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TemplateModelV2 {
+  model: "template";
+  version: 2;
+  page: {
+    paper: LayoutConfig["paper"];
+    orientation: LayoutConfig["orientation"];
+    margins: LayoutConfig["margins"];
+  };
+  regions: TemplateRegionV2[];
+  nodes: TemplateNodeV2[];
+  fields: TemplateFieldV2[];
+  fieldCandidates: FieldCandidate[];
+  assets: TemplateAssetV2[];
+  styles: { layout: LayoutConfig; tokens?: Record<string, unknown> };
+  metadata: {
+    name?: string;
+    layoutConfigCompatible: boolean;
+    migratedFromVersion?: number;
+    sourceImportId?: string;
+    notes: string[];
+  };
+}
+
 /** Dépose le fichier et relève sa première page. Le fichier part en base64. */
 export async function analyzeDocument(file: File): Promise<IngestAnalysis> {
   const fileBase64 = await toBase64(file);
@@ -497,6 +736,7 @@ export async function createTemplateFromIngest(
     /** Mode « assets » : visuel du .docx à poser en en-tête. */
     headerAsset?: string | null;
     vector?: boolean;
+    templateModel?: TemplateModelV2;
   },
 ): Promise<{
   id: string;
@@ -510,6 +750,26 @@ export async function createTemplateFromIngest(
       body: JSON.stringify(input),
     }),
   );
+}
+
+export async function previewTemplateFromIngest(
+  jobId: string,
+  templateModel: TemplateModelV2,
+): Promise<RenderResult | RenderError> {
+  const res = await apiFetch(`/api/ingest/${jobId}/preview-template`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ templateModel }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: "Unknown error" }));
+    return {
+      ok: false,
+      error: data.error ?? "Unknown error",
+      details: data.details,
+    };
+  }
+  return { ok: true, blob: await res.blob() };
 }
 
 /** FileReader plutôt qu'une boucle sur les octets : un PDF de 10 Mo saturerait la pile. */

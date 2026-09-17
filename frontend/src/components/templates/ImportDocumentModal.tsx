@@ -19,19 +19,22 @@ import {
   extractFragment,
   ingestAssetUrl,
   ingestPreviewUrl,
+  previewTemplateFromIngest,
   type IngestAnalysis,
   type IngestAsset,
   type IngestRect,
   type IngestRegion,
+  type TemplateModelV2,
 } from "../../api/client";
 import { CropCanvas } from "./CropCanvas";
+import { ImportVisualEditor } from "./import-editor/ImportVisualEditor";
 import "./templates-page.css";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 /** Un échec d'analyse s'affiche, puis la fenêtre se ferme d'elle-même. */
 const ERROR_LINGER_MS = 4000;
 
-type Stage = "drop" | "loading" | "crop" | "assets" | "typ" | "error";
+type Stage = "drop" | "loading" | "crop" | "assets" | "edit" | "typ" | "error";
 /** Ce à quoi sert la zone choisie : une template entière, ou le seul visuel d'une section. */
 export type ImportTarget = "template" | "header" | "footer";
 
@@ -84,6 +87,7 @@ export function ImportDocumentModal({
   const [upload, setUpload] = useState<UploadFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IngestAnalysis | null>(null);
+  const [templateModel, setTemplateModel] = useState<TemplateModelV2 | null>(null);
   const [rect, setRect] = useState<IngestRect | null>(null);
   /** Mode « assets » : visuel retenu parmi ceux sortis du .docx. */
   const [asset, setAsset] = useState<IngestAsset | null>(null);
@@ -91,6 +95,9 @@ export function ImportDocumentModal({
   const [vector, setVector] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   // Numéro de la lecture en cours : un fichier remplacé pendant son analyse est ignoré.
   const run = useRef(0);
 
@@ -100,6 +107,12 @@ export function ImportDocumentModal({
     const timer = window.setTimeout(onClose, ERROR_LINGER_MS);
     return () => window.clearTimeout(timer);
   }, [stage, onClose]);
+
+  useEffect(() => {
+    return () => {
+      if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+    };
+  }, [previewPdfUrl]);
 
   function fail(message: string) {
     setError(message);
@@ -157,6 +170,7 @@ export function ImportDocumentModal({
       const result = await analyzeDocument(file);
       if (id !== run.current) return;
       setAnalysis(result);
+      setTemplateModel(result.templateModel);
 
       // Un .docx qui porte ses visuels en clair n'a pas de page rendue : il n'y
       // a rien à recadrer, seulement un visuel à choisir.
@@ -168,6 +182,11 @@ export function ImportDocumentModal({
           null;
         setAsset(first);
         setStage("assets");
+        return;
+      }
+
+      if (target === "template") {
+        setStage("edit");
         return;
       }
 
@@ -226,7 +245,7 @@ export function ImportDocumentModal({
   }
 
   async function confirm() {
-    if (!analysis || (stage === "crop" ? !rect : !asset)) return;
+    if (!analysis || (stage === "crop" ? !rect : stage === "assets" ? !asset : stage === "edit" ? !templateModel : true)) return;
     setBusy(true);
     setError(null);
     const name =
@@ -248,6 +267,16 @@ export function ImportDocumentModal({
           });
           onFragment?.(fragment.file);
         }
+        onClose();
+        return;
+      }
+
+      if (stage === "edit") {
+        const created = await createTemplateFromIngest(analysis.jobId, {
+          name,
+          templateModel: templateModel!,
+        });
+        onTemplate?.(created.id);
         onClose();
         return;
       }
@@ -278,6 +307,35 @@ export function ImportDocumentModal({
     }
   }
 
+  async function previewEditedTemplate() {
+    if (!analysis || !templateModel) return;
+    setPreviewBusy(true);
+    setPreviewError(null);
+    try {
+      const result = await previewTemplateFromIngest(analysis.jobId, templateModel);
+      if (result.ok) {
+        if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+        setPreviewPdfUrl(URL.createObjectURL(result.blob));
+      } else {
+        setPreviewError(result.details || result.error);
+      }
+    } catch (err) {
+      setPreviewError((err as Error).message);
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
+
+  async function rasterizeEditedZone(rect: IngestRect): Promise<string> {
+    if (!analysis) throw new Error("Import absent");
+    const fragment = await extractFragment(analysis.jobId, {
+      rect,
+      vector: false,
+      kind: "fragment",
+    });
+    return fragment.file;
+  }
+
   const cta =
     target === "template" ? "Créer la template" : "Utiliser comme visuel";
   const title =
@@ -286,7 +344,7 @@ export function ImportDocumentModal({
   return (
     <Modal
       isOpen
-      size={stage === "crop" ? ModalSize.LARGE : ModalSize.MEDIUM}
+      size={stage === "crop" || stage === "edit" ? ModalSize.LARGE : ModalSize.MEDIUM}
       onClose={onClose}
       closeOnClickOutside
       hideCloseButton
@@ -310,10 +368,10 @@ export function ImportDocumentModal({
         </div>
       }
       rightActions={
-        stage === "crop" || stage === "assets" ? (
+        stage === "crop" || stage === "assets" || stage === "edit" ? (
           <Button
             type="button"
-            disabled={busy || (stage === "crop" ? !rect : !asset)}
+            disabled={busy || (stage === "crop" ? !rect : stage === "assets" ? !asset : !templateModel)}
             onClick={() => void confirm()}
           >
             {busy ? "En cours…" : cta}
@@ -490,6 +548,20 @@ export function ImportDocumentModal({
               )}
             </div>
           </div>
+        )}
+
+        {stage === "edit" && analysis && templateModel && (
+          <ImportVisualEditor
+            analysis={analysis}
+            previewUrl={ingestPreviewUrl(analysis.jobId)}
+            value={templateModel}
+            onChange={setTemplateModel}
+            onRasterize={rasterizeEditedZone}
+            onPreview={previewEditedTemplate}
+            previewPdfUrl={previewPdfUrl}
+            previewLoading={previewBusy}
+            previewError={previewError}
+          />
         )}
       </div>
     </Modal>

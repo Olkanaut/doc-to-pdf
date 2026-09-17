@@ -114,3 +114,21 @@ PDF/DOCX/OCR -> ImportModel -> TemplateModel -> Typst
 `TemplateModel v2` can project back to `LayoutConfig` only when it stays inside
 the simple subset: header/footer nodes, current page scopes, no positioned
 layout, and no advanced node types such as fields, tables, groups, or shapes.
+
+## Visual Import Editor
+
+The import flow now inserts an editing step between upload and final template
+creation:
+
+```text
+Upload -> ImportModel -> editable TemplateModel v2 -> Typst preview -> template
+```
+
+The editor treats `ImportModel` as immutable extraction evidence. User actions
+modify only `TemplateModel v2`: assign regions, choose scopes, hide/delete
+objects, group nodes, convert extracted text into accepted fields, rasterize
+zones, and preview the resulting Typst output.
+
+The first Typst adapter for this flow is conservative. It renders the simple
+header/footer subset and keeps unsupported advanced nodes in the model with
+warnings, so richer rendering can be added without changing the import contract.

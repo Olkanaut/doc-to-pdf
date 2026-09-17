@@ -773,3 +773,198 @@
   font-size: 0.6875rem;
   color: var(--c--globals--colors--gray-550);
 }
+
+/* Éditeur visuel d'import : page au centre, calques à gauche, propriétés à droite. */
+.c__modal .import-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: min(720px, 74vh);
+}
+.c__modal .import-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.c__modal .import-editor__grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(320px, 1fr) minmax(220px, 280px);
+  gap: 14px;
+  min-height: 0;
+}
+.c__modal .import-editor__layers,
+.c__modal .import-editor__props {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: var(--c--globals--colors--gray-025);
+}
+.c__modal .import-editor__panel-title {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: var(--c--globals--font--weights--bold);
+  color: var(--c--globals--colors--gray-850);
+  text-transform: uppercase;
+}
+.c__modal .import-editor__layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: auto;
+}
+.c__modal .import-editor__layer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  background: #fff;
+  color: var(--c--globals--colors--gray-850);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.c__modal .import-editor__layer small {
+  color: var(--c--globals--colors--gray-550);
+}
+.c__modal .import-editor__layer--on {
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
+}
+.c__modal .import-editor__layer--hidden {
+  opacity: 0.48;
+}
+.c__modal .import-editor__page-wrap {
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #f3f5f8;
+}
+.c__modal .import-editor__page {
+  position: relative;
+  width: min(100%, 680px);
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
+}
+.c__modal .import-editor__page-img,
+.c__modal .import-editor__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.c__modal .import-editor__page-img {
+  object-fit: fill;
+}
+.c__modal .import-editor__overlay {
+  z-index: 1;
+}
+.c__modal .import-editor__box {
+  fill: rgb(17 103 212 / 10%);
+  stroke: rgb(17 103 212 / 82%);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
+.c__modal .import-editor__box--image {
+  fill: rgb(37 137 72 / 12%);
+  stroke: rgb(37 137 72 / 84%);
+}
+.c__modal .import-editor__box--shape,
+.c__modal .import-editor__box--line {
+  fill: rgb(232 133 30 / 12%);
+  stroke: rgb(181 92 5 / 88%);
+}
+.c__modal .import-editor__box--field {
+  fill: rgb(112 63 190 / 12%);
+  stroke: rgb(112 63 190 / 88%);
+}
+.c__modal .import-editor__box--on {
+  fill: rgb(17 103 212 / 22%);
+  stroke: var(--dots-primary);
+  stroke-width: 2;
+}
+.c__modal .import-editor__box-label {
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  font-size: 9px;
+  pointer-events: none;
+}
+.c__modal .import-editor__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+}
+.c__modal .import-editor__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: var(--c--globals--font--weights--medium);
+  color: var(--c--globals--colors--gray-700);
+}
+.c__modal .import-editor__form select,
+.c__modal .import-editor__form input {
+  min-height: 34px;
+  box-sizing: border-box;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #fff;
+  color: var(--c--globals--colors--gray-850);
+  font: inherit;
+}
+.c__modal .import-editor__field-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c--globals--colors--gray-150);
+}
+.c__modal .import-editor__inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.c__modal .import-editor__inline input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.c__modal .import-editor__empty {
+  margin: 0;
+  color: var(--c--globals--colors--gray-550);
+  font-size: 0.875rem;
+}
+.c__modal .import-editor__preview-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--c--globals--colors--gray-700);
+  font-size: 0.8125rem;
+}
+.c__modal .import-editor__preview {
+  width: 100%;
+  height: 240px;
+  margin-top: 10px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  background: #fff;
+}
+
+@media (max-width: 980px) {
+  .c__modal .import-editor__grid {
+    grid-template-columns: 1fr;
+  }
+  .c__modal .import-editor__layers,
+  .c__modal .import-editor__props {
+    max-height: 260px;
+  }
+}
