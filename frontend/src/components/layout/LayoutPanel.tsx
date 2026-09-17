@@ -7,28 +7,19 @@ import {
   RadioGroup,
   Select,
   Switch,
-  TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
+import { ChevronDown, ChevronRight } from "@gouvfr-lasuite/ui-components/icons";
 import {
-  ChevronDown,
-  ChevronRight,
-  Trash,
-  Upload,
-} from "@gouvfr-lasuite/ui-components/icons";
-import {
-  assetUrl,
   deleteTemplateAsset,
-  type Align,
-  type FooterContent,
-  type HeaderContent,
+  uploadTemplateAsset,
+  type Block,
   type LayoutConfig,
-  type Numbering,
-  type PageBandMode,
   type PaperSize,
   type TextStyleKey,
 } from "../../api/client";
 import { ImportDocumentModal } from "../templates/ImportDocumentModal";
+import { SectionBuilder } from "./SectionBuilder";
 import { TemplateNameField } from "./TemplateNameField";
 
 type Option = { value: string; label: string };
@@ -53,23 +44,6 @@ const PAPERS: Option[] = [
   { value: "a4", label: "A4 — 210 × 297 mm" },
   { value: "a5", label: "A5 — 148 × 210 mm" },
   { value: "us-letter", label: "Lettre US — 216 × 279 mm" },
-];
-const ALIGNS: [Align, string][] = [
-  ["left", "Gauche"],
-  ["center", "Centre"],
-  ["right", "Droite"],
-];
-const NUMBERINGS: Option[] = [
-  { value: "none", label: "Aucune" },
-  { value: "n", label: "1" },
-  { value: "n-of-total", label: "1 / N" },
-  { value: "page-n-of-total", label: "Page 1 / N" },
-];
-const PAGE_BAND_MODES: Option[] = [
-  { value: "all", label: "Toutes les pages" },
-  { value: "except-first", label: "Pages suivantes uniquement" },
-  { value: "first-only", label: "Première page uniquement" },
-  { value: "different-first", label: "Première page différente" },
 ];
 /* Tableaux : mêmes listes que backend/src/layout/layoutConfig.ts (TABLE_*). */
 const TABLE_STROKES: Option[] = [
@@ -113,8 +87,7 @@ const RADIO_ROW = {
 } as const;
 type LayoutTab = (typeof TABS)[number]["id"];
 type TextSection = TextStyleKey | "table";
-type BandSlot = "default" | "first";
-type Importing = { kind: "header" | "footer"; slot: BandSlot };
+type Importing = { kind: "header" | "footer"; index: number };
 
 interface Props {
   layout: LayoutConfig;
@@ -152,24 +125,9 @@ export function LayoutPanel({
   // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
   const [importing, setImporting] = useState<Importing | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
-  const [openTextSection, setOpenTextSection] = useState<TextSection | null>(
-    null,
-  );
-  const set = (patch: Partial<LayoutConfig>) =>
-    onChange({ ...layout, ...patch });
-  const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
-    set({ header: { ...layout.header, ...patch } });
-  const setFooter = (patch: Partial<LayoutConfig["footer"]>) =>
-    set({ footer: { ...layout.footer, ...patch } });
-  const setHeaderContent = (slot: BandSlot, patch: Partial<HeaderContent>) => {
-    if (slot === "default") setHeader(patch);
-    else setHeader({ first: { ...layout.header.first, ...patch } });
-  };
-  const setFooterContent = (slot: BandSlot, patch: Partial<FooterContent>) => {
-    if (slot === "default") setFooter(patch);
-    else setFooter({ first: { ...layout.footer.first, ...patch } });
-  };
-  /** The visual is shared: deleting it clears it from every slot that uses it. */
+  const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
+  const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
+  /** The visual is shared: deleting it clears it from every block that uses it. */
   const handleDeleteAsset = async (file: string) => {
     if (
       !window.confirm(
@@ -183,26 +141,25 @@ export function LayoutPanel({
       window.alert(e instanceof Error ? e.message : String(e));
       return;
     }
+    const clear = (b: Block): Block => (b.image === file ? { ...b, image: null } : b);
     set({
-      header: {
-        ...layout.header,
-        logo: layout.header.logo === file ? null : layout.header.logo,
-        first: {
-          ...layout.header.first,
-          logo:
-            layout.header.first.logo === file ? null : layout.header.first.logo,
-        },
-      },
-      footer: {
-        ...layout.footer,
-        logo: layout.footer.logo === file ? null : layout.footer.logo,
-        first: {
-          ...layout.footer.first,
-          logo:
-            layout.footer.first.logo === file ? null : layout.footer.first.logo,
-        },
-      },
+      header: { ...layout.header, blocks: layout.header.blocks.map(clear) },
+      footer: { ...layout.footer, blocks: layout.footer.blocks.map(clear) },
     });
+    onAssetsChanged?.();
+  };
+  /** Dépose un fichier local comme image du bloc d'indice donné, sans passer par le recadrage PDF/DOCX. */
+  const handleUploadImage = async (kind: "header" | "footer", index: number, file: File) => {
+    let uploaded: string;
+    try {
+      uploaded = (await uploadTemplateAsset(file)).file;
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    const band = layout[kind];
+    const blocks = band.blocks.map((b, i) => (i === index ? { ...b, image: uploaded } : b));
+    set({ [kind]: { ...band, blocks } } as Partial<LayoutConfig>);
     onAssetsChanged?.();
   };
   const setTable = (patch: Partial<LayoutConfig["table"]>) =>
@@ -406,167 +363,35 @@ export function LayoutPanel({
           </TabPanel>
 
           <TabPanel uid={uid} tab="header" activeTab={activeTab}>
-            <Section title="En-tête">
-              <Switch
-                label="Activer"
-                role="switch"
-                fullWidth
-                checked={layout.header.enabled}
-                onChange={(e) => setHeader({ enabled: e.target.checked })}
+            <div className="le-tab-body">
+              <SectionBuilder
+                kind="header"
+                band={layout.header}
+                ruleColor={layout.headings.color}
+                onChange={(band) => set({ header: band })}
+                onPickImage={(index) => setImporting({ kind: "header", index })}
+                onUploadImage={(index, file) => void handleUploadImage("header", index, file)}
+                assets={assets}
+                canDeleteAssets={canDeleteAssets}
+                onDeleteAsset={handleDeleteAsset}
               />
-              <Select
-                label="Application"
-                fullWidth
-                clearable={false}
-                options={PAGE_BAND_MODES}
-                value={layout.header.mode}
-                onChange={(e) => {
-                  const mode = String(e.target.value) as PageBandMode;
-                  setHeader({
-                    mode,
-                    ...(mode === "different-first" &&
-                    layout.header.mode !== "different-first"
-                      ? {
-                          first: {
-                            text: layout.header.text,
-                            logo: layout.header.logo,
-                            fullBleed: layout.header.fullBleed,
-                            align: layout.header.align,
-                            rule: layout.header.rule,
-                          },
-                        }
-                      : {}),
-                  });
-                }}
-              />
-              {layout.header.mode === "different-first" ? (
-                <>
-                  <div className="le-group">
-                    <Label>Première page</Label>
-                    <HeaderFields
-                      uid={`${uid}-header-first`}
-                      assets={assets}
-                      canDeleteAssets={canDeleteAssets}
-                      onDeleteAsset={handleDeleteAsset}
-                      value={layout.header.first}
-                      onChange={(patch) => setHeaderContent("first", patch)}
-                      onImport={() =>
-                        setImporting({ kind: "header", slot: "first" })
-                      }
-                    />
-                  </div>
-                  <div className="le-group">
-                    <Label>Pages suivantes</Label>
-                    <HeaderFields
-                      uid={`${uid}-header-default`}
-                      assets={assets}
-                      canDeleteAssets={canDeleteAssets}
-                      onDeleteAsset={handleDeleteAsset}
-                      value={layout.header}
-                      onChange={(patch) => setHeaderContent("default", patch)}
-                      onImport={() =>
-                        setImporting({ kind: "header", slot: "default" })
-                      }
-                    />
-                  </div>
-                </>
-              ) : (
-                <HeaderFields
-                  uid={`${uid}-header`}
-                  assets={assets}
-                  canDeleteAssets={canDeleteAssets}
-                  onDeleteAsset={handleDeleteAsset}
-                  value={layout.header}
-                  onChange={(patch) => setHeaderContent("default", patch)}
-                  onImport={() =>
-                    setImporting({ kind: "header", slot: "default" })
-                  }
-                />
-              )}
-            </Section>
+            </div>
           </TabPanel>
 
           <TabPanel uid={uid} tab="footer" activeTab={activeTab}>
-            <Section title="Pied de page">
-              <Switch
-                label="Activer"
-                role="switch"
-                fullWidth
-                checked={layout.footer.enabled}
-                onChange={(e) => setFooter({ enabled: e.target.checked })}
+            <div className="le-tab-body">
+              <SectionBuilder
+                kind="footer"
+                band={layout.footer}
+                ruleColor={layout.headings.color}
+                onChange={(band) => set({ footer: band as LayoutConfig["footer"] })}
+                onPickImage={(index) => setImporting({ kind: "footer", index })}
+                onUploadImage={(index, file) => void handleUploadImage("footer", index, file)}
+                assets={assets}
+                canDeleteAssets={canDeleteAssets}
+                onDeleteAsset={handleDeleteAsset}
               />
-              <Select
-                label="Application"
-                fullWidth
-                clearable={false}
-                options={PAGE_BAND_MODES}
-                value={layout.footer.mode}
-                onChange={(e) => {
-                  const mode = String(e.target.value) as PageBandMode;
-                  setFooter({
-                    mode,
-                    firstPage: mode !== "except-first",
-                    ...(mode === "different-first" &&
-                    layout.footer.mode !== "different-first"
-                      ? {
-                          first: {
-                            text: layout.footer.text,
-                            logo: layout.footer.logo,
-                            fullBleed: layout.footer.fullBleed,
-                            numbering: layout.footer.numbering,
-                            align: layout.footer.align,
-                            rule: layout.footer.rule,
-                          },
-                        }
-                      : {}),
-                  });
-                }}
-              />
-              {layout.footer.mode === "different-first" ? (
-                <>
-                  <div className="le-group">
-                    <Label>Première page</Label>
-                    <FooterFields
-                      uid={`${uid}-footer-first`}
-                      assets={assets}
-                      canDeleteAssets={canDeleteAssets}
-                      onDeleteAsset={handleDeleteAsset}
-                      value={layout.footer.first}
-                      onChange={(patch) => setFooterContent("first", patch)}
-                      onImport={() =>
-                        setImporting({ kind: "footer", slot: "first" })
-                      }
-                    />
-                  </div>
-                  <div className="le-group">
-                    <Label>Pages suivantes</Label>
-                    <FooterFields
-                      uid={`${uid}-footer-default`}
-                      assets={assets}
-                      canDeleteAssets={canDeleteAssets}
-                      onDeleteAsset={handleDeleteAsset}
-                      value={layout.footer}
-                      onChange={(patch) => setFooterContent("default", patch)}
-                      onImport={() =>
-                        setImporting({ kind: "footer", slot: "default" })
-                      }
-                    />
-                  </div>
-                </>
-              ) : (
-                <FooterFields
-                  uid={`${uid}-footer`}
-                  assets={assets}
-                  canDeleteAssets={canDeleteAssets}
-                  onDeleteAsset={handleDeleteAsset}
-                  value={layout.footer}
-                  onChange={(patch) => setFooterContent("default", patch)}
-                  onImport={() =>
-                    setImporting({ kind: "footer", slot: "default" })
-                  }
-                />
-              )}
-            </Section>
+            </div>
           </TabPanel>
         </fieldset>
       </div>
@@ -576,10 +401,12 @@ export function LayoutPanel({
           target={importing.kind}
           onClose={() => setImporting(null)}
           onFragment={(file) => {
-            if (importing.kind === "header")
-              setHeaderContent(importing.slot, { logo: file, fullBleed: true });
-            else
-              setFooterContent(importing.slot, { logo: file, fullBleed: true });
+            // A strip cropped out of a document spans the page: width 0 is edge to edge.
+            const band = layout[importing.kind];
+            const blocks = band.blocks.map((b, i) =>
+              i === importing.index ? { ...b, image: file, imageHeightMm: 0 } : b,
+            );
+            set({ [importing.kind]: { ...band, blocks } } as Partial<LayoutConfig>);
             onAssetsChanged?.();
           }}
         />
@@ -792,210 +619,8 @@ function TableStyleSection({
   );
 }
 
-function HeaderFields({
-  uid,
-  assets,
-  canDeleteAssets,
-  onDeleteAsset,
-  value,
-  onChange,
-  onImport,
-}: {
-  uid: string;
-  assets: string[];
-  canDeleteAssets?: boolean;
-  onDeleteAsset: (file: string) => void;
-  value: HeaderContent;
-  onChange: (patch: Partial<HeaderContent>) => void;
-  onImport: () => void;
-}) {
-  return (
-    <>
-      <Gallery
-        label="Visuel"
-        assets={assets}
-        canDeleteAssets={canDeleteAssets}
-        onDeleteAsset={onDeleteAsset}
-        value={value.logo}
-        onPick={(logo) => onChange({ logo })}
-        onImport={onImport}
-      />
-      {value.logo && (
-        <Switch
-          label="Pleine largeur (bord à bord)"
-          role="switch"
-          fullWidth
-          checked={value.fullBleed}
-          onChange={(e) => onChange({ fullBleed: e.target.checked })}
-        />
-      )}
-      <TextArea
-        label="Texte"
-        fullWidth
-        rows={2}
-        value={value.text}
-        onChange={(e) => onChange({ text: e.target.value })}
-      />
-      <AlignRadios
-        name={`${uid}-align`}
-        groupLabel="Alignement de l'en-tête"
-        value={value.align}
-        onChange={(align) => onChange({ align })}
-      />
-      <Switch
-        label="Filet"
-        role="switch"
-        fullWidth
-        checked={value.rule}
-        onChange={(e) => onChange({ rule: e.target.checked })}
-      />
-    </>
-  );
-}
 
-function FooterFields({
-  uid,
-  assets,
-  canDeleteAssets,
-  onDeleteAsset,
-  value,
-  onChange,
-  onImport,
-}: {
-  uid: string;
-  assets: string[];
-  canDeleteAssets?: boolean;
-  onDeleteAsset: (file: string) => void;
-  value: FooterContent;
-  onChange: (patch: Partial<FooterContent>) => void;
-  onImport: () => void;
-}) {
-  return (
-    <>
-      <TextArea
-        label="Texte"
-        fullWidth
-        rows={2}
-        value={value.text}
-        onChange={(e) => onChange({ text: e.target.value })}
-      />
-      <Gallery
-        label="Visuel"
-        assets={assets}
-        canDeleteAssets={canDeleteAssets}
-        onDeleteAsset={onDeleteAsset}
-        value={value.logo}
-        onPick={(logo) => onChange({ logo })}
-        onImport={onImport}
-      />
-      {value.logo && (
-        <Switch
-          label="Pleine largeur (bord à bord)"
-          role="switch"
-          fullWidth
-          checked={value.fullBleed}
-          onChange={(e) => onChange({ fullBleed: e.target.checked })}
-        />
-      )}
-      <Select
-        label="Numérotation"
-        fullWidth
-        clearable={false}
-        options={NUMBERINGS}
-        value={value.numbering}
-        onChange={(e) =>
-          onChange({ numbering: String(e.target.value) as Numbering })
-        }
-      />
-      <AlignRadios
-        name={`${uid}-align`}
-        groupLabel="Alignement du pied de page"
-        value={value.align}
-        onChange={(align) => onChange({ align })}
-      />
-      <Switch
-        label="Filet"
-        role="switch"
-        fullWidth
-        checked={value.rule}
-        onChange={(e) => onChange({ rule: e.target.checked })}
-      />
-    </>
-  );
-}
 
-/**
- * Visuels disponibles, en vignettes : les logos livrés et les fragments
- * découpés dans un PDF importé. La dernière tuile ouvre la fenêtre d'import,
- * second point d'entrée du parcours (le premier est la page des templates).
- */
-function Gallery({
-  label,
-  assets,
-  canDeleteAssets,
-  onDeleteAsset,
-  value,
-  onPick,
-  onImport,
-}: {
-  label: string;
-  assets: string[];
-  canDeleteAssets?: boolean;
-  onDeleteAsset?: (file: string) => void;
-  value: string | null;
-  onPick: (file: string | null) => void;
-  onImport: () => void;
-}) {
-  return (
-    <div className="le-gallery">
-      <Label>{label}</Label>
-      <div className="le-gallery__grid">
-        <button
-          type="button"
-          className={`le-thumb le-thumb--none${value ? "" : " le-thumb--on"}`}
-          aria-pressed={!value}
-          title="Aucun visuel"
-          onClick={() => onPick(null)}
-        >
-          Aucun
-        </button>
-        {assets.map((file) => (
-          <div key={file} className="le-thumb-wrap">
-            <button
-              type="button"
-              className={`le-thumb${value === file ? " le-thumb--on" : ""}`}
-              aria-pressed={value === file}
-              title={file}
-              onClick={() => onPick(file)}
-            >
-              <img src={assetUrl(file)} alt={file} loading="lazy" />
-            </button>
-            {canDeleteAssets && (
-              <button
-                type="button"
-                className="le-thumb-delete"
-                title="Supprimer ce visuel"
-                aria-label={`Supprimer le visuel ${file}`}
-                onClick={() => onDeleteAsset?.(file)}
-              >
-                <Trash size={12} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          type="button"
-          className="le-thumb le-thumb--add"
-          title="Importer un visuel"
-          onClick={onImport}
-        >
-          <Upload size={16} aria-hidden="true" />
-          <span className="le-sr">Importer un visuel</span>
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -1038,32 +663,3 @@ function SectionToggle({
   );
 }
 
-function AlignRadios({
-  name,
-  groupLabel,
-  value,
-  onChange,
-}: {
-  name: string;
-  groupLabel: string;
-  value: Align;
-  onChange: (v: Align) => void;
-}) {
-  return (
-    <fieldset className="le-radios" aria-label={groupLabel}>
-      <legend>Alignement</legend>
-      <RadioGroup style={RADIO_ROW}>
-        {ALIGNS.map(([v, l]) => (
-          <Radio
-            key={v}
-            name={name}
-            label={l}
-            value={v}
-            checked={value === v}
-            onChange={() => onChange(v)}
-          />
-        ))}
-      </RadioGroup>
-    </fieldset>
-  );
-}

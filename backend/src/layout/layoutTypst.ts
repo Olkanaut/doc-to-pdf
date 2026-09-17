@@ -11,11 +11,14 @@ import {
   defaultLayout,
   INLINE_LOGO_HEIGHT_MM,
   sanitizeLayout,
-  type FooterContent,
-  type HeaderContent,
+  PLACEHOLDER_SUBTITLE,
+  PLACEHOLDER_TITLE,
+  type Band,
+  type Block,
+  type BlockKind,
+  type FooterBand,
   type LayoutConfig,
   type Numbering,
-  type PageBandMode,
   type TextStyle,
 } from "./layoutConfig.js";
 
@@ -83,119 +86,227 @@ function contentBlock(parts: string[], indent: string): string {
 }
 
 /**
- * Bandeau bord à bord : `place` sort de la zone de texte par un `dx` négatif
- * égal à la marge, et l'image est élargie des deux marges. La marge du côté
- * concerné doit valoir au moins la hauteur rendue, sinon Typst rogne l'image —
- * c'est l'appelant qui la règle (voir ingest/templateFromAnalysis.ts).
+ * Which pages a block prints on. Typst evaluates the header once per page, so
+ * the test is on the page counter; `all` needs no test at all.
  */
-function bleed(
-  file: string,
-  side: "top" | "bottom",
-  cfg: LayoutConfig,
-): string {
+function scoped(body: string, block: Block): string {
+  if (block.scope === "all") return body;
+  const n = "counter(page).get().first()";
+  const test = block.scope === "first" ? `${n} == 1` : `${n} > 1`;
+  return `#context { if ${test} [${body}] }`;
+}
+
+/**
+ * Stand-ins drawn until the real thing is chosen, so the section shows where it
+ * sits on the page from the moment a layout is picked. A grey area takes the
+ * image's place and untouched text is set in light grey; both turn into real
+ * content as soon as the user replaces them.
+ */
+const PLACEHOLDER_FILL = "luma(232)";
+const PLACEHOLDER_INK = "luma(165)";
+/** Height of the grey strip standing in for a full-page-width image. */
+const PLACEHOLDER_BLEED_HEIGHT_MM = 20;
+const PT_PER_MM = 72 / 25.4;
+
+/**
+ * Only the two layouts an image defines get a stand-in. « custom » is composed
+ * by hand and may well want no image, and every band migrated from the old
+ * shape lands there — a grey area would appear in templates that never had one.
+ */
+function usesImage(kind: BlockKind): boolean {
+  return kind === "image-text" || kind === "text-image";
+}
+
+/**
+ * An image at a set width. Height is left to Typst so the aspect ratio holds.
+ */
+function image(block: Block): string {
+  return `image("assets/${block.image}", height: ${block.imageHeightMm}mm)`;
+}
+
+/**
+ * The grey area shown in place of an image that has not been chosen yet. Only
+ * the height is set by the user, so the stand-in takes a plain 3:1 shape.
+ */
+function imagePlaceholder(block: Block): string {
+  const h = block.imageHeightMm;
+  return `rect(width: ${h * 3}mm, height: ${h}mm, fill: ${PLACEHOLDER_FILL}, stroke: none)`;
+}
+
+/**
+ * `imageHeightMm: 0` means the full width of the *page*, not of the text column:
+ * a strip cropped out of a letterhead has to reach both paper edges. `place`
+ * leaves the text area by a negative `dx` and the image grows by both margins.
+ * The margin on that side must be at least the rendered height or Typst clips
+ * it without a word — templateFromAnalysis.ts is what widens it.
+ */
+function bleed(block: Block, side: "top" | "bottom", cfg: LayoutConfig): string {
   const { left, right } = cfg.margins;
-  return `#place(${side} + left, dx: -${left}mm, image("assets/${file}", width: 100% + ${left + right}mm))`;
+  return `#place(${side} + left, dx: -${left}mm, image("assets/${block.image}", width: 100% + ${left + right}mm))`;
 }
 
-function pageBand(
-  defaultParts: string[],
-  firstParts: string[],
-  mode: PageBandMode,
-): string {
-  const defaultBlock = contentBlock(defaultParts, "      ");
-  const firstBlock = contentBlock(firstParts, "      ");
-  if (mode === "all") return contentBlock(defaultParts, "    ");
-  if (mode === "except-first") {
-    return contentBlock(
-      [`#context { if counter(page).get().first() > 1 ${defaultBlock} }`],
-      "    ",
+/**
+ * Title and subtitle, each on its own line; either may be empty. Text still left
+ * at its stand-in value is set in light grey, so what is really filled in reads
+ * apart from what is not.
+ */
+function words(block: Block): string {
+  const lines = [
+    [block.title, PLACEHOLDER_TITLE] as const,
+    [block.subtitle, PLACEHOLDER_SUBTITLE] as const,
+  ]
+    .filter(([value]) => value.trim())
+    .map(([value, stand]) =>
+      value === stand ? `#text(fill: ${PLACEHOLDER_INK})[${text(value)}]` : text(value),
     );
-  }
-  if (mode === "first-only") {
-    return contentBlock(
-      [`#context { if counter(page).get().first() == 1 ${defaultBlock} }`],
-      "    ",
-    );
-  }
-  return contentBlock(
-    [
-      `#context { if counter(page).get().first() == 1 ${firstBlock} else ${defaultBlock} }`,
-    ],
-    "    ",
-  );
+  return lines.length ? `[${lines.join(" \\ ")}]` : "";
 }
 
-function headerParts(h: HeaderContent, cfg: LayoutConfig): string[] {
+/**
+ * One block's markup. An image beside text becomes a two-column grid; centred
+ * or alone, the two simply stack.
+ */
+function blockBody(block: Block, cfg: LayoutConfig, side: "top" | "bottom"): string {
   const parts: string[] = [];
-  const body = `[${text(h.text)}]`;
-  if (h.logo && h.fullBleed) {
-    parts.push(bleed(h.logo, "top", cfg));
-    if (h.text) parts.push(`#align(${h.align})${body}`);
-  } else if (h.logo) {
+  // A full-width image is placed, not laid out: it never shares a row with text.
+  // A real image always bleeds, whatever the layout; a stand-in only where the
+  // layout is defined by an image.
+  if (block.imageHeightMm === 0 && (block.image !== null || usesImage(block.kind))) {
     parts.push(
-      `#grid(columns: (auto, 1fr), column-gutter: 0.4cm, align: (left + horizon, ${h.align} + horizon), image("assets/${h.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm), ${body})`,
+      block.image
+        ? bleed(block, side, cfg)
+        : `#rect(width: 100%, height: ${PLACEHOLDER_BLEED_HEIGHT_MM}mm, fill: ${PLACEHOLDER_FILL}, stroke: none)`,
     );
-  } else if (h.text) {
-    parts.push(`#align(${h.align})${body}`);
+    const only = words(block);
+    if (only) parts.push(`#align(${block.align})${only}`);
+    return withRule(parts, block, side).join("\n      ");
   }
-  if (h.rule)
+  const img = block.image ? image(block) : usesImage(block.kind) ? imagePlaceholder(block) : "";
+  const txt = words(block);
+
+  if (img && txt && block.imagePosition !== "center") {
+    const cols = block.imagePosition === "right" ? "(1fr, auto)" : "(auto, 1fr)";
+    const cells = block.imagePosition === "right" ? `${txt}, ${img}` : `${img}, ${txt}`;
     parts.push(
-      "#v(0.2cm)",
-      `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`,
+      `#grid(columns: ${cols}, column-gutter: 4mm, align: horizon, ${cells})`,
     );
-  return parts;
+  } else {
+    if (img) parts.push(`#align(${block.imagePosition})[#${img}]`);
+    if (txt) parts.push(`#align(${block.align})${txt}`);
+  }
+
+  return withRule(parts, block, side).join("\n      ");
+}
+
+/**
+ * The block's line, with the space it asks for either side. It goes under the
+ * content in a header and over it in a footer: either way the line is what
+ * separates the band from the body text, never what hangs off its far edge.
+ */
+function withRule(parts: string[], block: Block, side: "top" | "bottom"): string[] {
+  const r = block.rule;
+  if (!r.on) return parts;
+  const line = [
+    ...(r.aboveMm ? [`#v(${r.aboveMm}mm)`] : []),
+    `#line(length: 100%, stroke: ${r.widthPt}pt + ${rgb(r.color)})`,
+    ...(r.belowMm ? [`#v(${r.belowMm}mm)`] : []),
+  ];
+  return side === "bottom" ? [...line, ...parts] : [...parts, ...line];
+}
+
+/** True when a block would draw nothing at all. */
+function isBlockEmpty(block: Block): boolean {
+  if (usesImage(block.kind)) return false;
+  return !block.image && !block.title.trim() && !block.subtitle.trim() && !block.rule.on;
+}
+
+const NUMBERING_BLOCK = (band: FooterBand): string =>
+  NUMBERING[band.numbering] ? `#align(${band.numberingAlign})[${NUMBERING[band.numbering]}]` : "";
+
+/**
+ * The whole band: every block stacked inside one `header:`/`footer:` argument,
+ * wrapped in a single `pad` that holds the band's spacing. `none` when there is
+ * nothing to draw — presence is derived, never stored.
+ */
+function bandMarkup(band: Band, cfg: LayoutConfig, side: "top" | "bottom", extra = ""): string {
+  const drawn = band.blocks.filter((b) => !isBlockEmpty(b));
+  const bodies = drawn.map((b) => scoped(blockBody(b, cfg, side), b));
+  if (extra) bodies.push(extra);
+  if (!bodies.length) return "none";
+
+  // `top` is not padded here: Typst gives the header only `margin.top` minus the
+  // ascent, so padding inside it would push the band straight through the body.
+  // The margin is widened instead (see bandHeightMm), and Typst sits the band on
+  // the bottom of that box — which lands it exactly `top` from the paper edge.
+  const s = band.spacing;
+  const pad = [
+    s.left ? `left: ${s.left}mm` : "",
+    s.right ? `right: ${s.right}mm` : "",
+  ].filter(Boolean).join(", ");
+  const inner = bodies.map((b) => `      ${b}`).join("\n");
+  const content = `[\n${inner}\n    ]`;
+  return pad ? `pad(${pad})${content}` : content;
 }
 
 function header(cfg: LayoutConfig): string {
-  const h = cfg.header;
-  if (!h.enabled) return "none";
-  return pageBand(headerParts(h, cfg), headerParts(h.first, cfg), h.mode);
-}
-
-function footerParts(f: FooterContent, cfg: LayoutConfig): string[] {
-  const parts: string[] = [];
-  if (f.logo && f.fullBleed) parts.push(bleed(f.logo, "bottom", cfg));
-  else if (f.logo)
-    parts.push(
-      `#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`,
-    );
-  if (f.rule)
-    parts.push(
-      `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`,
-      "#v(0.2cm)",
-    );
-  const pieces = [text(f.text), NUMBERING[f.numbering]].filter(Boolean);
-  if (pieces.length)
-    parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
-  return parts;
+  return bandMarkup(cfg.header, cfg, "top");
 }
 
 function footer(cfg: LayoutConfig): string {
-  const f = cfg.footer;
-  if (!f.enabled) return "none";
-  return pageBand(footerParts(f, cfg), footerParts(f.first, cfg), f.mode);
+  return bandMarkup(cfg.footer, cfg, "bottom", NUMBERING_BLOCK(cfg.footer));
 }
 
-function hasFullBleedHeader(cfg: LayoutConfig): boolean {
-  const h = cfg.header;
-  return (
-    h.enabled &&
-    Boolean(
-      (h.logo && h.fullBleed) ||
-      (h.mode === "different-first" && h.first.logo && h.first.fullBleed),
-    )
-  );
+/**
+ * How tall a block prints, in millimetres. Every part of it is a set length —
+ * that is the reason an image is sized by height rather than width: the aspect
+ * ratio is not knowable here, and without the height the band cannot be made to
+ * fit the page margin, which is the only room Typst gives it.
+ */
+function blockHeightMm(block: Block, cfg: LayoutConfig): number {
+  const lines = [block.title, block.subtitle].filter((t) => t.trim()).length;
+  const textMm = (lines * cfg.textStyles.body.fontSize * cfg.lineHeight) / PT_PER_MM;
+  const drawsImage = block.image !== null || usesImage(block.kind);
+  const imageMm = !drawsImage
+    ? 0
+    : block.imageHeightMm === 0
+      ? PLACEHOLDER_BLEED_HEIGHT_MM
+      : block.imageHeightMm;
+  // Beside the text the two share a row; stacked, they add up.
+  const sideBySide = drawsImage && textMm > 0 && block.imageHeightMm !== 0 && block.imagePosition !== "center";
+  const content = sideBySide ? Math.max(textMm, imageMm) : textMm + imageMm;
+  const rule = block.rule.on
+    ? block.rule.aboveMm + block.rule.belowMm + block.rule.widthPt / PT_PER_MM
+    : 0;
+  return content + rule;
 }
 
-function hasFullBleedFooter(cfg: LayoutConfig): boolean {
-  const f = cfg.footer;
-  return (
-    f.enabled &&
-    Boolean(
-      (f.logo && f.fullBleed) ||
-      (f.mode === "different-first" && f.first.logo && f.first.fullBleed),
-    )
-  );
+/**
+ * The margin the band needs: its distance from the paper edge, the tallest
+ * stack of blocks that can land on one page, and the gap to the body text.
+ * Blocks scoped to different pages never print together, so only the worst
+ * page has to fit.
+ */
+function bandHeightMm(band: Band, cfg: LayoutConfig): number {
+  const drawn = band.blocks.filter((b) => !isBlockEmpty(b));
+  if (!drawn.length) return 0;
+  let always = 0;
+  let first = 0;
+  let rest = 0;
+  for (const b of drawn) {
+    const h = blockHeightMm(b, cfg);
+    if (b.scope === "first") first += h;
+    else if (b.scope === "except-first") rest += h;
+    else always += h;
+  }
+  return band.spacing.top + always + Math.max(first, rest) + band.spacing.gap;
+}
+
+/**
+ * A block image spanning the full width of the band needs the whole margin:
+ * Typst otherwise reserves 30 % of it between the band and the body.
+ */
+function hasFullWidthImage(band: Band): boolean {
+  return band.blocks.some((b) => b.image !== null && b.imageHeightMm === 0);
 }
 
 /**
@@ -249,6 +360,11 @@ function jsonLine(cfg: LayoutConfig): string {
 export function layoutToTypst(cfg: LayoutConfig): string {
   cfg = sanitizeLayout(cfg);
   const m = cfg.margins;
+  // Never smaller than what the user set, never too small for the band: below
+  // its own height Typst clips the band without a word.
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const marginTop = round(Math.max(m.top, bandHeightMm(cfg.header, cfg)));
+  const marginBottom = round(Math.max(m.bottom, bandHeightMm(cfg.footer, cfg)));
   const color = rgb(cfg.headings.color);
   // 0.65em est l'interligne par défaut de Typst, pris comme équivalent de 1.2.
   const leading = Math.round(((0.65 * cfg.lineHeight) / 1.2) * 100) / 100;
@@ -258,15 +374,15 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     "#set page(",
     `  paper: "${cfg.paper}",`,
     `  flipped: ${cfg.orientation === "landscape"},`,
-    `  margin: (top: ${m.top}mm, bottom: ${m.bottom}mm, left: ${m.left}mm, right: ${m.right}mm),`,
+    `  margin: (top: ${marginTop}mm, bottom: ${marginBottom}mm, left: ${m.left}mm, right: ${m.right}mm),`,
     `  header: ${header(cfg)},`,
     `  footer: ${footer(cfg)},`,
     // Un bandeau bord à bord posé par `place` reste borné par la part de marge
     // que Typst réserve par défaut (30 %) entre l'en-tête/pied et le corps : à
     // 0 %, le bandeau dispose de toute la hauteur que templateFromAnalysis.ts
     // lui a réservée, sans quoi son bas se fait rogner.
-    ...(hasFullBleedHeader(cfg) ? [`  header-ascent: 0%,`] : []),
-    ...(hasFullBleedFooter(cfg) ? [`  footer-descent: 0%,`] : []),
+    `  header-ascent: ${hasFullWidthImage(cfg.header) ? "0%" : `${cfg.header.spacing.gap}mm`},`,
+    `  footer-descent: ${hasFullWidthImage(cfg.footer) ? "0%" : `${cfg.footer.spacing.gap}mm`},`,
     ")",
     `#${textSet(cfg.textStyles.body)}`,
     `#set par(leading: ${leading}em)`,
@@ -466,58 +582,36 @@ export function deduceLayout(source: string): LayoutConfig {
     // Sans `font:` explicite, Typst compose en Libertinus Serif : le bloc doit le conserver.
     font: font ?? "Libertinus Serif",
     fontSize,
-    // En-tête ou pied absent : seul `enabled` passe à false, le reste garde ses défauts.
-    header:
-      header === undefined
-        ? { enabled: false }
-        : {
-            enabled: true,
-            text: headerText(header),
-            logo: /image\("assets\/([^"]+)"/.exec(header)?.[1] ?? null,
-            rule: /#line\(/.test(header),
-          },
-    footer:
-      footer === undefined
-        ? { enabled: false }
-        : {
-            enabled: true,
-            numbering: numbering(footer),
-            align: /#align\((left|center|right)\)/.exec(footer)?.[1],
-            firstPage: !/counter\(page\)\.get\(\)\.first\(\)\s*>\s*1/.test(
-              footer,
-            ),
-            rule: /#line\(/.test(footer),
-          },
+    // No header or footer in the source: the band is deduced empty, which is
+    // what makes it render as nothing now that presence comes from the fields.
+    header: header === undefined ? { text: "", logo: null, rule: false } : {
+      text: headerText(header),
+      logo: /image\("assets\/([^"]+)"/.exec(header)?.[1] ?? null,
+      rule: /#line\(/.test(header),
+    },
+    footer: footer === undefined ? { text: "", logo: null, rule: false, numbering: "none" } : {
+      numbering: numbering(footer),
+      align: /#align\((left|center|right)\)/.exec(footer)?.[1],
+      firstPage: !/counter\(page\)\.get\(\)\.first\(\)\s*>\s*1/.test(footer),
+      rule: /#line\(/.test(footer),
+    },
     headings: { color },
-    textStyles:
-      font || fontSize || color
-        ? {
-            body: {
+    textStyles: font || fontSize || color
+      ? {
+        body: { font: font ?? "Libertinus Serif", fontSize, color: "#000000" },
+        ...(["h1", "h2", "h3"] as const).reduce<Record<string, { font: string | undefined; fontSize: number | undefined; color: string | undefined }>>(
+          (acc, key, i) => {
+            const scale = HEADING_SIZE_FACTORS.normal[i];
+            acc[key] = {
               font: font ?? "Libertinus Serif",
-              fontSize,
-              color: "#000000",
-            },
-            ...(["h1", "h2", "h3"] as const).reduce<
-              Record<
-                string,
-                {
-                  font: string | undefined;
-                  fontSize: number | undefined;
-                  color: string | undefined;
-                }
-              >
-            >((acc, key, i) => {
-              const scale = HEADING_SIZE_FACTORS.normal[i];
-              acc[key] = {
-                font: font ?? "Libertinus Serif",
-                fontSize: fontSize
-                  ? Math.round(fontSize * scale * 10) / 10
-                  : undefined,
-                color,
-              };
-              return acc;
-            }, {}),
-          }
-        : undefined,
+              fontSize: fontSize ? Math.round(fontSize * scale * 10) / 10 : undefined,
+              color,
+            };
+            return acc;
+          },
+          {},
+        ),
+      }
+      : undefined,
   });
 }

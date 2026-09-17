@@ -8,7 +8,7 @@ import {
   LAYOUT_BEGIN,
   LAYOUT_END,
 } from "./layoutTypst.js";
-import { defaultLayout, sanitizeLayout, type LayoutConfig } from "./layoutConfig.js";
+import { defaultLayout, newBlock, sanitizeLayout, type Block, type LayoutConfig } from "./layoutConfig.js";
 import { compileToPdf } from "../compile/typstCompile.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 
@@ -19,6 +19,14 @@ function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
 
+/**
+ * A block with the given overrides. Title and subtitle start empty rather than
+ * with newBlock's stand-in text, so each test only renders what it sets.
+ */
+function blk(patch: Partial<Block> = {}): Block {
+  return { ...newBlock("custom", "#0659c5"), title: "", subtitle: "", ...patch };
+}
+
 /** Config qui exerce toutes les branches du générateur. */
 function fullConfig(): LayoutConfig {
   return sanitizeLayout({
@@ -27,19 +35,16 @@ function fullConfig(): LayoutConfig {
     font: "Arial",
     lineHeight: 1.5,
     header: {
-      enabled: true,
-      text: "= Ministère * # \" [x]\n- Direction _générale_",
-      logo: "logo-ministere.png",
-      align: "right",
-      rule: true,
+      blocks: [blk({
+        title: "= Ministère * # \" [x]\n- Direction _générale_",
+        image: "logo-ministere.png",
+        align: "right",
+      })],
     },
     footer: {
-      enabled: true,
-      text: "Réf. #2026",
+      blocks: [blk({ title: "Réf. #2026", scope: "except-first", align: "center" })],
       numbering: "page-n-of-total",
-      align: "center",
-      firstPage: false,
-      rule: true,
+      numberingAlign: "center",
     },
     headings: { scale: "large", color: "#002f6c" },
     table: { stroke: "full", headerFill: "brand", zebra: true, fontSize: "small" },
@@ -108,20 +113,25 @@ describe("readLayout", () => {
     expect(layout).toMatchObject({
       margins: { top: 25, bottom: 25, left: 25, right: 25 },
       font: "Libertinus Serif",
-      header: { enabled: false },
-      footer: { enabled: true, mode: "all", align: "center", rule: false },
+      header: { blocks: [] },
     });
+    expect(layout.footer.blocks).toEqual([]);
+    expect(layout.footer.numbering).toBe("n-of-total");
   });
 
   it("source sans #set page : ni en-tête ni pied, le reste par défaut", () => {
     const { layout } = readLayout("#set heading(numbering: none)\n#include \"body.typ\"\n");
-    expect(layout.header.enabled).toBe(false);
-    expect(layout.footer.enabled).toBe(false);
+    expect(layout.header.blocks).toEqual([]);
+    expect(layout.footer.blocks).toEqual([]);
+    expect(layout.footer.numbering).toBe("none");
     expect(layout.margins).toEqual(defaultLayout().margins);
   });
 
   it("relit les caractères de fin de ligne exotiques tels quels", () => {
-    const cfg = { ...defaultLayout(), header: { ...defaultLayout().header, text: "a\rb\u2028c\u0085d\u2029e" } };
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: { blocks: [blk({ title: "a\rb\u2028c\u0085d\u2029e" })] },
+    });
     expect(readLayout(applyLayout(minimal, cfg)).layout).toEqual(cfg);
   });
 
@@ -138,26 +148,18 @@ describe("deduceLayout", () => {
     expect(l.orientation).toBe("portrait");
     expect(l.margins).toEqual({ top: 40, bottom: 25, left: 25, right: 25 });
     expect(l.font).toBe("Libertinus Serif");
-    expect(l.header).toMatchObject({
-      enabled: true,
-      mode: "all",
-      text: "RÉPUBLIQUE FRANÇAISE\nMinistère de l'Exemple",
-      logo: "logo-ministere.png",
-      fullBleed: false,
+    expect(l.header.blocks).toHaveLength(1);
+    expect(l.header.blocks[0]).toMatchObject({
+      scope: "all",
+      title: "RÉPUBLIQUE FRANÇAISE\nMinistère de l'Exemple",
+      image: "logo-ministere.png",
       align: "left",
-      rule: true,
     });
-    expect(l.footer).toMatchObject({
-      enabled: true,
-      mode: "all",
-      text: "",
-      logo: null,
-      fullBleed: false,
-      numbering: "n-of-total",
-      align: "center",
-      firstPage: true,
-      rule: true,
-    });
+    expect(l.header.blocks[0].rule.on).toBe(true);
+    // A rule with no text and no image is still a block: the line is drawn.
+    expect(l.footer.blocks).toHaveLength(1);
+    expect(l.footer.blocks[0]).toMatchObject({ scope: "all", title: "", image: null });
+    expect(l.footer.numbering).toBe("n-of-total");
     expect(l.headings.color).toBe("#002f6c");
   });
 
@@ -177,36 +179,49 @@ describe("deduceLayout", () => {
     expect(l.margins).toEqual({ top: 25, bottom: 25, left: 25, right: 25 });
     expect(l.font).toBe("Arial");
     expect(l.fontSize).toBe(12);
-    expect(l.header.enabled).toBe(false);
-    expect(l.footer).toMatchObject({ enabled: true, numbering: "page-n-of-total", align: "right", firstPage: false, rule: false });
+    expect(l.header.blocks).toEqual([]);
+    expect(l.footer.numbering).toBe("page-n-of-total");
+    expect(l.footer.numberingAlign).toBe("right");
   });
 });
 
 describe("layoutToTypst", () => {
-  it("écrit header: none et footer: none quand ils sont désactivés", () => {
+  it("écrit header: none et footer: none quand la bande est vide", () => {
+    // No visual, no text, no rule and no page number: presence is derived from
+    // the fields, so there is nothing left to draw.
     const cfg = defaultLayout();
-    cfg.header.enabled = false;
-    cfg.footer.enabled = false;
+    cfg.footer.numbering = "none";
     const out = layoutToTypst(cfg);
     expect(out).toContain("header: none,");
     expect(out).toContain("footer: none,");
   });
 
+  it("une bande désactivée avant la dérivation reste vide après relecture", () => {
+    // Templates saved with the old `enabled: false` must keep looking the way
+    // they were saved, instead of the defaults reappearing.
+    const cfg = sanitizeLayout({ ...defaultLayout(), header: { enabled: false, rule: true } });
+    expect(cfg.header.blocks).toEqual([]);
+    expect(layoutToTypst(cfg)).toContain("header: none,");
+  });
+
   it("échappe le texte libre", () => {
     const out = layoutToTypst(fullConfig());
     expect(out).toContain('[\\= Ministère \\* \\# " \\[x\\] \\ \\- Direction \\_générale\\_]');
-    expect(out).toContain("[Réf. \\#2026#h(1em)Page #context counter(page).display(\"1 / 1\", both: true)]");
+    expect(out).toContain("[Réf. \\#2026]");
+    expect(out).toContain('#align(center)[Page #context counter(page).display("1 / 1", both: true)]');
   });
 
   it("échappe `//` et les fins de ligne que Typst reconnaît", () => {
-    const cfg = defaultLayout();
-    cfg.header.text = "Ministère // Direction\r= Titre\u2028- liste\u0085+ énum\u2029/ terme\x0B1. un";
-    cfg.footer.text = "https://example.fr";
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: { blocks: [blk({ title: "Ministère // Direction\r= Titre\u2028- liste\u0085+ énum\u2029/ terme\x0B1. un" })] },
+      footer: { blocks: [blk({ title: "https://example.fr" })] },
+    });
     const lines = layoutToTypst(cfg).split("\n");
     expect(lines.join("\n")).toContain(
       "[Ministère \\/\\/ Direction \\ \\= Titre \\ \\- liste \\ \\+ énum \\ \\/ terme \\ 1\\. un]",
     );
-    expect(lines.join("\n")).toContain("[https:\\/\\/example.fr");
+    expect(lines.join("\n")).toContain("[https:\\/\\/example.fr]");
     for (const line of lines) expect(line).not.toMatch(/[\r\x0B\x0C\u0085\u2028\u2029]/);
     // La ligne JSON reste un commentaire d'une seule ligne, et se relit.
     expect(lines[1]).toContain("\\u2028");
@@ -226,7 +241,7 @@ describe("layoutToTypst", () => {
   it("applique un en-tête seulement sur la première page", () => {
     const cfg = sanitizeLayout({
       ...defaultLayout(),
-      header: { ...defaultLayout().header, mode: "first-only", text: "Couverture" },
+      header: { blocks: [blk({ scope: "first", title: "Couverture", rule: { on: false, color: "#0659c5", widthPt: 0.5, aboveMm: 0, belowMm: 0 } })] },
     });
     const out = layoutToTypst(cfg);
     expect(out).toContain("header: [");
@@ -238,17 +253,15 @@ describe("layoutToTypst", () => {
     const cfg = sanitizeLayout({
       ...defaultLayout(),
       footer: {
-        ...defaultLayout().footer,
-        mode: "different-first",
-        text: "Suite",
-        first: { ...defaultLayout().footer.first, text: "Première", numbering: "none" },
+        blocks: [blk({ scope: "first", title: "Première" }), blk({ scope: "except-first", title: "Suite" })],
+        numbering: "none",
       },
     });
     const out = layoutToTypst(cfg);
     expect(out).toContain("if counter(page).get().first() == 1");
-    expect(out).toContain(" else ");
+    expect(out).toContain("if counter(page).get().first() > 1");
     expect(out).toContain("[Première]");
-    expect(out).toContain("[Suite#h(1em)#context counter(page).display(\"1 / 1\", both: true)]");
+    expect(out).toContain("[Suite]");
   });
 
   it("dérive les styles de texte depuis les anciens champs quand ils ne sont pas custom", () => {
@@ -291,26 +304,78 @@ describe("layoutToTypst", () => {
   });
 });
 
-describe("bandeau bord à bord", () => {
-  it("header-ascent/footer-descent à 0 % seulement pour un logo bord à bord", () => {
+describe("image pleine largeur", () => {
+  it("header-ascent/footer-descent à 0 % seulement pour une image pleine largeur", () => {
     const d = defaultLayout();
-    const bleedHeader = layoutToTypst({
-      ...d,
-      header: { ...d.header, logo: "logo-ministere.png", fullBleed: true },
-    });
+    const full = blk({ image: "logo-ministere.png", imageHeightMm: 0 });
+
+    const bleedHeader = layoutToTypst({ ...d, header: { ...d.header, blocks: [full] } });
     expect(bleedHeader).toContain("header-ascent: 0%,");
     expect(bleedHeader).not.toContain("footer-descent: 0%,");
 
-    const bleedFooter = layoutToTypst({
-      ...d,
-      footer: { ...d.footer, logo: "logo-ministere.png", fullBleed: true },
-    });
+    const bleedFooter = layoutToTypst({ ...d, footer: { ...d.footer, blocks: [full] } });
     expect(bleedFooter).toContain("footer-descent: 0%,");
     expect(bleedFooter).not.toContain("header-ascent: 0%,");
 
-    // Logo posé à hauteur fixe (pas bord à bord) : Typst garde sa réserve par défaut.
-    const inline = layoutToTypst({ ...d, header: { ...d.header, logo: "logo-ministere.png", fullBleed: false } });
-    expect(inline).not.toContain("header-ascent:");
+    // Image à largeur fixe : la réserve devient l'écart réglé par la bande.
+    const inline = layoutToTypst({
+      ...d,
+      header: { ...d.header, blocks: [blk({ image: "logo-ministere.png", imageHeightMm: 40 })] },
+    });
+    expect(inline).toContain(`header-ascent: ${d.header.spacing.gap}mm,`);
+  });
+
+  it("empile plusieurs blocs dans un seul argument header", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: {
+        blocks: [blk({ title: "Bloc un" }), blk({ title: "Bloc deux", scope: "first" })],
+        spacing: { top: 5, left: 10, right: 10, gap: 6 },
+      },
+    });
+    const out = layoutToTypst(cfg);
+    // Un seul en-tête, deux blocs dedans.
+    expect(count(out, "header: ")).toBe(1);
+    // `top` passe par la marge de page, pas par un pad interne.
+    expect(out).toContain("pad(left: 10mm, right: 10mm)");
+    expect(out).not.toContain("pad(top:");
+    expect(out).toContain("[Bloc un]");
+    expect(out).toContain("[Bloc deux]");
+    expect(readLayout(out).layout.header.blocks).toHaveLength(2);
+  });
+
+  it("élargit la marge pour loger la bande, sans jamais la réduire", () => {
+    const d = defaultLayout();
+    // 30 mm avant la bande + le contenu + l'écart : bien au-delà des 25 mm par défaut.
+    const tall = sanitizeLayout({
+      ...d,
+      header: {
+        blocks: [blk({ kind: "image-text", title: "Titre", imageHeightMm: 20 })],
+        spacing: { top: 30, left: 0, right: 0, gap: 6 },
+      },
+    });
+    const top = Number(/margin: \(top: ([\d.]+)mm/.exec(layoutToTypst(tall))![1]);
+    expect(top).toBeGreaterThanOrEqual(30 + 20 + 6);
+
+    // Une marge déjà plus grande que la bande est gardée telle quelle.
+    const wide = sanitizeLayout({ ...d, margins: { ...d.margins, top: 70 } });
+    expect(layoutToTypst(wide)).toContain("margin: (top: 70mm");
+  });
+
+  it("migre l'ancienne forme : different-first devient deux blocs", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: {
+        mode: "different-first",
+        text: "Suite",
+        rule: true,
+        first: { text: "Couverture", logo: null, fullBleed: false, align: "left", rule: true },
+      },
+    });
+    expect(cfg.header.blocks.map((b) => [b.scope, b.title])).toEqual([
+      ["first", "Couverture"],
+      ["except-first", "Suite"],
+    ]);
   });
 });
 
@@ -447,15 +512,13 @@ describe("compilation réelle (typst)", () => {
     const cfg = sanitizeLayout({
       ...defaultLayout(),
       header: {
-        ...defaultLayout().header,
-        mode: "different-first",
-        text: "Pages suivantes",
-        first: { ...defaultLayout().header.first, text: "Première page" },
+        blocks: [
+          blk({ scope: "first", title: "Première page" }),
+          blk({ scope: "except-first", title: "Pages suivantes" }),
+        ],
       },
       footer: {
-        ...defaultLayout().footer,
-        mode: "first-only",
-        text: "Couverture",
+        blocks: [blk({ scope: "first", title: "Couverture" })],
         numbering: "none",
       },
     });
@@ -468,8 +531,10 @@ describe("compilation réelle (typst)", () => {
   });
 
   it("texte avec `//` et fins de ligne exotiques compile", async () => {
-    const cfg = defaultLayout();
-    cfg.header.text = "Réf. 12//34 https://example.fr\r= pas un titre\u2028- pas une liste";
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: { blocks: [blk({ title: "Réf. 12//34 https://example.fr\r= pas un titre\u2028- pas une liste" })] },
+    });
     const pdf = await compileToPdf({
       templateSource: applyLayout(minimal, cfg),
       bodyTypst,

@@ -89,7 +89,6 @@ export function buildLayout({
     ...analysis.layout,
     margins,
     header: {
-      enabled: Boolean(header),
       text: "",
       logo: header?.file ?? null,
       fullBleed: Boolean(header?.fullBleed),
@@ -98,7 +97,6 @@ export function buildLayout({
       rule: false,
     },
     footer: {
-      enabled: true,
       text: "",
       logo: footer?.file ?? null,
       fullBleed: Boolean(footer?.fullBleed),
