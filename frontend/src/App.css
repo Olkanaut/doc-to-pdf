@@ -142,8 +142,7 @@ body {
 }
 
 .template-tile-open:focus-visible,
-.template-row-open:focus-visible,
-.view-switcher-btn:focus-visible {
+.template-row-open:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -233,34 +232,6 @@ body {
 .template-row-new:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-}
-
-.view-switcher {
-  display: inline-flex;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.view-switcher-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  color: #555;
-  border: none;
-  border-radius: 0;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
-.view-switcher-btn + .view-switcher-btn {
-  border-left: 1px solid #ccc;
-}
-
-.view-switcher-btn[aria-pressed="true"] {
-  background: var(--color-primary);
-  color: white;
 }
 
 .template-tile-new {

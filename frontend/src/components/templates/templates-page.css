@@ -9,6 +9,29 @@
 
 /* ── Liste des gabarits ──────────────────────────────────────────────────── */
 
+/* Header actions: the two buttons on one side, the view switcher on the
+   other, pushed all the way to the page's right edge. */
+.dots-page .dots-actions {
+  flex: 1 1 auto;
+  justify-content: space-between;
+}
+.dots-page .dots-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grid/list switcher: same pill as .editor-modes, to stay in the same colors
+   as the kit buttons to its left. */
+.dots-page .view-switcher {
+  display: inline-flex;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px;
+  border-radius: var(--c--components--button--border-radius);
+  background: var(--c--contextuals--background--semantic--neutral--tertiary);
+}
+
 .dots-page .templates-note {
   display: flex;
   align-items: center;
