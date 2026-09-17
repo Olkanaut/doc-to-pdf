@@ -248,7 +248,7 @@ describe.skipIf(!enabled)("routes d'import", () => {
     const bandHeight =
       (210 * result.fragments[0].heightPt) / result.fragments[0].widthPt;
     expect(result.layout.margins.top).toBeGreaterThanOrEqual(bandHeight);
-    expect(result.layout.header.fullBleed).toBe(true);
+    expect(result.layout.header.blocks[0].imageHeightMm).toBe(0);
 
     await app.close();
   });
@@ -263,7 +263,8 @@ describe.skipIf(!enabled)("routes d'import", () => {
       payload: { name: "Page entière", header: null, footer: null },
     });
     expect(res.statusCode).toBe(201);
-    expect(res.json().layout.header.enabled).toBe(false);
+    // No region kept: the band holds no blocks, which is what makes it render as nothing.
+    expect(res.json().layout.header.blocks).toEqual([]);
     expect(created?.source).not.toContain("image(");
 
     await app.close();

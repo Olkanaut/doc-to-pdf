@@ -117,9 +117,11 @@ describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
     };
     const layout = buildLayout({ analysis, header: placement });
 
-    expect(layout.header.enabled).toBe(true);
-    expect(layout.header.logo).toBe("en-tete.png");
-    expect(layout.header.fullBleed).toBe(true);
+    // The band renders because it holds a visual; there is no separate flag.
+    expect(layout.header.blocks).toHaveLength(1);
+    expect(layout.header.blocks[0].image).toBe("en-tete.png");
+    // Width 0 is the full width of the band, which is what a cropped strip wants.
+    expect(layout.header.blocks[0].imageHeightMm).toBe(0);
     // La marge haute doit loger l'image rendue pleine largeur, sinon typst la rogne.
     const rendered = (210 * fragment.heightPt) / fragment.widthPt;
     expect(layout.margins.top).toBeGreaterThanOrEqual(rendered);
@@ -160,8 +162,8 @@ describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
 
     const layout = buildLayout({ analysis, header: logo });
 
-    expect(layout.header.logo).toBe("logo.png");
-    expect(layout.header.fullBleed).toBe(false);
+    expect(layout.header.blocks[0].image).toBe("logo.png");
+    expect(layout.header.blocks[0].imageHeightMm).toBeGreaterThan(0);
     // La marge loge la hauteur fixe du logo, pas la hauteur d'un bandeau.
     expect(layout.margins.top).toBeGreaterThanOrEqual(INLINE_LOGO_HEIGHT_MM);
     expect(layout.margins.top).toBeLessThan(50);

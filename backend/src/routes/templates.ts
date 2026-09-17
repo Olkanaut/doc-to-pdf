@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { randomBytes } from "node:crypto";
 import path from "node:path";
-import { readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import {
   createExternalTemplate,
@@ -45,8 +46,9 @@ const DEFAULT_SOURCE = applyLayout('#include "body.typ"\n', {
     h2: { font: "Arial", fontSize: 13, color: HEADING_BLUE },
     h3: { font: "Arial", fontSize: 10, color: HEADING_BLUE },
   },
-  header: { ...defaultLayout().header, enabled: false },
-  footer: { ...defaultLayout().footer, enabled: false },
+  // No blocks: an empty band renders nothing, the direct equivalent of the old `enabled: false`.
+  header: defaultLayout().header,
+  footer: defaultLayout().footer,
   headings: { scale: "normal", color: HEADING_BLUE },
   table: { stroke: "full", headerFill: "none", zebra: false, fontSize: "inherit" },
 });
@@ -154,20 +156,37 @@ function assetDeleteEnabled(): boolean {
   return process.env.DOTS_ENABLE_ASSET_DELETE === "1";
 }
 
-/** Le nom du logo est déjà filtré par sanitizeLayout ; ici on exige que le fichier existe. */
+/** A logo sits well under this; it's not meant to hold a whole scanned document. */
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+/** Base64 runs ~1.34x the raw size; the JSON body needs the room. */
+const IMAGE_BODY_LIMIT = 8 * 1024 * 1024;
+
+/**
+ * The image's real type, read from its bytes rather than its name — a
+ * renamed .jpg must not pass as a .png. Same principle as /api/ingest.
+ */
+export function sniffImageExt(bytes: Buffer): "png" | "jpeg" | "svg" | null {
+  const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (bytes.length >= 8 && bytes.subarray(0, 8).equals(PNG_MAGIC)) return "png";
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "jpeg";
+  // SVG is text and may open with a comment or an XML declaration before <svg>,
+  // so this looks for the tag rather than requiring an exact prefix.
+  if (bytes.subarray(0, 1024).toString("utf8").toLowerCase().includes("<svg")) return "svg";
+  return null;
+}
+
+/** Readable, collision-free, nothing coming from the client. */
+function uploadedAssetName(ext: string): string {
+  return `logo-${randomBytes(4).toString("hex")}.${ext}`;
+}
+
+/** Image names are already filtered by sanitizeLayout; here the file must also exist. */
 async function withExistingLogo(cfg: LayoutConfig): Promise<LayoutConfig> {
   const assets = await listAssets();
-  if (cfg.header.logo && !assets.includes(cfg.header.logo)) {
-    cfg.header.logo = null;
-  }
-  if (cfg.header.first.logo && !assets.includes(cfg.header.first.logo)) {
-    cfg.header.first.logo = null;
-  }
-  if (cfg.footer.logo && !assets.includes(cfg.footer.logo)) {
-    cfg.footer.logo = null;
-  }
-  if (cfg.footer.first.logo && !assets.includes(cfg.footer.first.logo)) {
-    cfg.footer.first.logo = null;
+  for (const band of [cfg.header, cfg.footer]) {
+    for (const block of band.blocks) {
+      if (block.image && !assets.includes(block.image)) block.image = null;
+    }
   }
   return cfg;
 }
@@ -241,6 +260,46 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
       canDelete: assetDeleteEnabled(),
     };
   });
+
+  /**
+   * Direct upload of a visual (PNG/JPEG/SVG): unlike /api/ingest, there is
+   * nothing to crop, the file lands in the shared assets as it is.
+   */
+  app.post<{ Body: { fileBase64?: string; filename?: string } }>(
+    "/api/templates/assets",
+    { bodyLimit: IMAGE_BODY_LIMIT },
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const { fileBase64 } = req.body ?? {};
+      if (typeof fileBase64 !== "string" || !fileBase64) {
+        return reply.code(400).send({ error: "fileBase64 requis" });
+      }
+      const data = fileBase64.replace(/^data:[^,]*,/, "").replace(/\s/g, "");
+      if (!/^[A-Za-z0-9+/]+=*$/.test(data)) {
+        return reply.code(400).send({ error: "fileBase64 n'est pas du base64" });
+      }
+      const bytes = Buffer.from(data, "base64");
+      if (bytes.length === 0) return reply.code(400).send({ error: "Fichier vide" });
+      if (bytes.length > MAX_IMAGE_BYTES) {
+        return reply
+          .code(413)
+          .send({ code: "too_large", error: "Image trop volumineuse : 5 Mo au plus" });
+      }
+      const ext = sniffImageExt(bytes);
+      if (!ext) {
+        return reply
+          .code(415)
+          .send({ code: "unsupported_format", error: "PNG, JPEG ou SVG uniquement" });
+      }
+
+      const file = uploadedAssetName(ext);
+      await mkdir(TEMPLATES_ASSETS_DIR, { recursive: true });
+      await writeFile(path.join(TEMPLATES_ASSETS_DIR, file), bytes);
+      return reply.code(201).send({ file });
+    },
+  );
 
   /** Octets d'un asset : vignettes de la galerie d'en-tête/pied de page. */
   app.get<{ Params: { file: string } }>(

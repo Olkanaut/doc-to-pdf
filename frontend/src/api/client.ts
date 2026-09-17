@@ -278,6 +278,18 @@ export async function deleteTemplateAsset(file: string): Promise<void> {
   }
 }
 
+/** Dépose un PNG, JPEG ou SVG tel quel dans les assets partagés : pas de recadrage, juste un logo. */
+export async function uploadTemplateAsset(file: File): Promise<{ file: string }> {
+  const fileBase64 = await toBase64(file);
+  return asJson(
+    await apiFetch("/api/templates/assets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileBase64, filename: file.name }),
+    }),
+  );
+}
+
 // ── Import d'un PDF ou d'un .docx ─────────────────────────────────────────────
 
 export interface IngestRegion {
@@ -427,11 +439,9 @@ export type PaperSize = "a4" | "a5" | "us-letter";
 export type Align = "left" | "center" | "right";
 export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
 export type TextStyleKey = "body" | "h1" | "h2" | "h3";
-export type PageBandMode =
-  | "all"
-  | "except-first"
-  | "first-only"
-  | "different-first";
+export type BlockScope = "all" | "first" | "except-first";
+export type BlockKind = "image-text" | "text-image" | "centered" | "custom";
+export type ImagePosition = "left" | "center" | "right";
 
 export interface TextStyle {
   font: string;
@@ -440,16 +450,52 @@ export interface TextStyle {
   color: string;
 }
 
-export interface HeaderContent {
-  text: string;
-  logo: string | null;
-  fullBleed: boolean;
-  align: Align;
-  rule: boolean;
+export interface BlockRule {
+  on: boolean;
+  color: string;
+  /** Points. */
+  widthPt: number;
+  /** Millimetres. */
+  aboveMm: number;
+  belowMm: number;
 }
 
-export interface FooterContent extends HeaderContent {
+/**
+ * One piece of a header or footer. Several stack inside a single Typst
+ * `header:`/`footer:` argument — they are not separate page bands.
+ * Same type as backend/src/layout/layoutConfig.ts.
+ */
+export interface Block {
+  kind: BlockKind;
+  scope: BlockScope;
+  /** A file of /api/templates/assets. */
+  image: string | null;
+  imagePosition: ImagePosition;
+  /** Millimetres; 0 spans the full width of the page, margins included. */
+  imageHeightMm: number;
+  title: string;
+  subtitle: string;
+  align: Align;
+  rule: BlockRule;
+}
+
+export interface BandSpacing {
+  /** Millimetres. */
+  top: number;
+  left: number;
+  right: number;
+  /** Distance between the band and the body text. */
+  gap: number;
+}
+
+export interface Band {
+  blocks: Block[];
+  spacing: BandSpacing;
+}
+
+export interface FooterBand extends Band {
   numbering: Numbering;
+  numberingAlign: Align;
 }
 
 export interface LayoutConfig {
@@ -461,36 +507,9 @@ export interface LayoutConfig {
   /** Points. */
   fontSize: number;
   lineHeight: number;
-  /** Styles typographiques de base, prêts pour le futur onglet Texte. */
   textStyles: Record<TextStyleKey, TextStyle>;
-  /**
-   * `logo` est un fichier de /api/templates/assets. `fullBleed` le pose bord à
-   * bord sur toute la largeur de la page (bandeau repris d'un PDF) ; la marge
-   * du côté concerné doit alors loger l'image rendue.
-   * Même type que backend/src/layout/layoutConfig.ts.
-   */
-  header: {
-    enabled: boolean;
-    mode: PageBandMode;
-    text: string;
-    logo: string | null;
-    fullBleed: boolean;
-    align: Align;
-    rule: boolean;
-    first: HeaderContent;
-  };
-  footer: {
-    enabled: boolean;
-    mode: PageBandMode;
-    text: string;
-    logo: string | null;
-    fullBleed: boolean;
-    numbering: Numbering;
-    align: Align;
-    firstPage: boolean;
-    rule: boolean;
-    first: FooterContent;
-  };
+  header: Band;
+  footer: FooterBand;
   headings: { scale: "compact" | "normal" | "large"; color: string };
   /** Allure des tableaux ; leur structure (colonnes, fusions, contenu) vient du document. */
   table: {
