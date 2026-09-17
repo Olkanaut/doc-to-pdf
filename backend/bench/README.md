@@ -29,6 +29,22 @@ ONLY=marges-3cm,texte-blanc REPS=1 npm run bench
 npm run bench:score -- runs
 ```
 
+### Le tour rapide
+
+Quatre cas, une exécution chacun : de quoi voir en ~35 s si une modification du prompt ou
+du client casse quelque chose. Ce ne sont pas les plus exigeants, ce sont les plus courts.
+
+```bash
+ONLY=libre-renomme-ministere,marges-3cm,paysage,tableaux REPS=1 npm run bench
+```
+
+Durées mesurées le 17/09/2026 (Sonnet 5, cache actif, `DOTS_AI_EFFORT=low`) :
+`libre-renomme-ministere` 5 s, `paysage` 8 s, `marges-3cm` 8 s, `tableaux` 8 s.
+La compilation Typst ne pèse que ~180 ms là-dedans : le reste est la génération.
+
+`DOTS_BENCH_API=http://localhost:4002/api/ai/template` pointe le banc sur un autre backend,
+ce qui permet de comparer deux réglages sans toucher au serveur de travail.
+
 `OUT=<dossier>` change la destination (`runs` par défaut), ce qui permet de comparer deux
 états du prompt : `OUT=runs-avant npm run bench`, puis la modification, puis
 `OUT=runs-apres npm run bench`, puis `npm run bench:score -- runs-avant` et

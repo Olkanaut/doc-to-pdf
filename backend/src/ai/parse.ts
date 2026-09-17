@@ -9,7 +9,10 @@
 export interface AiReply {
   summary: string;
   changes: string[];
-  source: string;
+  /** Chemin complet : la template réécrite. Exclusif avec `layout`. */
+  source?: string;
+  /** Chemin abrégé : les seuls champs modifiés du JSON du bloc. Exclusif avec `source`. */
+  layout?: Record<string, unknown>;
 }
 
 export const BODY_INCLUDE = '#include "body.typ"';
@@ -30,10 +33,49 @@ function unfence(s: string): string {
 }
 
 /**
- * null = réponse inexploitable : aucun template reconnaissable. Une source sans
- * `#include "body.typ"` est refusée aussi : elle compilerait, mais sans le corps.
+ * Fusion en profondeur d'un correctif sur une config : les objets se fusionnent
+ * clé par clé, tout le reste — tableaux compris — remplace. Même sémantique que
+ * JSON Merge Patch, moins le `null` qui efface : `sanitizeLayout` valide derrière,
+ * et un `null` sur un champ non nullable y serait de toute façon écarté.
+ */
+export function mergePatch(
+  base: unknown,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> =
+    isPlainObject(base) ? { ...base } : {};
+  for (const [k, v] of Object.entries(patch)) {
+    out[k] =
+      isPlainObject(v) && isPlainObject(out[k])
+        ? mergePatch(out[k], v)
+        : v;
+  }
+  return out;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * null = réponse inexploitable : ni correctif, ni template reconnaissable. Une
+ * source sans `#include "body.typ"` est refusée aussi : elle compilerait, mais
+ * sans le corps.
  */
 export function parseAiReply(text: string): AiReply | null {
+  const patch = tag(text, "layout");
+  if (patch !== undefined) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(unfence(patch).trim());
+    } catch {
+      parsed = undefined;
+    }
+    // Un correctif vide ne dit rien : on retombe sur <typst> s'il y en a un.
+    if (isPlainObject(parsed) && Object.keys(parsed).length > 0)
+      return { ...head(text), layout: parsed };
+  }
+
   let source = tag(text, "typst");
   if (source === undefined) {
     if (!text.includes(BODY_INCLUDE)) return null;
@@ -42,11 +84,17 @@ export function parseAiReply(text: string): AiReply | null {
   source = unfence(source).trim();
   if (!source.includes(BODY_INCLUDE)) return null;
 
-  const summary = (tag(text, "summary") ?? "").trim();
-  const changes = [
-    ...(tag(text, "changes") ?? "").matchAll(/<item>([\s\S]*?)<\/item>/g),
-  ]
-    .map((m) => m[1].trim())
-    .filter(Boolean);
-  return { summary, changes, source: source + "\n" };
+  return { ...head(text), source: source + "\n" };
+}
+
+/** `<summary>` et `<changes>`, communs aux deux formes de réponse. */
+function head(text: string): { summary: string; changes: string[] } {
+  return {
+    summary: (tag(text, "summary") ?? "").trim(),
+    changes: [
+      ...(tag(text, "changes") ?? "").matchAll(/<item>([\s\S]*?)<\/item>/g),
+    ]
+      .map((m) => m[1].trim())
+      .filter(Boolean),
+  };
 }

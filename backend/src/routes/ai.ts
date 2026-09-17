@@ -3,7 +3,9 @@ import { readdir } from "node:fs/promises";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import { checkTemplateSource, type CheckFailure, type CheckResult } from "../layout/check.js";
 import { AiApiError, callMessages, type ContentBlock } from "../ai/client.js";
-import { parseAiReply } from "../ai/parse.js";
+import { mergePatch, parseAiReply } from "../ai/parse.js";
+import { applyLayout, readLayout } from "../layout/layoutTypst.js";
+import { sanitizeLayout } from "../layout/layoutConfig.js";
 import { editUserText, fromPdfUserText, systemPrompt } from "../ai/prompt.js";
 
 /** Même forme qu'AiError dans frontend/src/api/client.ts ; `unavailable` fait cacher l'assistant. */
@@ -84,14 +86,40 @@ async function runAssistant(
   const parsed = parseAiReply(text);
   if (!parsed)
     return reply.code(502).send({ ok: false, error: "réponse inexploitable" });
-  const check = await checkTemplateSource({ source: parsed.source, fixtureId });
+
+  // Réponse abrégée : le modèle n'a renvoyé que les champs modifiés du JSON. On
+  // les fusionne sur la config actuelle et on régénère le bloc nous-mêmes —
+  // exactement ce que fait le panneau quand on touche un réglage, donc le
+  // résultat est cohérent par construction et les lignes écrites après
+  // `// dots:layout end` sont conservées par applyLayout.
+  let source: string;
+  if (parsed.layout) {
+    if (!sourceAvant)
+      return reply
+        .code(502)
+        .send({ ok: false, error: "correctif de mise en page sans source" });
+    const { layout, managed } = readLayout(sourceAvant);
+    if (!managed)
+      return reply.code(502).send({
+        ok: false,
+        error: "correctif de mise en page sur une template sans bloc",
+      });
+    source = applyLayout(
+      sourceAvant,
+      sanitizeLayout(mergePatch(layout, parsed.layout)),
+    );
+  } else {
+    source = parsed.source!;
+  }
+
+  const check = await checkTemplateSource({ source, fixtureId });
   // Le rendu de départ sert de témoin : on ne signale que ce que la proposition
   // FAIT PERDRE, pas ce qui manquait déjà.
   if (check.ok && sourceAvant) {
     const avant = await checkTemplateSource({ source: sourceAvant, fixtureId });
     check.warnings = [...check.warnings, ...(await regressions(avant, check))];
   }
-  return { ok: true, ...parsed, check };
+  return { ok: true, ...parsed, source, check };
 }
 
 export async function aiRoutes(app: FastifyInstance): Promise<void> {

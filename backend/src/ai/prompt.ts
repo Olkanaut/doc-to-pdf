@@ -17,7 +17,11 @@ const TYPST_FONTS = [
 const LAYOUT_CONFIG_TYPE = `type PaperSize = "a4" | "a5" | "us-letter";
 type Align = "left" | "center" | "right";
 type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
-type PageBandMode = "all" | "except-first" | "first-only" | "different-first";
+/** Sur quelles pages un bloc s'imprime. */
+type BlockScope = "all" | "first" | "except-first";
+/** Ne change que les champs que le panneau révèle ; la forme stockée est la même pour les quatre. */
+type BlockKind = "image-text" | "text-image" | "centered" | "custom";
+type ImagePosition = "left" | "center" | "right";
 type Font = ${FONTS.map((f) => JSON.stringify(f)).join(" | ")};
 type TextStyleKey = "body" | "h1" | "h2" | "h3";
 
@@ -28,17 +32,57 @@ interface TextStyle {
   color: string;
 }
 
-interface HeaderContent {
-  text: string;
-  /** Nom de fichier seul, sans "assets/" (ex. "logo-ministere.png") ; le Typst y accède par image("assets/<logo>"). */
-  logo: string | null;
-  fullBleed: boolean;
-  align: Align;
-  rule: boolean;
+/** Le filet sous un bloc. Son espace vient de spaceAboveMm/spaceBelowMm du bloc, pas de lui. */
+interface BlockRule {
+  on: boolean;
+  color: string;
+  /** Points. */
+  widthPt: number;
 }
 
-interface FooterContent extends HeaderContent {
+/**
+ * Un morceau d'en-tête ou de pied. Plusieurs s'empilent dans le MÊME argument
+ * Typst header:/footer: — ce ne sont pas des bandes séparées.
+ */
+interface Block {
+  kind: BlockKind;
+  scope: BlockScope;
+  /** Nom de fichier seul, sans "assets/" (ex. "logo-ministere.png"), ou null. */
+  image: string | null;
+  /** left et right posent l'image à côté du texte ; center l'empile au-dessus. */
+  imagePosition: ImagePosition;
+  /** Hauteur en millimètres, largeur déduite du rapport. 0 = pleine largeur, bord à bord. */
+  imageHeightMm: number;
+  title: string;
+  subtitle: string;
+  /** Aligne le texte du bloc. */
+  align: Align;
+  /** Millimètres de blanc au-dessus et au-dessous de ce bloc. */
+  spaceAboveMm: number;
+  spaceBelowMm: number;
+  rule: BlockRule;
+}
+
+/** L'espacement appartient à la bande, pas au bloc. */
+interface BandSpacing {
+  /** Millimètres. */
+  top: number;
+  left: number;
+  right: number;
+  /** Distance entre la bande et le corps du texte. */
+  gap: number;
+}
+
+interface Band {
+  blocks: Block[];
+  spacing: BandSpacing;
+}
+
+interface FooterBand extends Band {
   numbering: Numbering;
+  numberingAlign: Align;
+  /** Sur quelles pages le numéro s'imprime, indépendamment du scope des blocs. */
+  numberingScope: BlockScope;
 }
 
 interface LayoutConfig {
@@ -53,30 +97,10 @@ interface LayoutConfig {
   lineHeight: number;
   /** Styles typographiques de base. */
   textStyles: Record<TextStyleKey, TextStyle>;
-  header: {
-    enabled: boolean;
-    mode: PageBandMode;
-    first: HeaderContent;
-    text: string;
-    logo: string | null;
-    fullBleed: boolean;
-    align: Align;
-    rule: boolean;
-  };
-  footer: {
-    enabled: boolean;
-    mode: PageBandMode;
-    first: FooterContent;
-    text: string;
-    logo: string | null;
-    fullBleed: boolean;
-    numbering: Numbering;
-    align: Align;
-    /** Ancien booléen de compatibilité ; mode pilote le rendu. */
-    firstPage: boolean;
-    rule: boolean;
-  };
-  /** Malgré son nom, \`color\` ne teint PAS les titres (ceux-ci suivent textStyles.h1/h2/h3.color) : il donne sa couleur aux filets de l'en-tête et du pied de page, et au fond d'en-tête des tableaux quand table.headerFill vaut "brand". */
+  /** Une bande vide (blocks: []) ne dessine rien : la présence se déduit, elle ne se stocke pas. */
+  header: Band;
+  footer: FooterBand;
+  /** Malgré son nom, \`color\` ne teint PAS les titres (ceux-ci suivent textStyles.h1/h2/h3.color) : il donne sa couleur aux filets des blocs et au fond d'en-tête des tableaux quand table.headerFill vaut "brand". */
   headings: { scale: "compact" | "normal" | "large"; color: string };
   /** Allure des tableaux ; leur structure (colonnes, fusions, contenu) vient du document. */
   table: {
@@ -86,6 +110,24 @@ interface LayoutConfig {
     fontSize: "inherit" | "small";
   };
 }`;
+
+/**
+ * Réponse abrégée : un correctif JSON au lieu de la template recopiée. Mesuré au lot 26 —
+ * la sortie est le poste de temps dominant, et pour « marges à 3 cm » 1 658 des 1 799
+ * octets renvoyés sont une recopie à l'identique. Sous `DOTS_AI_PATCH` tant que le banc
+ * complet n'a pas tranché.
+ */
+const PATCH_CONTRACT = process.env.DOTS_AI_PATCH
+  ? `
+Puis EXACTEMENT UNE des deux balises suivantes — jamais les deux, et jamais aucune :
+<layout>{ … uniquement les champs du JSON qui changent … }</layout>
+<typst>la source complète de la template, prête à compiler</typst>
+
+PRÉFÈRE <layout> dès qu'il s'applique. C'est un correctif fusionné en profondeur sur le JSON actuel du bloc ; le serveur régénère le Typst lui-même, tu n'as pas à le réécrire. Un objet est fusionné clé par clé ; un tableau remplace l'ancien EN ENTIER (donc si un bloc d'en-tête change, réécris \`header.blocks\` complet).
+<layout> n'est possible que si le bloc \`// dots:layout\` existe ET que la demande tient entièrement dans le type. Sinon — template libre, ou surcharge Typst nécessaire — réponds <typst> comme avant.
+Le raccourci ne dispense de RIEN : <summary> et <changes> restent obligatoires, avec les mêmes exigences, y compris nommer ce que la modification fait perdre.`
+  : `
+<typst>la source complète de la template, prête à compiler</typst>`;
 
 /** @param assets chemins relatifs des images disponibles (ex. "assets/logo-ministere.png"). */
 export function systemPrompt(assets: string[]): string {
@@ -111,7 +153,7 @@ Une template peut contenir, juste avant \`${BODY_INCLUDE}\`, un bloc de la forme
 Ce bloc est ENGENDRÉ par l'éditeur à partir du seul JSON de la ligne \`// dots:layout {json}\` : le Typst qui la suit est jetable, il est réécrit depuis ce JSON dès que l'utilisateur touche un réglage du panneau. Donc, si ce bloc existe :
 - ce que le type LayoutConfig sait exprimer se règle DANS LE JSON, et tu réécris le Typst du bloc pour qu'il corresponde. N'écris jamais dans le bloc un réglage que le JSON ne porte pas : il serait perdu sans avertissement.
 - ce que le type ne sait PAS exprimer se met APRÈS la ligne \`// dots:layout end\`, avant \`${BODY_INCLUDE}\` : ces lignes-là sont conservées telles quelles, et un \`#set\` postérieur l'emporte sur celui du bloc. Signale-le dans le <summary>.
-Limites connues du type : le logo d'une bande est toujours posé en première colonne, à gauche du texte, et \`align\` ne pilote que le texte ; il n'existe aucun champ pour un logo à droite, pour l'interlettrage ni pour les petites capitales. Ces demandes-là passent par une surcharge après le bloc.
+Limites connues du type : pas d'interlettrage, pas de petites capitales, pas de filet vertical, pas de texte tourné. Ces demandes-là passent par une surcharge après le bloc. En revanche un logo à droite SE RÈGLE dans le JSON (\`imagePosition: "right"\`, ou \`kind: "text-image"\`) : n'écris pas de surcharge pour ça.
 Le JSON respecte ce type :
 ${LAYOUT_CONFIG_TYPE}
 Si le bloc n'existe pas, n'en crée pas.
@@ -125,10 +167,10 @@ Quand la modification demandée abîme le document, applique-la ET dis dans le <
 - le nombre de pages change.
 Si un réglage que tu modifies en pilote un autre, dis-le aussi. Le piège le plus courant : \`headings.color\` ne colore pas les titres malgré son nom — il colore les filets de l'en-tête et du pied de page, et le fond d'en-tête des tableaux en mode "brand". Pour changer la couleur des titres, ce sont \`textStyles.h1/h2/h3.color\` qu'il faut toucher.
 
-Format de réponse — réponds UNIQUEMENT avec ces trois balises, sans texte autour ni bloc de code Markdown :
+Format de réponse — réponds UNIQUEMENT avec ces balises, sans texte autour ni bloc de code Markdown.
+TOUJOURS ces deux-là, quelle que soit la réponse :
 <summary>une phrase en français résumant la modification, qui ne décrit que ce que tu as réellement écrit — aucun effet annoncé qui ne soit pas dans la source rendue</summary>
-<changes><item>un changement</item><item>un autre changement</item></changes>
-<typst>la source complète de la template, prête à compiler</typst>`;
+<changes><item>un changement</item><item>un autre changement</item></changes>${PATCH_CONTRACT}`;
 }
 
 export function editUserText(source: string, instruction: string): string {

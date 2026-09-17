@@ -51,8 +51,22 @@ export async function callMessages(input: {
         model: process.env.DOTS_AI_MODEL ?? "claude-sonnet-5",
         // ponytail: un template complet dépasse 4096 jetons de sortie ; réglable, 16k par défaut.
         max_tokens: Number(process.env.DOTS_AI_MAX_TOKENS) || 16384,
-        system: input.system,
+        // Le prompt système ne bouge qu'avec la liste des images, triée : c'est un préfixe
+        // stable, donc cachable. Le minimum cachable de Sonnet 5 est 1024 jetons, celui-ci
+        // en fait plus du double. Aucun effet sur la réponse, seulement sur l'entrée.
+        system: [
+          {
+            type: "text",
+            text: input.system,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
         messages: [{ role: "user", content: input.content }],
+        // Non réglé par défaut : l'API applique `high`. `DOTS_AI_EFFORT=low` raccourcit la
+        // réflexion, donc la réponse — à mesurer au banc avant d'en faire un défaut.
+        ...(process.env.DOTS_AI_EFFORT
+          ? { output_config: { effort: process.env.DOTS_AI_EFFORT } }
+          : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -81,7 +95,11 @@ export async function callMessages(input: {
   const data = (await res.json()) as {
     stop_reason?: string;
     content?: { type: string; text?: string }[];
+    usage?: Record<string, number>;
   };
+  // DOTS_AI_TRACE=1 : de quoi voir si le cache prend, sans instrumenter le reste.
+  if (process.env.DOTS_AI_TRACE && data.usage)
+    console.log("[ai] usage", JSON.stringify(data.usage));
   if (data.stop_reason === "max_tokens")
     throw new AiApiError("réponse tronquée par le modèle (max_tokens)");
   if (data.stop_reason === "refusal")
