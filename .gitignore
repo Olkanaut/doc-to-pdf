@@ -18,3 +18,16 @@ backend/ingest/__pycache__/
 backend/templates/assets/en-tete-*
 backend/templates/assets/pied-de-page-*
 backend/templates/assets/fragment-*
+
+# Sorties du banc d'essai de l'assistant (appels API enregistrés, PDF et PNG de mesure)
+backend/bench/runs*/
+backend/bench/rendu/
+backend/bench/*-scores.json
+backend/bench/*.typ
+
+# Jamais : sauvegarde de .env (contient la clé API) et état de session Playwright
+backend/.env.bak
+frontend/e2e/.auth/
+
+# Brouillons des agents d'audit dans le banc
+backend/bench/_*
