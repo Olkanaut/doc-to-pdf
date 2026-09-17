@@ -1,4 +1,4 @@
-import { ProConnectButton } from "@gouvfr-lasuite/ui-components";
+import { Button } from "@gouvfr-lasuite/ui-components";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
@@ -9,7 +9,7 @@ function safeReturnTo(value: string | null): string {
 }
 
 /**
- * Connexion par le flux OpenID du backend (`/api/auth/login`), avec le bouton du kit.
+ * Connexion par le flux OpenID du backend (`/api/auth/login`) vers Keycloak.
  * Le jeton obtenu sert à lire Docs ; sans session, la lecture retombe sur le cookie
  * de session de Docs quand les deux tournent sur le même hôte.
  */
@@ -29,13 +29,17 @@ export function LoginPage() {
         </div>
       </div>
       <div className="dots-login">
-        <p id="login-hint">Se connecter avec ProConnect</p>
+        <p id="login-hint">Se connecter avec le compte La Suite local</p>
         {/* Navigation plein page : le flux OpenID sort de l'application. */}
-        <ProConnectButton
+        <Button
+          type="button"
+          variant="primary"
           onClick={() => {
             window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
           }}
-        />
+        >
+          Se connecter
+        </Button>
       </div>
     </div>
   );
