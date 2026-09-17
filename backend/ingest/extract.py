@@ -14,6 +14,7 @@ extracted (see `visible_items`). This runs on every analysis, not on demand.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import shutil
@@ -258,6 +259,204 @@ def line_height(spans: list[dict], body_size: float) -> float:
     return max(1.0, min(2.0, round(gaps[len(gaps) // 2] / body_size, 2)))
 
 
+# ---------------------------------------------------------------- import model
+
+
+def bbox(rect: pymupdf.Rect) -> dict:
+    return {
+        "x": round(rect.x0, 2),
+        "y": round(rect.y0, 2),
+        "width": round(max(0.0, rect.width), 2),
+        "height": round(max(0.0, rect.height), 2),
+    }
+
+
+def import_zones(
+    page_rect: pymupdf.Rect,
+    header_band: pymupdf.Rect | None,
+    footer_band: pymupdf.Rect | None,
+) -> list[dict]:
+    zones = []
+    if header_band is not None:
+        zones.append(
+            {
+                "id": "region-header",
+                "kind": "header",
+                "pageIndex": 0,
+                "bbox": bbox(header_band),
+                "confidence": 0.75,
+                "provenance": "rendered-page",
+            }
+        )
+
+    body_top = header_band.y1 if header_band is not None else page_rect.y0
+    body_bottom = footer_band.y0 if footer_band is not None else page_rect.y1
+    if body_bottom <= body_top:
+        body_top, body_bottom = page_rect.y0, page_rect.y1
+    body = pymupdf.Rect(page_rect.x0, body_top, page_rect.x1, body_bottom) & page_rect
+    zones.append(
+        {
+            "id": "region-body",
+            "kind": "body",
+            "pageIndex": 0,
+            "bbox": bbox(body),
+            "confidence": 1.0,
+            "provenance": "rendered-page",
+        }
+    )
+
+    if footer_band is not None:
+        zones.append(
+            {
+                "id": "region-footer",
+                "kind": "footer",
+                "pageIndex": 0,
+                "bbox": bbox(footer_band),
+                "confidence": 0.75,
+                "provenance": "rendered-page",
+            }
+        )
+    return zones
+
+
+def point_in_box(x: float, y: float, box: dict) -> bool:
+    return box["x"] <= x <= box["x"] + box["width"] and box["y"] <= y <= box["y"] + box["height"]
+
+
+def zone_for(rect: pymupdf.Rect, zones: list[dict]) -> str:
+    cx = rect.x0 + rect.width / 2
+    cy = rect.y0 + rect.height / 2
+    for zone in zones:
+        if point_in_box(cx, cy, zone["bbox"]):
+            return zone["id"]
+    return "region-body"
+
+
+def shape_style(drawing: dict) -> dict:
+    style = {}
+    if drawing.get("fill") is not None:
+        style["fill"] = rgb_to_hex(drawing["fill"])
+    if drawing.get("color") is not None:
+        style["stroke"] = rgb_to_hex(drawing["color"])
+    if drawing.get("width") is not None:
+        style["widthPt"] = round(float(drawing.get("width") or 0), 2)
+    return style
+
+
+def shape_kind(drawing: dict) -> str:
+    rect = drawing["rect"]
+    if min(rect.width, rect.height) <= 1.5 and max(rect.width, rect.height) > 2:
+        return "line"
+    return "shape"
+
+
+def pdf_import_model(
+    *,
+    page_rect: pymupdf.Rect,
+    page_count: int,
+    spans: list[dict],
+    shapes: list[dict],
+    images: list[dict],
+    zones: list[dict],
+    font_substitution: str | None,
+) -> dict:
+    objects = []
+
+    for index, span in enumerate(spans):
+        objects.append(
+            {
+                "id": f"pdf-text-{index + 1}",
+                "type": "text",
+                "pageIndex": 0,
+                "bbox": bbox(span["rect"]),
+                "provenance": "pdf-text",
+                "confidence": 1.0,
+                "zoneId": zone_for(span["rect"], zones),
+                "text": html.unescape(span["text"]),
+                "style": {
+                    "font": span["font"],
+                    "fontSize": round(span["size"], 2),
+                    "color": int_to_hex(span["color"]),
+                },
+            }
+        )
+
+    assets = []
+    seen_images: set[int] = set()
+    for index, image in enumerate(images):
+        asset_id = f"pdf-image-{image['xref']}"
+        if image["xref"] not in seen_images:
+            seen_images.add(image["xref"])
+            assets.append(
+                {
+                    "id": asset_id,
+                    "name": asset_id,
+                    "provenance": "pdf-image",
+                }
+            )
+        objects.append(
+            {
+                "id": f"pdf-image-object-{index + 1}",
+                "type": "image",
+                "pageIndex": 0,
+                "bbox": bbox(image["rect"]),
+                "provenance": "pdf-image",
+                "confidence": 1.0,
+                "zoneId": zone_for(image["rect"], zones),
+                "assetId": asset_id,
+                "raw": {"xref": image["xref"]},
+            }
+        )
+
+    for index, drawing in enumerate(shapes):
+        kind = shape_kind(drawing)
+        objects.append(
+            {
+                "id": f"pdf-{kind}-{index + 1}",
+                "type": kind,
+                "pageIndex": 0,
+                "bbox": bbox(drawing["rect"]),
+                "provenance": "pdf-vector",
+                "confidence": 0.9,
+                "zoneId": zone_for(drawing["rect"], zones),
+                "style": shape_style(drawing),
+                "raw": {
+                    "items": len(drawing.get("items", [])),
+                    "filled": drawing.get("fill") is not None,
+                },
+            }
+        )
+
+    warnings = []
+    if font_substitution:
+        warnings.append(
+            {
+                "code": "font-substitution",
+                "message": f"{font_substitution} was replaced by the fallback font.",
+            }
+        )
+
+    return {
+        "model": "import",
+        "version": 1,
+        "source": {"kind": "pdf"},
+        "pages": [
+            {
+                "id": "page-1",
+                "pageIndex": 0,
+                "widthPt": round(page_rect.width, 2),
+                "heightPt": round(page_rect.height, 2),
+                "rotation": 0,
+            }
+        ],
+        "zones": zones,
+        "objects": objects,
+        "assets": assets,
+        "warnings": warnings,
+        "raw": {"pageCount": page_count},
+    }
+
+
 # ---------------------------------------------------------------- analyze
 
 
@@ -285,9 +484,11 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     page_rect = page.rect
     spans, shapes = visible_items(page)
 
-    image_rects: list[pymupdf.Rect] = []
+    images: list[dict] = []
     for info in page.get_images(full=True):
-        image_rects.extend(r for r in page.get_image_rects(info[0]) if not r.is_empty)
+        xref = int(info[0])
+        images.extend({"xref": xref, "rect": r} for r in page.get_image_rects(xref) if not r.is_empty)
+    image_rects = [image["rect"] for image in images]
 
     preview = page.get_pixmap(matrix=pymupdf.Matrix(PREVIEW_SCALE, PREVIEW_SCALE))
     preview.save(out_dir / "page-1.png")
@@ -373,6 +574,16 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
         full = pymupdf.Rect(0, footer_band.y0 - 2, page_rect.width, page_rect.height)
         regions.append(region("footer", full))
     regions.append(region("page", page_rect))
+    zones = import_zones(page_rect, header_band, footer_band)
+    import_model = pdf_import_model(
+        page_rect=page_rect,
+        page_count=doc.page_count,
+        spans=spans,
+        shapes=shapes,
+        images=images,
+        zones=zones,
+        font_substitution=substituted,
+    )
 
     return {
         "ok": True,
@@ -388,6 +599,7 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
         "layout": layout,
         "fontSubstitution": substituted,
         "counts": {"text": len(spans), "shapes": len(shapes), "images": len(image_rects)},
+        "importModel": import_model,
     }
 
 
@@ -405,6 +617,7 @@ def analyze_docx(input_path: Path) -> dict | None:
                 return None
             geometry = docx_zip.page_geometry(zf)
             raw_font, size = docx_zip.default_font(zf)
+            import_model = docx_zip.import_model(zf, geometry, assets)
     except (zipfile.BadZipFile, KeyError):
         return None
 
@@ -435,6 +648,7 @@ def analyze_docx(input_path: Path) -> dict | None:
         },
         "fontSubstitution": substituted,
         "counts": {"text": 0, "shapes": 0, "images": len(assets)},
+        "importModel": import_model,
     }
 
 

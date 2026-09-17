@@ -77,6 +77,14 @@ describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
     expect(analysis.layout.margins.left).toBeCloseTo(25, 0);
     expect(analysis.layout.margins.right).toBeCloseTo(25, 0);
     expect(analysis.layout.margins.top).toBeGreaterThan(30);
+    expect(analysis.importModel?.zones.map((z) => z.kind)).toEqual([
+      "header",
+      "body",
+      "footer",
+    ]);
+    expect(
+      analysis.importModel?.objects.some((o) => o.type === "text" && o.provenance === "pdf-text"),
+    ).toBe(true);
 
     const header = analysis.regions.find((r) => r.kind === "header");
     expect(header, "une bande d'en-tête est proposée").toBeDefined();
@@ -288,6 +296,8 @@ describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
       vector: false,
       widthPt: 2,
     });
+    expect(analysis.importModel?.source.kind).toBe("docx");
+    expect(analysis.importModel?.objects.some((o) => o.type === "image")).toBe(true);
   });
 
   it("préfère le vrai SVG à son repli PNG obligatoire", async () => {
@@ -325,6 +335,9 @@ describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
 
     const analysis = await analyzeDocument(docx, dir);
     expect(analysis.assets![0].kind).toBe("header");
+    expect(
+      analysis.importModel?.objects.find((o) => o.type === "image")?.zoneId,
+    ).toBe("region-header");
   });
 
   it("demande LibreOffice seulement quand le .docx n'a aucun visuel à extraire", async () => {

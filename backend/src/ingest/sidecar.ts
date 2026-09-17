@@ -12,6 +12,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import type { ImportModelV1 } from "../template-model/importModel.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -93,6 +94,8 @@ export interface Analysis {
   /** Police du document absente du serveur, remplacée par Marianne. */
   fontSubstitution: string | null;
   counts: { text: number; shapes: number; images: number };
+  /** Observation structurée du document, plus riche que les zones de recadrage historiques. */
+  importModel?: ImportModelV1;
 }
 
 export interface Fragment {

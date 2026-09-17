@@ -83,6 +83,23 @@ python3 extract.py crop --input letter.pdf --out /tmp/job \
 Both subcommands write a single JSON object to stdout, including on failure
 (`{"ok": false, "code": "...", "error": "..."}`), and then exit 1.
 
+## Structured import model
+
+`analyze` keeps the historical response used by the cropping UI (`mode`,
+`page`, `regions`, `layout`, `assets`) and now also returns `importModel`.
+That model is the raw observation layer consumed by the TypeScript
+`ImportModelV1` contract:
+
+- native PDFs expose visible text spans with bbox, font, size, and colour;
+- placed PDF images expose their placement bbox and logical asset id;
+- simple PDF vector drawings expose line/shape objects with stroke/fill style;
+- DOCX files handled directly from the zip expose OOXML text, table, and media
+  observations with approximate zone bboxes.
+
+The rendered PNG preview and crop endpoints remain the visual fallback. The
+structured model is additive: existing imports can still behave like a page
+crop while future UI can inspect objects separately.
+
 ## What extraction refuses to do
 
 An opaque shape painted over text hides it on screen without erasing it from

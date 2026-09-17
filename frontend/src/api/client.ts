@@ -346,12 +346,104 @@ export interface IngestAnalysis {
   /** Police du document absente du serveur, remplacée par Marianne. */
   fontSubstitution: string | null;
   counts: { text: number; shapes: number; images: number };
+  /** Observation structurée du document importé, plus riche que les zones historiques. */
+  importModel: ImportModelV1;
 }
 
 export interface IngestFragment {
   file: string;
   widthPt: number;
   heightPt: number;
+}
+
+export type ImportSourceKind = "pdf" | "docx" | "image" | "unknown";
+export type ImportZoneKind = "header" | "footer" | "body" | "background" | "custom";
+export type ImportObjectType =
+  | "text"
+  | "image"
+  | "shape"
+  | "line"
+  | "table"
+  | "rasterRegion"
+  | "unknown";
+export type ImportProvenance =
+  | "pdf-text"
+  | "pdf-image"
+  | "pdf-vector"
+  | "docx-xml"
+  | "docx-media"
+  | "ocr"
+  | "rendered-page"
+  | "manual"
+  | "ai";
+
+export interface ImportBBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ImportPage {
+  id: string;
+  pageIndex: number;
+  widthPt: number;
+  heightPt: number;
+  rotation: 0 | 90 | 180 | 270;
+}
+
+export interface ImportZone {
+  id: string;
+  kind: ImportZoneKind;
+  pageIndex: number;
+  bbox: ImportBBox;
+  confidence: number;
+  provenance: ImportProvenance;
+}
+
+export interface ImportObject {
+  id: string;
+  type: ImportObjectType;
+  pageIndex: number;
+  bbox: ImportBBox;
+  provenance: ImportProvenance;
+  confidence: number;
+  zoneId?: string;
+  text?: string;
+  assetId?: string;
+  style?: Record<string, unknown>;
+  raw?: Record<string, unknown>;
+}
+
+export interface ImportAsset {
+  id: string;
+  name?: string;
+  file?: string;
+  mimeType?: string;
+  bytes?: number;
+  provenance: ImportProvenance;
+}
+
+export interface ImportWarning {
+  code: string;
+  message: string;
+  objectId?: string;
+}
+
+export interface ImportModelV1 {
+  model: "import";
+  version: 1;
+  source: {
+    kind: ImportSourceKind;
+    name?: string;
+    bytes?: number;
+    mimeType?: string;
+  };
+  pages: ImportPage[];
+  zones: ImportZone[];
+  objects: ImportObject[];
+  assets: ImportAsset[];
+  warnings: ImportWarning[];
 }
 
 /** Dépose le fichier et relève sa première page. Le fichier part en base64. */

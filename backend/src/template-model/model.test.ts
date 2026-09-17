@@ -104,6 +104,16 @@ describe("template model contracts", () => {
     expect(projected.reason).toContain("field-node");
   });
 
+  it("accepts table observations while keeping them outside the LayoutConfig subset", () => {
+    const model = sanitizeTemplateModel({
+      nodes: [{ id: "table-node", type: "table", regionId: "region-body" }],
+    });
+    const projected = templateModelToLayoutConfig(model);
+
+    expect(model.nodes[0]).toMatchObject({ id: "table-node", type: "table" });
+    expect(projected.compatible).toBe(false);
+  });
+
   it("adapts current ingest analysis to ImportModel, then to a non-compatible TemplateModel proposal", () => {
     const analysis: Analysis = {
       mode: "page",
@@ -136,5 +146,56 @@ describe("template model contracts", () => {
       regionId: "region-header",
       sourceObjectIds: ["object-region-header-1"],
     });
+  });
+
+  it("preserves rich sidecar ImportModel objects when they are already present", () => {
+    const analysis: Analysis = {
+      mode: "page",
+      page: { widthPt: 595.28, heightPt: 841.89, count: 1, previewScale: 2, preview: "page-1.png" },
+      regions: [{ kind: "page", x: 0, y: 0, width: 595.28, height: 841.89, vector: false }],
+      layout: {
+        paper: "a4",
+        orientation: "portrait",
+        margins: { top: 25, bottom: 20, left: 20, right: 20 },
+        font: "Marianne",
+        fontSize: 11,
+        lineHeight: 1.2,
+        headings: { scale: "normal", color: "#0659c5" },
+      },
+      fontSubstitution: null,
+      counts: { text: 1, shapes: 0, images: 0 },
+      importModel: {
+        model: "import",
+        version: 1,
+        source: { kind: "pdf" },
+        pages: [{ id: "page-1", pageIndex: 0, widthPt: 595.28, heightPt: 841.89, rotation: 0 }],
+        zones: [{
+          id: "region-body",
+          kind: "body",
+          pageIndex: 0,
+          bbox: { x: 0, y: 0, width: 595.28, height: 841.89 },
+          confidence: 1,
+          provenance: "pdf-text",
+        }],
+        objects: [{
+          id: "pdf-text-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 20, y: 30, width: 120, height: 12 },
+          provenance: "pdf-text",
+          confidence: 1,
+          zoneId: "region-body",
+          text: "Reference",
+          style: { font: "Arial", fontSize: 11, color: "#000000" },
+        }],
+        assets: [],
+        warnings: [],
+      },
+    };
+
+    const importModel = analysisToImportModel(analysis, { name: "source.pdf" });
+
+    expect(importModel.source).toMatchObject({ kind: "pdf", name: "source.pdf" });
+    expect(importModel.objects).toEqual(analysis.importModel!.objects);
   });
 });

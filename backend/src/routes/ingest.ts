@@ -40,6 +40,7 @@ import {
   buildSource,
   type Placement,
 } from "../ingest/templateFromAnalysis.js";
+import { analysisToImportModel } from "../template-model/adapters.js";
 
 /** 10 Mo de fichier ≈ 13,4 Mo de base64 ; la limite Fastify laisse la marge. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -74,6 +75,17 @@ interface TemplateBody {
   /** Mode « assets » : visuel à poser en en-tête. */
   headerAsset?: string | null;
   vector?: boolean;
+}
+
+function importSource(filename: unknown): { kind?: "pdf" | "docx" | "unknown"; name?: string } {
+  const name = typeof filename === "string" ? filename : undefined;
+  const lower = name?.toLowerCase() ?? "";
+  const kind = lower.endsWith(".pdf")
+    ? "pdf"
+    : lower.endsWith(".docx")
+      ? "docx"
+      : undefined;
+  return { kind, name };
 }
 
 /** Points d'injection, comme documentRoutes : les tests branchent une session et Docs. */
@@ -179,7 +191,12 @@ export async function ingestRoutes(
       try {
         const analysis = await analyzeDocument(job.input, job.dir);
         await cacheAnalysis(job, analysis);
-        return { ok: true, jobId: job.id, ...analysis };
+        return {
+          ok: true,
+          jobId: job.id,
+          ...analysis,
+          importModel: analysisToImportModel(analysis, importSource(filename)),
+        };
       } catch (error) {
         return sendSidecarError(reply, error);
       }

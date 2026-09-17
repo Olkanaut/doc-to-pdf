@@ -152,8 +152,20 @@ export function templateModelToLayoutConfig(modelInput: TemplateModelV1): {
 
 export function analysisToImportModel(
   analysis: Analysis & { jobId?: string },
-  source: { kind: "pdf" | "docx" | "unknown"; name?: string } = { kind: "unknown" },
+  source: { kind?: "pdf" | "docx" | "image" | "unknown"; name?: string } = {},
 ): ImportModelV1 {
+  if (analysis.importModel) {
+    const sanitized = sanitizeImportModel(analysis.importModel);
+    return sanitizeImportModel({
+      ...sanitized,
+      source: {
+        ...sanitized.source,
+        ...source,
+        kind: source.kind ?? sanitized.source.kind,
+      },
+    });
+  }
+
   const page = {
     id: "page-1",
     pageIndex: 0,
@@ -275,6 +287,7 @@ function objectTypeToNodeType(type: ImportObject["type"]): TemplateNode["type"] 
   if (type === "image") return "image";
   if (type === "shape") return "shape";
   if (type === "line") return "line";
+  if (type === "table") return "table";
   if (type === "rasterRegion") return "raster";
   return "raster";
 }

@@ -3,7 +3,7 @@ export const IMPORT_MODEL_VERSION = 1 as const;
 
 export type ImportSourceKind = "pdf" | "docx" | "image" | "unknown";
 export type ImportZoneKind = "header" | "footer" | "body" | "background" | "custom";
-export type ImportObjectType = "text" | "image" | "shape" | "line" | "rasterRegion" | "unknown";
+export type ImportObjectType = "text" | "image" | "shape" | "line" | "table" | "rasterRegion" | "unknown";
 export type ImportProvenance =
   | "pdf-text"
   | "pdf-image"
@@ -89,7 +89,7 @@ export interface ImportModelV1 {
 
 const SOURCE_KINDS: readonly ImportSourceKind[] = ["pdf", "docx", "image", "unknown"];
 const ZONE_KINDS: readonly ImportZoneKind[] = ["header", "footer", "body", "background", "custom"];
-const OBJECT_TYPES: readonly ImportObjectType[] = ["text", "image", "shape", "line", "rasterRegion", "unknown"];
+const OBJECT_TYPES: readonly ImportObjectType[] = ["text", "image", "shape", "line", "table", "rasterRegion", "unknown"];
 const PROVENANCES: readonly ImportProvenance[] = [
   "pdf-text",
   "pdf-image",

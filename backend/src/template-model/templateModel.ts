@@ -11,6 +11,7 @@ export type TemplateNodeType =
   | "image"
   | "shape"
   | "line"
+  | "table"
   | "group"
   | "pageNumber"
   | "raster";
@@ -81,7 +82,7 @@ export interface TemplateModelV1 {
 }
 
 const REGION_KINDS: readonly TemplateRegionKind[] = ["header", "footer", "body", "background", "custom"];
-const NODE_TYPES: readonly TemplateNodeType[] = ["text", "field", "image", "shape", "line", "group", "pageNumber", "raster"];
+const NODE_TYPES: readonly TemplateNodeType[] = ["text", "field", "image", "shape", "line", "table", "group", "pageNumber", "raster"];
 const SCOPES: readonly TemplateScope[] = ["all", "first", "except-first"];
 const FIELD_TYPES: readonly FieldType[] = ["text", "date", "image", "number", "richText"];
 

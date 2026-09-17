@@ -20,6 +20,7 @@ marqueurs XML des formes (``prstGeom`` et compagnie) figurent dans presque tout
 
 from __future__ import annotations
 
+import html
 import re
 import zipfile
 from pathlib import Path
@@ -123,6 +124,210 @@ def _part_media(zf: zipfile.ZipFile, prefix: str) -> set[str]:
             if target.startswith("media/"):
                 found.add(f"word/{target}")
     return found
+
+
+def _part_names(zf: zipfile.ZipFile, prefix: str) -> list[str]:
+    return sorted(
+        name
+        for name in zf.namelist()
+        if re.match(rf"^word/{prefix}\d*\.xml$", name)
+    )
+
+
+def _texts(xml: str) -> list[str]:
+    return [
+        html.unescape(match)
+        for match in re.findall(r"<w:t\b[^>]*>(.*?)</w:t>", xml, re.S)
+        if html.unescape(match).strip()
+    ]
+
+
+def _paragraphs(xml: str) -> list[str]:
+    paragraphs = []
+    for para in re.findall(r"<w:p\b.*?</w:p>", xml, re.S):
+        text = "".join(_texts(para)).strip()
+        if text:
+            paragraphs.append(text)
+    return paragraphs
+
+
+def _tables(xml: str) -> list[list[str]]:
+    tables = []
+    for table in re.findall(r"<w:tbl\b.*?</w:tbl>", xml, re.S):
+        rows = []
+        for row in re.findall(r"<w:tr\b.*?</w:tr>", table, re.S):
+            cells = []
+            for cell in re.findall(r"<w:tc\b.*?</w:tc>", row, re.S):
+                text = " ".join(_texts(cell)).strip()
+                if text:
+                    cells.append(text)
+            if cells:
+                rows.append(" | ".join(cells))
+        if rows:
+            tables.append(rows)
+    return tables
+
+
+def _zone_bbox(geometry: dict, kind: str) -> dict:
+    width = geometry["widthPt"]
+    height = geometry["heightPt"]
+    margins = geometry["margins"]
+    top = margins["top"] * PT_PER_MM
+    bottom = margins["bottom"] * PT_PER_MM
+    left = margins["left"] * PT_PER_MM
+    right = margins["right"] * PT_PER_MM
+
+    if kind == "header":
+        return {"x": 0, "y": 0, "width": round(width, 2), "height": round(max(1, top), 2)}
+    if kind == "footer":
+        return {
+            "x": 0,
+            "y": round(max(0, height - bottom), 2),
+            "width": round(width, 2),
+            "height": round(max(1, bottom), 2),
+        }
+    return {
+        "x": round(left, 2),
+        "y": round(top, 2),
+        "width": round(max(1, width - left - right), 2),
+        "height": round(max(1, height - top - bottom), 2),
+    }
+
+
+def _object_bbox(geometry: dict, kind: str, ordinal: int) -> dict:
+    zone = _zone_bbox(geometry, kind)
+    line = 14.0
+    y = min(zone["y"] + 4 + ordinal * line, zone["y"] + max(0, zone["height"] - line))
+    return {
+        "x": zone["x"],
+        "y": round(y, 2),
+        "width": zone["width"],
+        "height": line,
+    }
+
+
+def _zone(kind: str, geometry: dict) -> dict:
+    return {
+        "id": f"region-{kind}",
+        "kind": kind,
+        "pageIndex": 0,
+        "bbox": _zone_bbox(geometry, kind),
+        "confidence": 0.9 if kind in {"header", "footer"} else 1.0,
+        "provenance": "docx-xml",
+    }
+
+
+def _xml_text_objects(zf: zipfile.ZipFile, part: str, kind: str, geometry: dict, start: int) -> list[dict]:
+    objects = []
+    for offset, text in enumerate(_paragraphs(_text(zf, part))):
+        index = start + offset
+        objects.append(
+            {
+                "id": f"docx-text-{index + 1}",
+                "type": "text",
+                "pageIndex": 0,
+                "bbox": _object_bbox(geometry, kind, offset),
+                "provenance": "docx-xml",
+                "confidence": 0.9,
+                "zoneId": f"region-{kind}",
+                "text": text,
+                "raw": {"part": part},
+            }
+        )
+    return objects
+
+
+def _xml_table_objects(zf: zipfile.ZipFile, part: str, kind: str, geometry: dict, start: int) -> list[dict]:
+    objects = []
+    for offset, rows in enumerate(_tables(_text(zf, part))):
+        index = start + offset
+        objects.append(
+            {
+                "id": f"docx-table-{index + 1}",
+                "type": "table",
+                "pageIndex": 0,
+                "bbox": _object_bbox(geometry, kind, offset),
+                "provenance": "docx-xml",
+                "confidence": 0.8,
+                "zoneId": f"region-{kind}",
+                "text": "\n".join(rows),
+                "raw": {"part": part, "rows": rows},
+            }
+        )
+    return objects
+
+
+def import_model(zf: zipfile.ZipFile, geometry: dict, media_assets: list[dict]) -> dict:
+    """Structured OOXML observations for the TypeScript ImportModel contract.
+
+    OOXML gives structure but not rendered coordinates. Bboxes are therefore
+    stable approximations inside the page zones; rendered PDF analysis remains
+    the source of precise geometry when a DOCX falls back to LibreOffice.
+    """
+    zones = [_zone("header", geometry), _zone("body", geometry), _zone("footer", geometry)]
+    objects: list[dict] = []
+
+    for part in _part_names(zf, "header"):
+        objects.extend(_xml_text_objects(zf, part, "header", geometry, len(objects)))
+        objects.extend(_xml_table_objects(zf, part, "header", geometry, len(objects)))
+
+    document = "word/document.xml"
+    objects.extend(_xml_text_objects(zf, document, "body", geometry, len(objects)))
+    objects.extend(_xml_table_objects(zf, document, "body", geometry, len(objects)))
+
+    for part in _part_names(zf, "footer"):
+        objects.extend(_xml_text_objects(zf, part, "footer", geometry, len(objects)))
+        objects.extend(_xml_table_objects(zf, part, "footer", geometry, len(objects)))
+
+    import_assets = []
+    for index, asset in enumerate(media_assets):
+        asset_id = f"docx-asset-{index + 1}"
+        kind = asset["kind"] if asset["kind"] in {"header", "footer"} else "body"
+        import_assets.append(
+            {
+                "id": asset_id,
+                "name": asset["name"],
+                "bytes": asset["bytes"],
+                "provenance": "docx-media",
+            }
+        )
+        objects.append(
+            {
+                "id": f"docx-image-{index + 1}",
+                "type": "image",
+                "pageIndex": 0,
+                "bbox": _object_bbox(geometry, kind, index),
+                "provenance": "docx-media",
+                "confidence": 1.0,
+                "zoneId": f"region-{kind}",
+                "assetId": asset_id,
+                "style": {
+                    "vector": asset["vector"],
+                    "widthPt": asset["widthPt"],
+                    "heightPt": asset["heightPt"],
+                },
+                "raw": {"entry": asset["id"], "kind": asset["kind"]},
+            }
+        )
+
+    return {
+        "model": "import",
+        "version": 1,
+        "source": {"kind": "docx"},
+        "pages": [
+            {
+                "id": "page-1",
+                "pageIndex": 0,
+                "widthPt": geometry["widthPt"],
+                "heightPt": geometry["heightPt"],
+                "rotation": 0,
+            }
+        ],
+        "zones": zones,
+        "objects": objects,
+        "assets": import_assets,
+        "warnings": [],
+    }
 
 
 def _pixel_size(data: bytes, suffix: str) -> tuple[float, float] | None:

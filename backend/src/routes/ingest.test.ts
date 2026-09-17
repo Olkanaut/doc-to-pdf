@@ -175,6 +175,17 @@ describe.skipIf(!enabled)("routes d'import", () => {
       body.regions.some((r: { kind: string }) => r.kind === "header"),
     ).toBe(true);
     expect(body.layout.margins.left).toBeCloseTo(25, 0);
+    expect(body.importModel.source).toMatchObject({
+      kind: "pdf",
+      name: "lettre.pdf",
+    });
+    expect(body.importModel.zones.map((z: { kind: string }) => z.kind)).toContain("body");
+    expect(
+      body.importModel.objects.some(
+        (o: { type: string; provenance: string }) =>
+          o.type === "text" && o.provenance === "pdf-text",
+      ),
+    ).toBe(true);
 
     const preview = await app.inject({
       method: "GET",
