@@ -328,6 +328,15 @@
   position: relative;
   isolation: isolate;
 }
+
+/* …mais cet isolement enferme aussi le menu d'actions : son `z-index: 30` ne vaut
+   qu'à l'intérieur de la tuile, et les tuiles qui suivent dans le DOM se peignent
+   donc par-dessus le menu ouvert — visible dès qu'une seconde ligne existe. La
+   tuile qui porte un menu ouvert prend son propre rang le temps de l'ouverture :
+   au-dessus des autres tuiles, et loin sous le voile des modales (1000, theme.css). */
+.dots-page .template-tile:has(.template-actions-menu__content) {
+  z-index: 40;
+}
 .dots-page .template-badge {
   align-items: center;
   gap: 4px;
