@@ -15,6 +15,7 @@ import {
   PLACEHOLDER_TITLE,
   type Band,
   type Block,
+  type BlockScope,
   type BlockKind,
   type FooterBand,
   type LayoutConfig,
@@ -86,13 +87,14 @@ function contentBlock(parts: string[], indent: string): string {
 }
 
 /**
- * Which pages a block prints on. Typst evaluates the header once per page, so
- * the test is on the page counter; `all` needs no test at all.
+ * Which pages a piece of the band prints on — a block, or the footer's own
+ * page number. Typst evaluates the header/footer once per page, so the test
+ * is on the page counter; `all` needs no test at all.
  */
-function scoped(body: string, block: Block): string {
-  if (block.scope === "all") return body;
+function scoped(body: string, scope: BlockScope): string {
+  if (scope === "all") return body;
   const n = "counter(page).get().first()";
-  const test = block.scope === "first" ? `${n} == 1` : `${n} > 1`;
+  const test = scope === "first" ? `${n} == 1` : `${n} > 1`;
   return `#context { if ${test} [${body}] }`;
 }
 
@@ -166,7 +168,7 @@ function words(block: Block): string {
  * One block's markup. An image beside text becomes a two-column grid; centred
  * or alone, the two simply stack.
  */
-function blockBody(block: Block, cfg: LayoutConfig, side: "top" | "bottom"): string {
+function blockBody(block: Block, cfg: LayoutConfig, band: Band, side: "top" | "bottom"): string {
   const parts: string[] = [];
   // A full-width image is placed, not laid out: it never shares a row with text.
   // A real image always bleeds, whatever the layout; a stand-in only where the
@@ -179,7 +181,7 @@ function blockBody(block: Block, cfg: LayoutConfig, side: "top" | "bottom"): str
     );
     const only = words(block);
     if (only) parts.push(`#align(${block.align})${only}`);
-    return withRule(parts, block, side).join("\n      ");
+    return withSpacing(parts, block, band, side).join("\n      ");
   }
   const img = block.image ? image(block) : usesImage(block.kind) ? imagePlaceholder(block) : "";
   const txt = words(block);
@@ -195,23 +197,48 @@ function blockBody(block: Block, cfg: LayoutConfig, side: "top" | "bottom"): str
     if (txt) parts.push(`#align(${block.align})${txt}`);
   }
 
-  return withRule(parts, block, side).join("\n      ");
+  return withSpacing(parts, block, band, side).join("\n      ");
 }
 
 /**
- * The block's line, with the space it asks for either side. It goes under the
- * content in a header and over it in a footer: either way the line is what
- * separates the band from the body text, never what hangs off its far edge.
+ * However narrow the band's own left/right padding makes its content, the
+ * rule still needs to span the full page — a rule that stops wherever the
+ * text happens to be inset reads as a layout bug, not a choice. `pad` with a
+ * *negative* amount cancels the band's own `pad(left:, right:)` for just this
+ * element, the mirror image of `bleed()`'s trick for a full-width image.
  */
-function withRule(parts: string[], block: Block, side: "top" | "bottom"): string[] {
-  const r = block.rule;
-  if (!r.on) return parts;
-  const line = [
-    ...(r.aboveMm ? [`#v(${r.aboveMm}mm)`] : []),
-    `#line(length: 100%, stroke: ${r.widthPt}pt + ${rgb(r.color)})`,
-    ...(r.belowMm ? [`#v(${r.belowMm}mm)`] : []),
-  ];
-  return side === "bottom" ? [...line, ...parts] : [...parts, ...line];
+function fullWidthRule(block: Block, band: Band): string {
+  const { left, right } = band.spacing;
+  const line = `#line(length: 100%, stroke: ${block.rule.widthPt}pt + ${rgb(block.rule.color)})`;
+  return left || right ? `#pad(left: ${-left}mm, right: ${-right}mm)[${line}]` : line;
+}
+
+/**
+ * Clear space between the rule and the content it sits next to, and between
+ * the last block and the page number — never flush against either. 2mm read
+ * as still touching once rendered; this is the smallest value that visibly
+ * doesn't.
+ */
+const RULE_GAP_MM = 3;
+
+/**
+ * The block's own clear space, with its rule (if any) drawn just inside it.
+ * Space applies whether or not the line does, which is what lets several
+ * blocks in one band be pulled apart without forcing a line onto any of
+ * them. The rule itself sits below the content in a header (the traditional
+ * placement, right before the body) and above it in a footer (separating
+ * the footer from the body above), with a small fixed gap either way so it
+ * never touches the text it sits next to.
+ */
+function withSpacing(parts: string[], block: Block, band: Band, side: "top" | "bottom"): string[] {
+  const above = block.spaceAboveMm ? [`#v(${block.spaceAboveMm}mm)`] : [];
+  const below = block.spaceBelowMm ? [`#v(${block.spaceBelowMm}mm)`] : [];
+  if (!block.rule.on) return [...above, ...parts, ...below];
+
+  const rule = fullWidthRule(block, band);
+  const gap = `#v(${RULE_GAP_MM}mm)`;
+  const withRule = side === "bottom" ? [rule, gap, ...parts] : [...parts, gap, rule];
+  return [...above, ...withRule, ...below];
 }
 
 /** True when a block would draw nothing at all. */
@@ -223,6 +250,12 @@ function isBlockEmpty(block: Block): boolean {
 const NUMBERING_BLOCK = (band: FooterBand): string =>
   NUMBERING[band.numbering] ? `#align(${band.numberingAlign})[${NUMBERING[band.numbering]}]` : "";
 
+/** The footer's page number, wrapped in its own page-scope test. */
+function numberingMarkup(band: FooterBand): string {
+  const body = NUMBERING_BLOCK(band);
+  return body ? scoped(body, band.numberingScope) : "";
+}
+
 /**
  * The whole band: every block stacked inside one `header:`/`footer:` argument,
  * wrapped in a single `pad` that holds the band's spacing. `none` when there is
@@ -230,8 +263,11 @@ const NUMBERING_BLOCK = (band: FooterBand): string =>
  */
 function bandMarkup(band: Band, cfg: LayoutConfig, side: "top" | "bottom", extra = ""): string {
   const drawn = band.blocks.filter((b) => !isBlockEmpty(b));
-  const bodies = drawn.map((b) => scoped(blockBody(b, cfg, side), b));
-  if (extra) bodies.push(extra);
+  const bodies = drawn.map((b) => scoped(blockBody(b, cfg, band, side), b.scope));
+  // par.spacing is zeroed below, so without this the page number would sit
+  // flush against whatever block came before it — the same "stuck" look the
+  // rule itself needed fixing for, just for the numbering instead of a rule.
+  if (extra) bodies.push(bodies.length ? `#v(${RULE_GAP_MM}mm)\n      ${extra}` : extra);
   if (!bodies.length) return "none";
 
   // `top` is not padded here: Typst gives the header only `margin.top` minus the
@@ -243,8 +279,14 @@ function bandMarkup(band: Band, cfg: LayoutConfig, side: "top" | "bottom", extra
     s.left ? `left: ${s.left}mm` : "",
     s.right ? `right: ${s.right}mm` : "",
   ].filter(Boolean).join(", ");
+  // Several blocks are several separate paragraphs, and Typst inserts its own
+  // spacing between paragraphs (par.spacing, ~1em by default) on top of the
+  // #v() calls above — invisible to bandHeightMm, so the band silently grew
+  // taller than the margin it had just computed for itself. Zeroing it here
+  // makes every gap between blocks an explicit one, which is the only kind
+  // bandHeightMm can see.
   const inner = bodies.map((b) => `      ${b}`).join("\n");
-  const content = `[\n${inner}\n    ]`;
+  const content = `[\n      #set par(spacing: 0pt)\n${inner}\n    ]`;
   return pad ? `pad(${pad})${content}` : content;
 }
 
@@ -253,7 +295,7 @@ function header(cfg: LayoutConfig): string {
 }
 
 function footer(cfg: LayoutConfig): string {
-  return bandMarkup(cfg.footer, cfg, "bottom", NUMBERING_BLOCK(cfg.footer));
+  return bandMarkup(cfg.footer, cfg, "bottom", numberingMarkup(cfg.footer));
 }
 
 /**
@@ -274,31 +316,54 @@ function blockHeightMm(block: Block, cfg: LayoutConfig): number {
   // Beside the text the two share a row; stacked, they add up.
   const sideBySide = drawsImage && textMm > 0 && block.imageHeightMm !== 0 && block.imagePosition !== "center";
   const content = sideBySide ? Math.max(textMm, imageMm) : textMm + imageMm;
-  const rule = block.rule.on
-    ? block.rule.aboveMm + block.rule.belowMm + block.rule.widthPt / PT_PER_MM
-    : 0;
-  return content + rule;
+  // Space applies whether or not the line is drawn; the line adds its own thickness
+  // plus the fixed gap that keeps it clear of the content (see RULE_GAP_MM).
+  const space =
+    block.spaceAboveMm + block.spaceBelowMm +
+    (block.rule.on ? block.rule.widthPt / PT_PER_MM + RULE_GAP_MM : 0);
+  return content + space;
+}
+
+/** One line of body text, in millimetres — what the page-number line takes. */
+function textLineHeightMm(cfg: LayoutConfig): number {
+  return (cfg.textStyles.body.fontSize * cfg.lineHeight) / PT_PER_MM;
 }
 
 /**
  * The margin the band needs: its distance from the paper edge, the tallest
- * stack of blocks that can land on one page, and the gap to the body text.
- * Blocks scoped to different pages never print together, so only the worst
- * page has to fit.
+ * stack of things that can land on one page, and the gap to the body text.
+ * Things scoped to different pages never print together, so only the worst
+ * page has to fit. `extra` folds in content that is not a block — the
+ * footer's page number, which has its own scope and no block of its own.
  */
-function bandHeightMm(band: Band, cfg: LayoutConfig): number {
-  const drawn = band.blocks.filter((b) => !isBlockEmpty(b));
-  if (!drawn.length) return 0;
+function bandHeightMm(
+  band: Band,
+  cfg: LayoutConfig,
+  extra: { heightMm: number; scope: BlockScope }[] = [],
+): number {
+  const blockItems = band.blocks
+    .filter((b) => !isBlockEmpty(b))
+    .map((b) => ({ heightMm: blockHeightMm(b, cfg), scope: b.scope }));
+  // Matches the #v() bandMarkup inserts before `extra` when blocks precede it.
+  const gapBeforeExtra = blockItems.length && extra.length ? RULE_GAP_MM : 0;
+  const items = [...blockItems, ...extra];
+  if (!items.length) return 0;
   let always = 0;
   let first = 0;
   let rest = 0;
-  for (const b of drawn) {
-    const h = blockHeightMm(b, cfg);
-    if (b.scope === "first") first += h;
-    else if (b.scope === "except-first") rest += h;
-    else always += h;
+  for (const it of items) {
+    if (it.scope === "first") first += it.heightMm;
+    else if (it.scope === "except-first") rest += it.heightMm;
+    else always += it.heightMm;
   }
-  return band.spacing.top + always + Math.max(first, rest) + band.spacing.gap;
+  // "Haut" (spacing.gap): the room content actually needs, plus its own
+  // breathing room toward the body — always added, never optional.
+  const needed = always + Math.max(first, rest) + gapBeforeExtra + band.spacing.gap;
+  // "Bas" (spacing.top): a floor on the band's distance from the *page* edge,
+  // the same relationship margins.top/bottom already have with this same
+  // number — asking for more than the content needs pushes it further from
+  // the edge; asking for less never clips it, `needed` still wins.
+  return Math.max(band.spacing.top, needed);
 }
 
 /**
@@ -364,7 +429,10 @@ export function layoutToTypst(cfg: LayoutConfig): string {
   // its own height Typst clips the band without a word.
   const round = (n: number) => Math.round(n * 10) / 10;
   const marginTop = round(Math.max(m.top, bandHeightMm(cfg.header, cfg)));
-  const marginBottom = round(Math.max(m.bottom, bandHeightMm(cfg.footer, cfg)));
+  const numberingExtra = NUMBERING[cfg.footer.numbering]
+    ? [{ heightMm: textLineHeightMm(cfg), scope: cfg.footer.numberingScope }]
+    : [];
+  const marginBottom = round(Math.max(m.bottom, bandHeightMm(cfg.footer, cfg, numberingExtra)));
   const color = rgb(cfg.headings.color);
   // 0.65em est l'interligne par défaut de Typst, pris comme équivalent de 1.2.
   const leading = Math.round(((0.65 * cfg.lineHeight) / 1.2) * 100) / 100;

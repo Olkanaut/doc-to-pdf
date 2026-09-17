@@ -1,7 +1,7 @@
 /**
- * `sniffImageExt` décide seul si /api/templates/assets accepte un fichier : un
- * test direct, sans passer par Fastify ni par une session, couvre le cas qui
- * compte — un contenu lu sur ses octets, jamais sur son nom.
+ * `sniffImageExt` alone decides whether /api/templates/assets accepts a file:
+ * a direct test, without going through Fastify or a session, covers the case
+ * that matters — content read from its bytes, never from its name.
  */
 import { describe, expect, it } from "vitest";
 import { sniffImageExt } from "./templates.js";
@@ -26,13 +26,13 @@ describe("sniffImageExt", () => {
   });
 
   it("refuse ce qui n'est ni l'un ni l'autre, même déguisé", () => {
-    // Un PDF renommé en .png : c'est le contenu qui décide, pas le nom du fichier.
+    // A PDF renamed to .png: the content decides, not the file name.
     expect(sniffImageExt(Buffer.from("%PDF-1.7 pas une image", "utf8"))).toBeNull();
     expect(sniffImageExt(Buffer.alloc(0))).toBeNull();
   });
 
   it("ignore un <svg> qui n'apparaît pas en tête du fichier", () => {
-    // Un fragment de texte qui mentionne « svg » sans en être un.
+    // A text fragment that mentions "svg" without being one.
     const padded = Buffer.concat([Buffer.alloc(2000, 0x20), Buffer.from("<svg></svg>")]);
     expect(sniffImageExt(padded)).toBeNull();
   });

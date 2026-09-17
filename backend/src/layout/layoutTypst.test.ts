@@ -241,7 +241,7 @@ describe("layoutToTypst", () => {
   it("applique un en-tête seulement sur la première page", () => {
     const cfg = sanitizeLayout({
       ...defaultLayout(),
-      header: { blocks: [blk({ scope: "first", title: "Couverture", rule: { on: false, color: "#0659c5", widthPt: 0.5, aboveMm: 0, belowMm: 0 } })] },
+      header: { blocks: [blk({ scope: "first", title: "Couverture" })] },
     });
     const out = layoutToTypst(cfg);
     expect(out).toContain("header: [");
@@ -304,6 +304,123 @@ describe("layoutToTypst", () => {
   });
 });
 
+describe("espacement des sections et pagination", () => {
+  it("un bloc neuf n'a pas de filet : plusieurs sections ne tracent pas chacune leur trait", () => {
+    expect(newBlock("custom", "#0659c5").rule.on).toBe(false);
+  });
+
+  it("l'espacement s'applique même filet éteint, pour écarter des sections sans tracer de trait", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: {
+        blocks: [blk({ title: "Un", spaceBelowMm: 8 }), blk({ title: "Deux", spaceAboveMm: 0 })],
+      },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain("#v(8mm)");
+    expect(out).not.toContain("#line(");
+  });
+
+  it("l'espace « après » d'un bloc suit son propre contenu, dans un pied comme dans un en-tête", () => {
+    // A plain toContain would have missed this: the bug moved #v(8mm) before "Un",
+    // not between "Un" and "Deux". Only the order reveals it.
+    for (const kind of ["header", "footer"] as const) {
+      const cfg = sanitizeLayout({
+        ...defaultLayout(),
+        [kind]: {
+          blocks: [blk({ title: "Un", spaceBelowMm: 8 }), blk({ title: "Deux" })],
+        },
+      });
+      const out = layoutToTypst(cfg);
+      const iUn = out.indexOf("[Un]");
+      const iGap = out.indexOf("#v(8mm)");
+      const iDeux = out.indexOf("[Deux]");
+      expect(iUn, kind).toBeGreaterThan(-1);
+      expect(iGap, kind).toBeGreaterThan(iUn);
+      expect(iDeux, kind).toBeGreaterThan(iGap);
+    }
+  });
+
+  it("le filet se place au-dessus du contenu dans un pied, en dessous dans un en-tête", () => {
+    const rule = { on: true, color: "#0659c5", widthPt: 1 } as const;
+    const header = layoutToTypst(
+      sanitizeLayout({ ...defaultLayout(), header: { blocks: [blk({ title: "Texte", rule })] } }),
+    );
+    const footer = layoutToTypst(
+      sanitizeLayout({ ...defaultLayout(), footer: { blocks: [blk({ title: "Texte", rule })] } }),
+    );
+    expect(header.indexOf("[Texte]")).toBeLessThan(header.indexOf("#line("));
+    expect(footer.indexOf("#line(")).toBeLessThan(footer.indexOf("[Texte]"));
+  });
+
+  it("le filet ne touche jamais son contenu, même sans espacement réglé par l'utilisateur", () => {
+    const rule = { on: true, color: "#0659c5", widthPt: 1 } as const;
+    const out = layoutToTypst(
+      sanitizeLayout({ ...defaultLayout(), footer: { blocks: [blk({ title: "Texte", rule })] } }),
+    );
+    // The line comes before the content in a footer: the fixed v() reads just before "[Texte]".
+    const iLine = out.indexOf("#line(");
+    const iGap = out.indexOf("#v(3mm)");
+    const iTexte = out.indexOf("[Texte]");
+    expect(iLine).toBeGreaterThan(-1);
+    expect(iGap).toBeGreaterThan(iLine);
+    expect(iTexte).toBeGreaterThan(iGap);
+  });
+
+  it("le filet garde toute la largeur de la page même si la bande a ses propres marges gauche/droite", () => {
+    const rule = { on: true, color: "#0659c5", widthPt: 1 } as const;
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      footer: {
+        blocks: [blk({ title: "Texte", rule })],
+        spacing: { top: 0, left: 30, right: 15, gap: 6 },
+      },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain("pad(left: -30mm, right: -15mm)[#line(length: 100%,");
+  });
+
+  it("centre le numéro de page par défaut", () => {
+    expect(defaultLayout().footer.numberingAlign).toBe("center");
+  });
+
+  it("la marge basse loge le numéro de page même sans aucun bloc dans le pied", () => {
+    // Margin deliberately too short for a line of text: without the fix,
+    // bandHeightMm ignored the numbering and would never have widened it.
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      margins: { ...defaultLayout().margins, bottom: 2 },
+      footer: { blocks: [], numbering: "n-of-total" },
+    });
+    const out = layoutToTypst(cfg);
+    const bottom = Number(/margin: \([^)]*bottom: ([\d.]+)mm/.exec(out)![1]);
+    expect(bottom).toBeGreaterThan(2);
+    expect(out).toContain("footer: [");
+  });
+
+  it("la numérotation a sa propre portée, indépendante de celle des blocs", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      footer: { blocks: [], numbering: "n", numberingScope: "except-first" },
+    });
+    const out = layoutToTypst(cfg);
+    expect(out).toContain("counter(page).get().first() > 1");
+  });
+
+  it("deux blocs qui tracent chacun leur filet donnent deux traits, pas un seul", () => {
+    const cfg = sanitizeLayout({
+      ...defaultLayout(),
+      header: {
+        blocks: [
+          blk({ title: "Un", rule: { on: true, color: "#0659c5", widthPt: 1 } }),
+          blk({ title: "Deux", rule: { on: true, color: "#0659c5", widthPt: 1 } }),
+        ],
+      },
+    });
+    expect(count(layoutToTypst(cfg), "#line(")).toBe(2);
+  });
+});
+
 describe("image pleine largeur", () => {
   it("header-ascent/footer-descent à 0 % seulement pour une image pleine largeur", () => {
     const d = defaultLayout();
@@ -344,18 +461,30 @@ describe("image pleine largeur", () => {
     expect(readLayout(out).layout.header.blocks).toHaveLength(2);
   });
 
-  it("élargit la marge pour loger la bande, sans jamais la réduire", () => {
+  it("« Bas » (spacing.top) est un plancher : jamais réduit, jamais additionné au besoin réel", () => {
     const d = defaultLayout();
-    // 30 mm avant la bande + le contenu + l'écart : bien au-delà des 25 mm par défaut.
-    const tall = sanitizeLayout({
+    // The content (20mm image + 6mm gap = 26mm) sits well under the 30mm
+    // asked for: "Bas" wins, it is not added on top.
+    const floorWins = sanitizeLayout({
       ...d,
       header: {
         blocks: [blk({ kind: "image-text", title: "Titre", imageHeightMm: 20 })],
         spacing: { top: 30, left: 0, right: 0, gap: 6 },
       },
     });
-    const top = Number(/margin: \(top: ([\d.]+)mm/.exec(layoutToTypst(tall))![1]);
-    expect(top).toBeGreaterThanOrEqual(30 + 20 + 6);
+    const top1 = Number(/margin: \(top: ([\d.]+)mm/.exec(layoutToTypst(floorWins))![1]);
+    expect(top1).toBe(30);
+
+    // Conversely, content taller than "Bas" is never clipped: the real need wins.
+    const contentWins = sanitizeLayout({
+      ...d,
+      header: {
+        blocks: [blk({ kind: "image-text", title: "Titre", imageHeightMm: 60 })],
+        spacing: { top: 5, left: 0, right: 0, gap: 6 },
+      },
+    });
+    const top2 = Number(/margin: \(top: ([\d.]+)mm/.exec(layoutToTypst(contentWins))![1]);
+    expect(top2).toBeGreaterThanOrEqual(60 + 6);
 
     // Une marge déjà plus grande que la bande est gardée telle quelle.
     const wide = sanitizeLayout({ ...d, margins: { ...d.margins, top: 70 } });

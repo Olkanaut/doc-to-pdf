@@ -26,15 +26,12 @@ export type BlockScope = "all" | "first" | "except-first";
 export type BlockKind = "image-text" | "text-image" | "centered" | "custom";
 export type ImagePosition = "left" | "center" | "right";
 
-/** The line under a block. */
+/** The line under a block. Its space is `Block.spaceAboveMm`/`spaceBelowMm`, not its own: the two blocks a line sits between still need room to breathe when the line itself is off. */
 export interface BlockRule {
   on: boolean;
   color: string;
   /** Points. */
   widthPt: number;
-  /** Millimetres. */
-  aboveMm: number;
-  belowMm: number;
 }
 
 /**
@@ -57,6 +54,13 @@ export interface Block {
   title: string;
   subtitle: string;
   align: Align;
+  /**
+   * Millimetres of clear space above and below this block, so several blocks
+   * in one band can be pulled apart from each other — independent of whether
+   * `rule.on` draws a line in that gap.
+   */
+  spaceAboveMm: number;
+  spaceBelowMm: number;
   rule: BlockRule;
 }
 
@@ -78,6 +82,8 @@ export interface Band {
 export interface FooterBand extends Band {
   numbering: Numbering;
   numberingAlign: Align;
+  /** Which pages the page number itself prints on — independent of any block's own scope. */
+  numberingScope: BlockScope;
 }
 
 export interface LayoutConfig {
@@ -173,7 +179,7 @@ export function defaultLayout(): LayoutConfig {
     lineHeight: 1.2,
     textStyles: textStylesFromLegacy(font, fontSize, headings),
     header: { blocks: [], spacing: { ...DEFAULT_SPACING } },
-    footer: { blocks: [], spacing: { ...DEFAULT_SPACING }, numbering: "n-of-total", numberingAlign: "right" },
+    footer: { blocks: [], spacing: { ...DEFAULT_FOOTER_SPACING }, numbering: "n-of-total", numberingAlign: "center", numberingScope: "all" },
     headings,
     table: { stroke: "light", headerFill: "grey", zebra: false, fontSize: "inherit" },
   };
@@ -225,7 +231,11 @@ const asset = (v: unknown): string | null =>
   typeof v === "string" && /^[\w.-]+\.(png|jpe?g|svg)$/i.test(v) ? v : null;
 
 export const DEFAULT_SPACING: BandSpacing = { top: 0, left: 0, right: 0, gap: 6 };
+/** A page number sitting flush with the paper edge reads as a mistake; the footer starts a little further in by default. */
+export const DEFAULT_FOOTER_SPACING: BandSpacing = { ...DEFAULT_SPACING, gap: 12 };
 export const DEFAULT_RULE_WIDTH_PT = 1;
+/** New blocks land with no gap and no line: nothing to "turn off" on a single-block band. */
+export const DEFAULT_SPACE_MM = 0;
 /**
  * A new block starts with stand-in text rather than empty, so the section shows
  * up in the preview the moment a layout is picked and the user can see where it
@@ -245,7 +255,9 @@ export function newBlock(kind: BlockKind, ruleColor: string): Block {
     title: PLACEHOLDER_TITLE,
     subtitle: PLACEHOLDER_SUBTITLE,
     align: kind === "centered" ? "center" : "left",
-    rule: { on: true, color: ruleColor, widthPt: DEFAULT_RULE_WIDTH_PT, aboveMm: 2, belowMm: 0 },
+    spaceAboveMm: DEFAULT_SPACE_MM,
+    spaceBelowMm: DEFAULT_SPACE_MM,
+    rule: { on: false, color: ruleColor, widthPt: DEFAULT_RULE_WIDTH_PT },
   };
 }
 
@@ -255,8 +267,6 @@ function blockRule(raw: unknown, fallback: BlockRule): BlockRule {
     on: bool(o.on, fallback.on),
     color: color(o.color, fallback.color),
     widthPt: num(o.widthPt, fallback.widthPt, 0.1, 10),
-    aboveMm: num(o.aboveMm, fallback.aboveMm, 0, 40),
-    belowMm: num(o.belowMm, fallback.belowMm, 0, 40),
   };
 }
 
@@ -273,17 +283,19 @@ function block(raw: unknown, ruleColor: string): Block {
     title: str(o.title, d.title),
     subtitle: str(o.subtitle, d.subtitle),
     align: oneOf(o.align, ALIGNS, d.align),
+    spaceAboveMm: num(o.spaceAboveMm, d.spaceAboveMm, 0, 60),
+    spaceBelowMm: num(o.spaceBelowMm, d.spaceBelowMm, 0, 60),
     rule: blockRule(o.rule, d.rule),
   };
 }
 
-function spacing(raw: unknown): BandSpacing {
+function spacing(raw: unknown, fallback: BandSpacing): BandSpacing {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   return {
-    top: num(o.top, DEFAULT_SPACING.top, 0, 80),
-    left: num(o.left, DEFAULT_SPACING.left, 0, 80),
-    right: num(o.right, DEFAULT_SPACING.right, 0, 80),
-    gap: num(o.gap, DEFAULT_SPACING.gap, 0, 80),
+    top: num(o.top, fallback.top, 0, 80),
+    left: num(o.left, fallback.left, 0, 80),
+    right: num(o.right, fallback.right, 0, 80),
+    gap: num(o.gap, fallback.gap, 0, 80),
   };
 }
 
@@ -315,6 +327,8 @@ function blocksFromLegacy(o: Record<string, any>, ruleColor: string): Block[] {
       imageHeightMm: bool(raw.fullBleed, false) ? 0 : INLINE_LOGO_HEIGHT_MM,
       title,
       align: oneOf(raw.align, ALIGNS, b.align),
+      // The old generator always left a small gap before a rule it drew.
+      spaceAboveMm: on ? 2 : 0,
       rule: { ...b.rule, on },
     };
   };
@@ -326,12 +340,12 @@ function blocksFromLegacy(o: Record<string, any>, ruleColor: string): Block[] {
   return b ? [b] : [];
 }
 
-function band(raw: unknown, ruleColor: string): Band {
+function band(raw: unknown, ruleColor: string, fallbackSpacing: BandSpacing): Band {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
   const blocks = Array.isArray(o.blocks)
     ? o.blocks.slice(0, MAX_BLOCKS).map((b: unknown) => block(b, ruleColor))
     : blocksFromLegacy(o, ruleColor);
-  return { blocks, spacing: spacing(o.spacing) };
+  return { blocks, spacing: spacing(o.spacing, fallbackSpacing) };
 }
 
 /**
@@ -355,7 +369,7 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
   const rawTextStyles: Partial<Record<TextStyleKey, unknown>> = isLegacyDerivedTextStyles(o.textStyles)
     ? {}
     : ((o.textStyles ?? {}) as Record<TextStyleKey, unknown>);
-  const footerBand = band(f, headingColor);
+  const footerBand = band(f, headingColor, DEFAULT_FOOTER_SPACING);
   // Only the old shape carried numbering on the band; a block-shaped footer keeps its own.
   const legacyNumbering = Array.isArray(f.blocks) ? undefined : f.numbering;
   return {
@@ -376,11 +390,12 @@ export function sanitizeLayout(input: unknown): LayoutConfig {
       h2: textStyle(rawTextStyles.h2, legacyTextStyles.h2),
       h3: textStyle(rawTextStyles.h3, legacyTextStyles.h3),
     },
-    header: band(o.header, headingColor),
+    header: band(o.header, headingColor, DEFAULT_SPACING),
     footer: {
       ...footerBand,
       numbering: oneOf(legacyNumbering ?? f.numbering, NUMBERINGS, d.footer.numbering),
       numberingAlign: oneOf(f.numberingAlign ?? f.align, ALIGNS, d.footer.numberingAlign),
+      numberingScope: oneOf(f.numberingScope, BLOCK_SCOPES, d.footer.numberingScope),
     },
     headings,
     table: {
