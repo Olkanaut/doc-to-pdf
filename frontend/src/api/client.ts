@@ -39,6 +39,13 @@ export interface DocsDocumentContent {
   updatedAt: string;
 }
 
+export interface DocsDocumentSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthCallbackResult {
   authenticated: true;
   user: AuthUser;
@@ -138,6 +145,18 @@ export async function fetchDocumentContent(documentId: string): Promise<DocsDocu
   return asJson(
     await apiFetch(`/api/documents/${encodeURIComponent(documentId)}/content`),
   );
+}
+
+export async function searchDocsDocuments(
+  query: string,
+  limit = 8,
+  signal?: AbortSignal,
+): Promise<DocsDocumentSummary[]> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+  });
+  return asJson(await apiFetch(`/api/documents/search?${params.toString()}`, { signal }));
 }
 
 export interface RenderRequest {

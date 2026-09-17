@@ -1,5 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { DocsApiError, fetchDocsDocumentContent } from "../clients/docsClient.js";
+import {
+  DocsApiError,
+  fetchDocsDocumentContent,
+  searchDocsDocuments,
+} from "../clients/docsClient.js";
 import { getExternalTemplate, TemplatesApiError } from "../clients/templatesClient.js";
 import { TypstCompileError } from "../compile/typstCompile.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
@@ -21,9 +25,15 @@ interface RenderDocumentBody {
   templateId?: unknown;
 }
 
+interface SearchDocumentsQuery {
+  q?: string;
+  limit?: string;
+}
+
 export interface DocumentRoutesOptions {
   getSession?: typeof getAuthSession;
   fetchDocument?: typeof fetchDocsDocumentContent;
+  searchDocuments?: typeof searchDocsDocuments;
   fetchTemplate?: typeof getExternalTemplate;
   renderBlocks?: typeof renderBlocksToPdf;
 }
@@ -34,8 +44,47 @@ export async function documentRoutes(
 ): Promise<void> {
   const getSession = options.getSession ?? getAuthSession;
   const fetchDocument = options.fetchDocument ?? fetchDocsDocumentContent;
+  const searchDocuments = options.searchDocuments ?? searchDocsDocuments;
   const fetchTemplate = options.fetchTemplate ?? getExternalTemplate;
   const renderBlocks = options.renderBlocks ?? renderBlocksToPdf;
+
+  app.get<{ Querystring: SearchDocumentsQuery }>(
+    "/api/documents/search",
+    async (req, reply) => {
+      const session = await getSession(req, reply);
+      if (!session) {
+        return reply.code(401).send({ error: "Authentication required" });
+      }
+
+      reply.header("Cache-Control", "no-store");
+
+      const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+      if (query.length < 2) {
+        return reply.send([]);
+      }
+
+      const requestedLimit = Number(req.query.limit ?? 8);
+      const limit = Number.isSafeInteger(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), 10)
+        : 8;
+
+      try {
+        const documents = await searchDocuments(query, session.accessToken, limit);
+        return reply.send(documents);
+      } catch (error) {
+        if (error instanceof DocsApiError) {
+          if (error.statusCode >= 500) {
+            req.log.warn(
+              { err: error, queryLength: query.length },
+              "Docs API search request failed",
+            );
+          }
+          return reply.code(error.statusCode).send({ error: error.message });
+        }
+        throw error;
+      }
+    },
+  );
 
   app.get<{ Params: DocumentParams }>(
     "/api/documents/:documentId/content",

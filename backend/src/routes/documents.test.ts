@@ -1,6 +1,10 @@
 import Fastify from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DocsApiError, type DocsDocumentContent } from "../clients/docsClient.js";
+import {
+  DocsApiError,
+  type DocsDocumentContent,
+  type DocsDocumentSummary,
+} from "../clients/docsClient.js";
 import {
   TemplatesApiError,
   type TemplateDetail,
@@ -34,6 +38,15 @@ const DOCUMENT: DocsDocumentContent = {
   updatedAt: "2026-09-15T15:42:10.115420Z",
 };
 
+const SEARCH_RESULTS: DocsDocumentSummary[] = [
+  {
+    id: DOCUMENT_ID,
+    title: "Hello world",
+    createdAt: "2026-09-15T00:21:08.979814Z",
+    updatedAt: "2026-09-15T15:42:10.115420Z",
+  },
+];
+
 const TEMPLATE: TemplateDetail = {
   id: TEMPLATE_ID,
   name: "Standard invoice",
@@ -51,6 +64,7 @@ async function buildApp(overrides: DocumentRoutesOptions = {}) {
   await app.register(documentRoutes, {
     getSession: async () => SESSION,
     fetchDocument: async () => DOCUMENT,
+    searchDocuments: async () => SEARCH_RESULTS,
     fetchTemplate: async () => TEMPLATE,
     renderBlocks: async () => ({
       pdf: PDF,
@@ -66,6 +80,71 @@ async function buildApp(overrides: DocumentRoutesOptions = {}) {
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
   vi.restoreAllMocks();
+});
+
+describe("GET /api/documents/search", () => {
+  it("requires a Dots session", async () => {
+    const app = await buildApp({ getSession: async () => null });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/documents/search?q=hello",
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({ error: "Authentication required" });
+  });
+
+  it("returns an empty list for short queries", async () => {
+    const searchDocuments = vi.fn(async () => SEARCH_RESULTS);
+    const app = await buildApp({ searchDocuments });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/documents/search?q=h",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json()).toEqual([]);
+    expect(searchDocuments).not.toHaveBeenCalled();
+  });
+
+  it("searches Docs with the user token and a capped limit", async () => {
+    const searchDocuments = vi.fn(async () => SEARCH_RESULTS);
+    const app = await buildApp({ searchDocuments });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/documents/search?q=%20hello%20world%20&limit=99",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json()).toEqual(SEARCH_RESULTS);
+    expect(searchDocuments).toHaveBeenCalledWith(
+      "hello world",
+      SESSION.accessToken,
+      10,
+    );
+  });
+
+  it("preserves Docs API status codes", async () => {
+    const app = await buildApp({
+      searchDocuments: async () => {
+        throw new DocsApiError("Docs request timed out", 504);
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/documents/search?q=hello",
+    });
+
+    expect(response.statusCode).toBe(504);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json()).toEqual({ error: "Docs request timed out" });
+  });
 });
 
 describe("POST /api/documents/:documentId/render", () => {

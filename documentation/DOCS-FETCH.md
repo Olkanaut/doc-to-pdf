@@ -43,6 +43,40 @@ Response: `200 OK`
 
 The browser sends the HttpOnly Dots session cookie. It does not send an access token.
 
+## Search Docs Documents
+
+The home page can search the current user's Docs documents without exposing the
+Keycloak access token to the browser.
+
+```js
+const response = await fetch("/api/documents/search?q=rapport&limit=8", {
+  credentials: "include",
+});
+const documents = await response.json();
+```
+
+Response: `200 OK`
+
+```json
+[
+  {
+    "id": "a372f33f-25a1-4595-b6b6-d8de64c5ac00",
+    "title": "Rapport annuel",
+    "createdAt": "2026-09-15T00:21:08.979814Z",
+    "updatedAt": "2026-09-15T15:42:10.115420Z"
+  }
+]
+```
+
+Dots proxies the search to Docs' external API list endpoint:
+
+```text
+GET /external_api/v1.0/documents/?q=rapport&page_size=8
+```
+
+Queries shorter than two characters return an empty list. `limit` is capped to
+10 results.
+
 ## Dots to Docs
 
 Fetch:
