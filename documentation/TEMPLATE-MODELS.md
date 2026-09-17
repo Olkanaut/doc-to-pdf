@@ -22,21 +22,32 @@ trustworthy it is.
 
 ## TemplateModel
 
-`TemplateModel` is the future editable template structure. It represents what a
-user has accepted, arranged, or created manually.
+`TemplateModel` is the editable template structure. It represents what a user
+has accepted, arranged, or created manually.
 
 It can hold:
 
 - page settings;
-- regions;
-- editable nodes such as text, field, image, shape, line, group, page number,
-  and raster nodes;
-- typed fields such as dates, images, numbers, rich text, and custom text;
+- regions such as header, footer, body, sidebar, watermark, signature, and
+  custom regions;
+- editable nodes such as text, field, image, shape, line, group, table, and
+  page number nodes;
+- permissive fields with stable ids, labels, custom field types, aliases,
+  validation metadata, source, and confidence;
 - assets and source metadata.
 
-`TemplateModel` is versioned. New node kinds, scopes, regions, and field
-capabilities should be added by model migrations rather than by overloading
-`LayoutConfig`.
+`TemplateModel` is versioned:
+
+- `TemplateModel v1` is the compatibility contract introduced before rich
+  editing. It mirrors the current simple layout path and may still contain
+  legacy raster nodes.
+- `TemplateModel v2` is the rich editable contract. Each node carries `id`,
+  `type`, `region`, `regionId`, `bbox`, optional layout, style, scope, source,
+  confidence, and lock state. Rendered fallback captures are represented as
+  `ImageNode` values with `imageKind: "raster-region"`.
+
+New node kinds, scopes, regions, and field capabilities should be added by
+model migrations rather than by overloading `LayoutConfig`.
 
 ## LayoutConfig
 
@@ -65,5 +76,6 @@ PDF/DOCX/OCR -> ImportModel -> TemplateModel -> Typst
                                LayoutConfig subset
 ```
 
-Phase 1 keeps runtime behavior unchanged. It only introduces the contracts,
-sanitizers, and compatibility adapters needed by later extraction work.
+`TemplateModel v2` can project back to `LayoutConfig` only when it stays inside
+the simple subset: header/footer nodes, current page scopes, no positioned
+layout, and no advanced node types such as fields, tables, groups, or shapes.

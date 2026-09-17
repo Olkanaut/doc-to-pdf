@@ -3,11 +3,18 @@ import { defaultLayout, newBlock, sanitizeLayout, type LayoutConfig } from "../l
 import {
   analysisToImportModel,
   importModelToTemplateModel,
+  importModelToTemplateModelV2,
   layoutConfigToTemplateModel,
+  layoutConfigToTemplateModelV2,
   templateModelToLayoutConfig,
+  templateModelV2ToLayoutConfig,
 } from "./adapters.js";
 import { sanitizeImportModel } from "./importModel.js";
-import { sanitizeTemplateModel } from "./templateModel.js";
+import {
+  migrateTemplateModelToV2,
+  sanitizeTemplateModel,
+  sanitizeTemplateModelV2,
+} from "./templateModel.js";
 import type { Analysis } from "../ingest/sidecar.js";
 
 function layoutWithHeader(): LayoutConfig {
@@ -111,6 +118,200 @@ describe("template model contracts", () => {
     const projected = templateModelToLayoutConfig(model);
 
     expect(model.nodes[0]).toMatchObject({ id: "table-node", type: "table" });
+    expect(projected.compatible).toBe(false);
+  });
+
+  it("sanitizes TemplateModel v2 with editable nodes, richer scopes, and permissive fields", () => {
+    const model = sanitizeTemplateModelV2({
+      version: 2,
+      nodes: [
+        {
+          id: "header-title",
+          type: "text",
+          region: "header",
+          scope: "odd",
+          text: "Ministere",
+          source: { kind: "pdf-text", objectIds: ["pdf-text-1"], assetIds: [] },
+          confidence: 0.82,
+          bbox: { x: 20, y: 12, width: 180, height: 16 },
+        },
+        {
+          id: "recipient-mail",
+          type: "field",
+          region: "body",
+          fieldId: "recipient.email",
+          fieldType: "email",
+          label: "Email",
+          binding: { path: "recipient.email" },
+        },
+        {
+          id: "watermark-logo",
+          type: "image",
+          region: "watermark",
+          assetId: "logo.png",
+          imageKind: "embedded",
+          source: { kind: "docx-media" },
+        },
+        { id: "signature-box", type: "shape", region: "signature", shape: "rect" },
+        { id: "separator", type: "line", region: "header", x1: 0, y1: 80, x2: 595, y2: 80 },
+        { id: "header-group", type: "group", region: "header", children: ["header-title", "separator"] },
+        {
+          id: "rates-table",
+          type: "table",
+          region: "body",
+          columns: [{ id: "label" }, { id: "value" }],
+          rows: [[{ text: "TVA" }, { text: "20%" }]],
+        },
+        {
+          id: "last-page",
+          type: "pageNumber",
+          region: "footer",
+          scope: "last",
+          numbering: "page-n-of-total",
+          align: "right",
+        },
+      ],
+      fields: [{
+        id: "recipient.email",
+        label: "Email destinataire",
+        type: "email",
+        aliases: ["mail", "courriel"],
+      }],
+      assets: [{ id: "logo.png", file: "logo.png", source: { kind: "docx-media" } }],
+      metadata: { layoutConfigCompatible: false },
+    });
+
+    expect(model.version).toBe(2);
+    expect(model.regions.map((region) => region.kind)).toEqual(
+      expect.arrayContaining(["header", "footer", "body", "sidebar", "watermark", "signature"]),
+    );
+    expect(model.nodes.map((node) => node.type)).toEqual([
+      "text",
+      "field",
+      "image",
+      "shape",
+      "line",
+      "group",
+      "table",
+      "pageNumber",
+    ]);
+    expect(model.nodes[0]).toMatchObject({
+      scope: "odd",
+      source: { kind: "pdf-text", objectIds: ["pdf-text-1"] },
+      layout: { mode: "absolute", x: 20 },
+    });
+    expect(model.nodes[1]).toMatchObject({ fieldId: "recipient.email", fieldType: "email" });
+    expect(model.nodes[2]).toMatchObject({
+      region: "watermark",
+      source: { kind: "docx-media", assetIds: ["logo.png"] },
+    });
+    expect(model.nodes[7]).toMatchObject({ scope: "last", numbering: "page-n-of-total" });
+    expect(model.fields[0]).toMatchObject({ id: "recipient.email", type: "email", aliases: ["mail", "courriel"] });
+  });
+
+  it("migrates TemplateModel v1 to v2 while keeping the simple LayoutConfig projection", () => {
+    const layout = layoutWithHeader();
+    const v1 = layoutConfigToTemplateModel(layout, { name: "Simple" });
+    const v2 = migrateTemplateModelToV2(v1);
+    const projected = templateModelV2ToLayoutConfig(v2);
+
+    expect(v2).toMatchObject({
+      version: 2,
+      metadata: {
+        name: "Simple",
+        layoutConfigCompatible: true,
+        migratedFromVersion: 1,
+      },
+    });
+    expect(v2.nodes.map((node) => node.type)).toEqual(["image", "text", "text", "line", "pageNumber"]);
+    expect(projected.compatible).toBe(true);
+    expect(projected.layout).toEqual(layout);
+  });
+
+  it("projects LayoutConfig directly into TemplateModel v2 without changing the simple layout", () => {
+    const layout = layoutWithHeader();
+    const model = layoutConfigToTemplateModelV2(layout, { name: "Simple v2" });
+    const projected = templateModelV2ToLayoutConfig(model);
+
+    expect(model.metadata).toMatchObject({
+      name: "Simple v2",
+      layoutConfigCompatible: true,
+    });
+    expect(model.nodes.map((node) => node.type)).toEqual(["image", "text", "text", "line", "pageNumber"]);
+    expect(projected.compatible).toBe(true);
+    expect(projected.layout).toEqual(layout);
+  });
+
+  it("adapts rich ImportModel observations to editable TemplateModel v2 nodes", () => {
+    const importModel = sanitizeImportModel({
+      source: { kind: "pdf", name: "source.pdf" },
+      pages: [{ id: "page-1", pageIndex: 0, widthPt: 595.28, heightPt: 841.89, rotation: 0 }],
+      zones: [{
+        id: "zone-header",
+        kind: "header",
+        pageIndex: 0,
+        bbox: { x: 0, y: 0, width: 595.28, height: 90 },
+        confidence: 0.9,
+        provenance: "pdf-text",
+      }],
+      objects: [
+        {
+          id: "pdf-text-1",
+          type: "text",
+          pageIndex: 0,
+          bbox: { x: 20, y: 30, width: 120, height: 12 },
+          provenance: "pdf-text",
+          confidence: 0.98,
+          zoneId: "zone-header",
+          text: "Reference",
+          style: { font: "Arial", fontSize: 11 },
+        },
+        {
+          id: "pdf-image-1",
+          type: "image",
+          pageIndex: 0,
+          bbox: { x: 420, y: 20, width: 80, height: 40 },
+          provenance: "pdf-image",
+          confidence: 0.86,
+          zoneId: "zone-header",
+          assetId: "asset-logo",
+        },
+        {
+          id: "docx-table-1",
+          type: "table",
+          pageIndex: 0,
+          bbox: { x: 30, y: 140, width: 300, height: 80 },
+          provenance: "docx-xml",
+          confidence: 0.75,
+          raw: { rows: [["A", "B"], ["1", "2"]] },
+        },
+      ],
+      assets: [{ id: "asset-logo", name: "logo.png", provenance: "pdf-image" }],
+      warnings: [],
+    });
+
+    const model = importModelToTemplateModelV2(importModel);
+    const projected = templateModelV2ToLayoutConfig(model);
+
+    expect(model.metadata.layoutConfigCompatible).toBe(false);
+    expect(model.nodes[0]).toMatchObject({
+      type: "text",
+      region: "header",
+      text: "Reference",
+      source: { kind: "pdf-text", objectIds: ["pdf-text-1"] },
+      layout: { mode: "absolute", x: 20 },
+    });
+    expect(model.nodes[1]).toMatchObject({
+      type: "image",
+      imageKind: "embedded",
+      assetId: "asset-logo",
+      source: { kind: "pdf-image", assetIds: ["asset-logo"] },
+    });
+    expect(model.nodes[2]).toMatchObject({
+      type: "table",
+      source: { kind: "docx-xml" },
+    });
+    expect(model.nodes[2].type === "table" ? model.nodes[2].rows[0]?.[0]?.text : undefined).toBe("A");
     expect(projected.compatible).toBe(false);
   });
 
