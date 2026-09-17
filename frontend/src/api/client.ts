@@ -217,14 +217,28 @@ export async function checkTemplateSource(input: {
   return res.json();
 }
 
-export async function fetchTemplateAssets(): Promise<{ file: string }[]> {
-  const data = await asJson<{ assets: { file: string }[] }>(await fetch("/api/templates/assets"));
-  return data.assets;
+export interface TemplateAssets {
+  assets: { file: string }[];
+  /** True when DOTS_ENABLE_ASSET_DELETE is enabled on the backend: deletion is possible. */
+  canDelete: boolean;
+}
+
+export async function fetchTemplateAssets(): Promise<TemplateAssets> {
+  return asJson(await fetch("/api/templates/assets"));
 }
 
 /** URL des octets d'un asset : vignettes de la galerie d'en-tête et de pied de page. */
 export function assetUrl(file: string): string {
   return `/api/templates/assets/${encodeURIComponent(file)}`;
+}
+
+/** Only available when DOTS_ENABLE_ASSET_DELETE=1 (demo cleanup). */
+export async function deleteTemplateAsset(file: string): Promise<void> {
+  const res = await apiFetch(`/api/templates/assets/${encodeURIComponent(file)}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) {
+    const data = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(data.error ?? `Request failed (${res.status})`);
+  }
 }
 
 // ── Import d'un PDF ou d'un .docx ─────────────────────────────────────────────

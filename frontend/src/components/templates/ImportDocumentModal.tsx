@@ -28,7 +28,6 @@ import { CropCanvas } from "./CropCanvas";
 import "./templates-page.css";
 
 const MAX_BYTES = 10 * 1024 * 1024;
-const TITLE = "Importer un document";
 /** Un échec d'analyse s'affiche, puis la fenêtre se ferme d'elle-même. */
 const ERROR_LINGER_MS = 4000;
 
@@ -95,6 +94,20 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
   function fail(message: string) {
     setError(message);
     setStage("error");
+  }
+
+  /** Bouton « Continuer sans import » : même création qu'un gabarit vide, sans passer par un fichier. */
+  async function createBlank() {
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
+      onTemplate?.(created.id);
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
   }
 
   async function choose(next: UploadFile) {
@@ -241,6 +254,7 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
   }
 
   const cta = target === "template" ? "Créer le gabarit" : "Utiliser comme visuel";
+  const title = target === "template" ? "Nouveau gabarit" : "Importer un document";
 
   return (
     <Modal
@@ -251,10 +265,10 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
       hideCloseButton
       // Le titre est un nœud React : sans aria-label, react-modal nommerait la
       // boîte « [object Object] » (même contournement que dans Docs).
-      aria-label={TITLE}
+      aria-label={title}
       title={
-        <>
-          <h2 className="import-modal__title">{TITLE}</h2>
+        <div className="import-modal__head">
+          <h2 className="import-modal__title">{title}</h2>
           <div className="import-modal__close">
             <Button
               type="button"
@@ -266,7 +280,7 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
               onClick={onClose}
             />
           </div>
-        </>
+        </div>
       }
       rightActions={
         stage === "crop" || stage === "assets" ? (
@@ -276,6 +290,11 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
             onClick={() => void confirm()}
           >
             {busy ? "En cours…" : cta}
+          </Button>
+        ) : stage === "drop" && target === "template" && !upload ? (
+          // Masqué dès qu'un fichier est déposé : le dépôt devient alors la seule action en cours.
+          <Button type="button" disabled={busy} onClick={() => void createBlank()}>
+            {busy ? "En cours…" : "Continuer sans import"}
           </Button>
         ) : undefined
       }

@@ -11,9 +11,10 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ArrowLeft, ChevronDown, ChevronRight, More, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { ArrowLeft, ChevronDown, ChevronRight, More, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
 import {
   assetUrl,
+  deleteTemplateAsset,
   type Align,
   type FooterContent,
   type HeaderContent,
@@ -109,6 +110,8 @@ interface Props {
   managed: boolean;
   /** Fichiers de backend/templates/assets, proposés comme logo. */
   assets: string[];
+  /** DOTS_ENABLE_ASSET_DELETE flag: shows the option to delete visuals. */
+  canDeleteAssets?: boolean;
   /** Vrai pendant qu'une proposition de l'assistant est en attente. */
   disabled?: boolean;
   onChange: (next: LayoutConfig) => void;
@@ -119,7 +122,7 @@ interface Props {
   codeHref: string;
   onNavigateLayout: (e: MouseEvent<HTMLElement>) => void;
   onNavigateCode: (e: MouseEvent<HTMLElement>) => void;
-  /** Un visuel vient d'être importé : la liste des assets est à relire. */
+  /** A visual was just imported or deleted: the assets list needs re-reading. */
   onAssetsChanged?: () => void;
 }
 
@@ -129,6 +132,7 @@ export function LayoutPanel({
   isDefault,
   managed,
   assets,
+  canDeleteAssets,
   disabled,
   onChange,
   onTemplateNameChange,
@@ -159,6 +163,29 @@ export function LayoutPanel({
   const setFooterContent = (slot: BandSlot, patch: Partial<FooterContent>) => {
     if (slot === "default") setFooter(patch);
     else setFooter({ first: { ...layout.footer.first, ...patch } });
+  };
+  /** The visual is shared: deleting it clears it from every slot that uses it. */
+  const handleDeleteAsset = async (file: string) => {
+    if (!window.confirm(`Supprimer ce visuel ? Il sera retiré de tous les gabarits qui l'utilisent.`)) return;
+    try {
+      await deleteTemplateAsset(file);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    set({
+      header: {
+        ...layout.header,
+        logo: layout.header.logo === file ? null : layout.header.logo,
+        first: { ...layout.header.first, logo: layout.header.first.logo === file ? null : layout.header.first.logo },
+      },
+      footer: {
+        ...layout.footer,
+        logo: layout.footer.logo === file ? null : layout.footer.logo,
+        first: { ...layout.footer.first, logo: layout.footer.first.logo === file ? null : layout.footer.first.logo },
+      },
+    });
+    onAssetsChanged?.();
   };
   const setTable = (patch: Partial<LayoutConfig["table"]>) =>
     set({ table: { ...layout.table, ...patch } });
@@ -433,6 +460,8 @@ export function LayoutPanel({
                     <HeaderFields
                       uid={`${uid}-header-first`}
                       assets={assets}
+                      canDeleteAssets={canDeleteAssets}
+                      onDeleteAsset={handleDeleteAsset}
                       value={layout.header.first}
                       onChange={(patch) => setHeaderContent("first", patch)}
                       onImport={() => setImporting({ kind: "header", slot: "first" })}
@@ -443,6 +472,8 @@ export function LayoutPanel({
                     <HeaderFields
                       uid={`${uid}-header-default`}
                       assets={assets}
+                      canDeleteAssets={canDeleteAssets}
+                      onDeleteAsset={handleDeleteAsset}
                       value={layout.header}
                       onChange={(patch) => setHeaderContent("default", patch)}
                       onImport={() => setImporting({ kind: "header", slot: "default" })}
@@ -453,6 +484,8 @@ export function LayoutPanel({
                 <HeaderFields
                   uid={`${uid}-header`}
                   assets={assets}
+                  canDeleteAssets={canDeleteAssets}
+                  onDeleteAsset={handleDeleteAsset}
                   value={layout.header}
                   onChange={(patch) => setHeaderContent("default", patch)}
                   onImport={() => setImporting({ kind: "header", slot: "default" })}
@@ -503,6 +536,8 @@ export function LayoutPanel({
                     <FooterFields
                       uid={`${uid}-footer-first`}
                       assets={assets}
+                      canDeleteAssets={canDeleteAssets}
+                      onDeleteAsset={handleDeleteAsset}
                       value={layout.footer.first}
                       onChange={(patch) => setFooterContent("first", patch)}
                       onImport={() => setImporting({ kind: "footer", slot: "first" })}
@@ -513,6 +548,8 @@ export function LayoutPanel({
                     <FooterFields
                       uid={`${uid}-footer-default`}
                       assets={assets}
+                      canDeleteAssets={canDeleteAssets}
+                      onDeleteAsset={handleDeleteAsset}
                       value={layout.footer}
                       onChange={(patch) => setFooterContent("default", patch)}
                       onImport={() => setImporting({ kind: "footer", slot: "default" })}
@@ -523,6 +560,8 @@ export function LayoutPanel({
                 <FooterFields
                   uid={`${uid}-footer`}
                   assets={assets}
+                  canDeleteAssets={canDeleteAssets}
+                  onDeleteAsset={handleDeleteAsset}
                   value={layout.footer}
                   onChange={(patch) => setFooterContent("default", patch)}
                   onImport={() => setImporting({ kind: "footer", slot: "default" })}
@@ -731,12 +770,16 @@ function TableStyleSection({
 function HeaderFields({
   uid,
   assets,
+  canDeleteAssets,
+  onDeleteAsset,
   value,
   onChange,
   onImport,
 }: {
   uid: string;
   assets: string[];
+  canDeleteAssets?: boolean;
+  onDeleteAsset: (file: string) => void;
   value: HeaderContent;
   onChange: (patch: Partial<HeaderContent>) => void;
   onImport: () => void;
@@ -746,6 +789,8 @@ function HeaderFields({
       <Gallery
         label="Visuel"
         assets={assets}
+        canDeleteAssets={canDeleteAssets}
+        onDeleteAsset={onDeleteAsset}
         value={value.logo}
         onPick={(logo) => onChange({ logo })}
         onImport={onImport}
@@ -786,12 +831,16 @@ function HeaderFields({
 function FooterFields({
   uid,
   assets,
+  canDeleteAssets,
+  onDeleteAsset,
   value,
   onChange,
   onImport,
 }: {
   uid: string;
   assets: string[];
+  canDeleteAssets?: boolean;
+  onDeleteAsset: (file: string) => void;
   value: FooterContent;
   onChange: (patch: Partial<FooterContent>) => void;
   onImport: () => void;
@@ -808,6 +857,8 @@ function FooterFields({
       <Gallery
         label="Visuel"
         assets={assets}
+        canDeleteAssets={canDeleteAssets}
+        onDeleteAsset={onDeleteAsset}
         value={value.logo}
         onPick={(logo) => onChange({ logo })}
         onImport={onImport}
@@ -854,12 +905,16 @@ function FooterFields({
 function Gallery({
   label,
   assets,
+  canDeleteAssets,
+  onDeleteAsset,
   value,
   onPick,
   onImport,
 }: {
   label: string;
   assets: string[];
+  canDeleteAssets?: boolean;
+  onDeleteAsset?: (file: string) => void;
   value: string | null;
   onPick: (file: string | null) => void;
   onImport: () => void;
@@ -878,23 +933,34 @@ function Gallery({
           Aucun
         </button>
         {assets.map((file) => (
-          <button
-            key={file}
-            type="button"
-            className={`le-thumb${value === file ? " le-thumb--on" : ""}`}
-            aria-pressed={value === file}
-            title={file}
-            onClick={() => onPick(file)}
-          >
-            <img src={assetUrl(file)} alt={file} loading="lazy" />
-          </button>
+          <div key={file} className="le-thumb-wrap">
+            <button
+              type="button"
+              className={`le-thumb${value === file ? " le-thumb--on" : ""}`}
+              aria-pressed={value === file}
+              title={file}
+              onClick={() => onPick(file)}
+            >
+              <img src={assetUrl(file)} alt={file} loading="lazy" />
+            </button>
+            {canDeleteAssets && (
+              <button
+                type="button"
+                className="le-thumb-delete"
+                title="Supprimer ce visuel"
+                aria-label={`Supprimer le visuel ${file}`}
+                onClick={() => onDeleteAsset?.(file)}
+              >
+                <Trash size={12} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         ))}
         <button type="button" className="le-thumb le-thumb--add" title="Importer un visuel" onClick={onImport}>
           <Upload size={16} aria-hidden="true" />
           <span className="le-sr">Importer un visuel</span>
         </button>
       </div>
-      {value && <span className="le-gallery__name">{value}</span>}
     </div>
   );
 }

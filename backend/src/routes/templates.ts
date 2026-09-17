@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import path from "node:path";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, rm } from "node:fs/promises";
 import {
   TEMPLATES_ASSETS_DIR,
 } from "../registry/templates.js";
@@ -127,6 +127,14 @@ async function listAssets(): Promise<string[]> {
     .sort();
 }
 
+/**
+ * Asset deletion: the folder is shared across all templates, so this is
+ * gated behind an env flag (demo cleanup), not a public-facing feature.
+ */
+function assetDeleteEnabled(): boolean {
+  return process.env.DOTS_ENABLE_ASSET_DELETE === "1";
+}
+
 /** Le nom du logo est déjà filtré par sanitizeLayout ; ici on exige que le fichier existe. */
 async function withExistingLogo(cfg: LayoutConfig): Promise<LayoutConfig> {
   const assets = await listAssets();
@@ -203,7 +211,7 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get("/api/templates/assets", async () => {
-    return { assets: (await listAssets()).map((file) => ({ file })) };
+    return { assets: (await listAssets()).map((file) => ({ file })), canDelete: assetDeleteEnabled() };
   });
 
   /** Octets d'un asset : vignettes de la galerie d'en-tête/pied de page. */
@@ -220,6 +228,22 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
         ? "image/jpeg"
         : "image/png";
     return reply.type(type).header("Cache-Control", "private, max-age=3600").send(bytes);
+  });
+
+  /** Deletes a shared asset. Gated behind DOTS_ENABLE_ASSET_DELETE. */
+  app.delete<{ Params: { file: string } }>("/api/templates/assets/:file", async (req, reply) => {
+    if (!assetDeleteEnabled()) return reply.code(404).send({ error: "Not found" });
+
+    const session = await requireSession(req, reply);
+    if (!session) return;
+
+    const { file } = req.params;
+    // The name comes from the URL: it must be exactly one of the listed files.
+    if (!(await listAssets()).includes(file)) {
+      return reply.code(404).send({ error: "Asset inconnu" });
+    }
+    await rm(path.join(TEMPLATES_ASSETS_DIR, file));
+    return reply.code(204).send();
   });
 
   app.get<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {

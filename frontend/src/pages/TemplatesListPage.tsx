@@ -1,9 +1,8 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Badge, Button, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
-import { Code, Play, Plus, Star, StarFilled, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import { Code, Play, Plus, Star, StarFilled, Trash } from "@gouvfr-lasuite/ui-components/icons";
 import {
-  createTemplate,
   deleteTemplate,
   fetchDefaultTemplate,
   fetchTemplates,
@@ -25,7 +24,7 @@ function loadStoredView(): TemplateView {
   }
 }
 
-/** `Button` du kit rendu en lien (`href`), navigation interne sans rechargement. */
+/** Kit `Button` rendered as a link (`href`), internal navigation without a reload. */
 function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
   const navigate = useNavigate();
   return (
@@ -43,9 +42,10 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
 }
 
 /**
- * Galerie des gabarits, page d'accueil de l'app. Deux actions en tête :
- * importer un document (un .typ s'ouvre tel quel, un PDF ou un .docx passe par
- * l'analyse et le recadrage) et partir de zéro.
+ * Templates gallery, the app's home page. A single entry point at the top,
+ * « Nouveau gabarit », opens the import window: it offers the choice between
+ * dropping a file (a .typ opens as-is, a PDF or .docx goes through analysis
+ * and cropping) and continuing without an import.
  */
 export function TemplatesListPage() {
   const navigate = useNavigate();
@@ -54,13 +54,12 @@ export function TemplatesListPage() {
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
 
   function reload() {
     setLoading(true);
     setError(null);
-    // Le gabarit par défaut arrive par `isDefault` dans la liste ou par
-    // /templates/default (null tant que la route manque ou qu'aucun n'est défini).
+    // The default template comes either via `isDefault` in the list or via
+    // /templates/default (null as long as the route is missing or none is set).
     Promise.all([fetchTemplates(), fetchDefaultTemplate().catch(() => null)])
       .then(([list, def]) =>
         setTemplates(list.map((t) => ({ ...t, isDefault: t.isDefault ?? t.id === def?.id }))),
@@ -77,19 +76,6 @@ export function TemplatesListPage() {
       localStorage.setItem(VIEW_STORAGE_KEY, next);
     } catch {
       // per-viewer convenience only; fine if it can't persist
-    }
-  }
-
-  async function handleCreate() {
-    setCreating(true);
-    setError(null);
-    try {
-      const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
-      navigate(`/t/${created.id}/layout`);
-    } catch (e) {
-      setError(`Création impossible : ${(e as Error).message}`);
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -111,30 +97,17 @@ export function TemplatesListPage() {
 
   return (
     <div className="dots-page">
-      <div className="dots-page-header">
+      <div className="dots-page-header templates-header">
         <div>
           <h1>Gabarits</h1>
-          <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination.</p>
+          <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination</p>
         </div>
         <div className="dots-actions">
-          <div className="dots-actions-buttons">
-            {/* Entrée unique : le type du fichier déposé choisit la suite. */}
-            <Button
-              variant="secondary"
-              icon={<Upload aria-hidden="true" />}
-              onClick={() => setImportOpen(true)}
-            >
-              Importer un document
-            </Button>
-            <Button
-              color="brand"
-              icon={<Plus aria-hidden="true" />}
-              disabled={creating}
-              onClick={() => void handleCreate()}
-            >
-              Nouveau gabarit
-            </Button>
-          </div>
+          {/* Single entry point: the window that opens offers the choice between
+              dropping a file and continuing without an import. */}
+          <Button color="brand" icon={<Plus aria-hidden="true" />} onClick={() => setImportOpen(true)}>
+            Nouveau gabarit
+          </Button>
           <ViewSwitcher view={view} onChange={handleViewChange} />
         </div>
       </div>
@@ -164,8 +137,8 @@ export function TemplatesListPage() {
         <TemplateBrowser
           templates={templates}
           view={view}
-          // La tuile ouvre l'éditeur de mise en page (cible produit) ; le code Typst
-          // reste accessible par l'action secondaire.
+          // The tile opens the layout editor (the product's main target); the Typst
+          // code stays reachable through the secondary action.
           getOpenHref={(id) => `/t/${id}/layout`}
           renderBadge={(t) =>
             t.isDefault ? (
@@ -175,10 +148,10 @@ export function TemplatesListPage() {
               </Badge>
             ) : null
           }
-          // Chaque nom accessible porte le nom du gabarit : quatre actions par tuile,
-          // un lecteur d'écran ne doit pas entendre quatre « Supprimer » identiques.
-          // En grille (tuile ~176 px), les quatre actions sont des icônes seules
-          // (nom accessible + title) pour tenir sur une ligne ; en liste, le texte reste.
+          // Each accessible name carries the template's name: four actions per tile,
+          // a screen reader must not hear four identical « Supprimer ».
+          // In grid view (~176 px tile), the four actions are icon-only
+          // (accessible name + title) to fit on one line; in list view, the text stays.
           renderActions={(t) => (
             <span className="template-actions">
               <LinkButton

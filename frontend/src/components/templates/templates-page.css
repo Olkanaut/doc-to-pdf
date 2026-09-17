@@ -9,16 +9,18 @@
 
 /* ── Liste des gabarits ──────────────────────────────────────────────────── */
 
-/* Header actions: the two buttons on one side, the view switcher on the
-   other, pushed all the way to the page's right edge. */
-.dots-page .dots-actions {
+/* Header of the templates gallery: title/subtitle on their own line, the
+   create button and the view switcher on the line below — scoped to this
+   page's header only, .dots-page-header itself stays a single row elsewhere
+   (e.g. the template editor's title + mode switch + actions). */
+.dots-page .templates-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+.dots-page .templates-header .dots-actions {
   flex: 1 1 auto;
   justify-content: space-between;
-}
-.dots-page .dots-actions-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Grid/list switcher: same pill as .editor-modes, to stay in the same colors
@@ -75,17 +77,38 @@
 
 /* ── Modale d'import (Modal + FileUploader du kit) ───────────────────────── */
 
+/* Le kit pose un padding uniforme (24px) sur .c__modal__scroller ; le haut
+   seul est resserré ici, ciblé par :has() pour ne pas toucher les autres
+   modales du kit qui n'ont pas ce marqueur. */
+.c__modal__scroller:has(.import-modal__title) {
+  padding-top: var(--c--globals--spacings--base);
+}
+
 /* Titre de la modale : un vrai <h2>, à la taille du titre du kit (qui pose la
-   police sur .c__modal__title). Le bouton Fermer est posé en absolu dans le
-   titre, comme dans Docs (ButtonCloseModal). */
+   police sur .c__modal__title). .c__modal__title est déjà un flex row du kit,
+   mais un seul enfant flex ne s'étire pas tout seul ; .import-modal__head
+   prend toute la largeur et aligne le titre et la croix sur la même ligne
+   médiane, quelle que soit la hauteur du texte. */
+.c__modal .import-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Plus d'air entre le titre et la zone de dépôt qu'avec le margin-bottom par
+   défaut du kit (16px) ; scopé de la même façon pour ne pas toucher les
+   autres modales. */
+.c__modal__title:has(.import-modal__head) {
+  margin-bottom: var(--c--globals--spacings--md);
+}
 .c__modal .import-modal__title {
   margin: 0;
   font: inherit;
 }
 .c__modal .import-modal__close {
-  position: absolute;
-  top: 4px;
-  right: 4px;
+  flex: 0 0 auto;
 }
 .c__modal .import-modal__body {
   display: flex;
