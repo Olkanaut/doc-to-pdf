@@ -16,7 +16,7 @@ import {
 } from "../clients/templatesClient.js";
 import { getAuthSession, type AuthSession } from "./auth.js";
 import { checkTemplateSource } from "../layout/check.js";
-import { sanitizeLayout, type LayoutConfig } from "../layout/layoutConfig.js";
+import { defaultLayout, sanitizeLayout, type LayoutConfig } from "../layout/layoutConfig.js";
 import { applyLayout, readLayout } from "../layout/layoutTypst.js";
 import {
   clearDefaultTemplateId,
@@ -25,16 +25,33 @@ import {
 } from "../templates/defaultTemplate.js";
 import { getCachedTemplateThumbnail } from "../templates/thumbnailCache.js";
 
-const DEFAULT_SOURCE = `#set page(
-  paper: "a4",
-  margin: 2.5cm,
-  footer: [
-    #align(center)[#context counter(page).display("1 / 1", both: true)]
-  ],
-)
+/**
+ * Point de départ d'un gabarit créé depuis l'éditeur : corps en serif, titres en
+ * sans-serif bleu, tableaux à filets pleins et en-tête en gras, sans bande.
+ *
+ * Engendré par `applyLayout` plutôt qu'écrit à la main : le bloc « dots:layout » et
+ * son JSON ne peuvent donc pas diverger, et le panneau de mise en page pilote tous
+ * ces réglages dès la création.
+ */
+const HEADING_BLUE = "#2e5c8a";
 
-#include "body.typ"
-`;
+const DEFAULT_SOURCE = applyLayout('#include "body.typ"\n', {
+  ...defaultLayout(),
+  margins: { top: 25, bottom: 25, left: 25, right: 25 },
+  font: "Libertinus Serif",
+  fontSize: 11,
+  lineHeight: 1.3,
+  textStyles: {
+    body: { font: "Libertinus Serif", fontSize: 11, color: "#000000" },
+    h1: { font: "Arial", fontSize: 15, color: HEADING_BLUE },
+    h2: { font: "Arial", fontSize: 13, color: HEADING_BLUE },
+    h3: { font: "Arial", fontSize: 10, color: HEADING_BLUE },
+  },
+  header: { ...defaultLayout().header, enabled: false },
+  footer: { ...defaultLayout().footer, enabled: false },
+  headings: { scale: "normal", color: HEADING_BLUE },
+  table: { stroke: "full", headerFill: "none", zebra: false, fontSize: "inherit" },
+});
 
 interface CreateBody {
   name?: string;
