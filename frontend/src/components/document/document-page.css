@@ -294,6 +294,6 @@
 
 /* Le kit posait son anneau sur la puce : il revient sur la tuile entière. */
 .doc-rail .compose-tile.c__checkbox:has(input:focus-visible) {
-  outline: 2px solid var(--dots-brand-500);
+  outline: 2px solid var(--dots-primary);
   outline-offset: 1px;
 }

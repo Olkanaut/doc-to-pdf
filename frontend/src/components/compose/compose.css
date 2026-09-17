@@ -41,7 +41,7 @@
   font-family: var(--dots-mono);
 }
 .compose-header__meta a {
-  color: var(--dots-brand-600);
+  color: var(--dots-primary);
 }
 /* « Chargement… » du document Docs : spinner du kit et texte sur une ligne. */
 .compose-url__status {
@@ -92,11 +92,12 @@
   align-items: center;
   gap: 6px;
   font-size: 0.875rem;
-  color: var(--dots-brand-600);
+  color: var(--dots-primary);
   text-decoration: none;
 }
 .compose-templates legend a:hover,
 .compose-link:hover {
+  color: var(--dots-primary-hover);
   text-decoration: underline;
 }
 /* Les Radio du kit, une par gabarit, empilées sur toute la largeur. */
@@ -117,8 +118,8 @@
   background: var(--dots-grey-025);
 }
 .compose-tile.c__checkbox:has(input:checked) {
-  border-color: var(--dots-brand-500);
-  background: var(--dots-brand-050);
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
 }
 .compose-tile .c__field,
 .compose-tile .c__checkbox__container {

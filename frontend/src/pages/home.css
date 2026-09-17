@@ -92,8 +92,8 @@
 }
 
 .home-entry__form input:focus {
-  border-color: var(--dots-brand-500);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dots-brand-500), transparent 84%);
+  border-color: var(--dots-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dots-primary), transparent 84%);
 }
 
 .home-entry__form button {

@@ -7,10 +7,17 @@
    segment « Mise en page | Code Typst » encore maison sur /templates/:id. */
 
 :root {
-  --dots-brand-050: var(--c--globals--colors--brand-050);
-  --dots-brand-500: var(--c--globals--colors--brand-500);
-  --dots-brand-600: var(--c--globals--colors--brand-600);
-  --dots-brand-700: var(--c--globals--colors--brand-700);
+  --dots-primary: #3E5DE7;
+  --dots-primary-hover: #2845C1;
+  --dots-primary-soft: color-mix(in srgb, var(--dots-primary), white 90%);
+  --dots-brand-050: var(--dots-primary-soft);
+  --dots-brand-500: var(--dots-primary);
+  --dots-brand-600: var(--dots-primary-hover);
+  --dots-brand-700: var(--dots-primary-hover);
+  --c--globals--colors--brand-500: var(--dots-primary);
+  --c--globals--colors--brand-550: var(--dots-primary);
+  --c--globals--colors--brand-600: var(--dots-primary-hover);
+  --c--globals--colors--brand-700: var(--dots-primary-hover);
   --dots-grey-000: var(--c--globals--colors--gray-000);
   --dots-grey-025: var(--c--globals--colors--gray-025);
   --dots-grey-050: var(--c--globals--colors--gray-050);
@@ -121,13 +128,13 @@ body {
   background: var(--dots-grey-025);
 }
 .dots-nav-item.active {
-  background: var(--dots-brand-050);
-  color: var(--dots-brand-700);
+  background: var(--dots-primary-soft);
+  color: var(--dots-primary-hover);
   font-weight: 500;
 }
 .dots-nav-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--dots-brand-500);
+  box-shadow: 0 0 0 2px var(--dots-primary);
 }
 .dots-panel-footer {
   display: flex;

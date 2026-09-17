@@ -245,7 +245,7 @@
 .c__modal .crop__rect {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid var(--c--globals--colors--brand-550);
+  border: 2px solid var(--dots-primary);
   background: rgb(17 103 212 / 6%);
   cursor: move;
 }
@@ -259,7 +259,7 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 3px;
-  background: var(--c--globals--colors--brand-550);
+  background: var(--dots-primary);
   color: #fff;
   font-family: var(--dots-mono);
   font-size: 0.625rem;
@@ -270,7 +270,7 @@
   width: 10px;
   height: 10px;
   box-sizing: border-box;
-  border: 1.5px solid var(--c--globals--colors--brand-550);
+  border: 1.5px solid var(--dots-primary);
   border-radius: 1px;
   background: #fff;
 }
@@ -298,13 +298,13 @@
   border-color: var(--c--contextuals--border--semantic--neutral--secondary);
 }
 .c__modal .crop-opt--on {
-  border-color: var(--c--globals--colors--brand-550);
-  background: var(--c--globals--colors--brand-050);
-  box-shadow: 0 0 0 1px var(--c--globals--colors--brand-550);
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
+  box-shadow: 0 0 0 1px var(--dots-primary);
 }
 .c__modal .crop-opt:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px #fff, 0 0 0 4px var(--c--contextuals--border--semantic--brand--primary);
+  box-shadow: 0 0 0 1px #fff, 0 0 0 4px var(--dots-primary);
 }
 /* Tant qu'aucune zone n'a été tracée, l'entrée existe sans être choisissable. */
 .c__modal .crop-opt--custom {
@@ -315,7 +315,7 @@
 }
 .c__modal .crop-opt--custom.crop-opt--on {
   border-style: solid;
-  background: var(--c--globals--colors--brand-050);
+  background: var(--dots-primary-soft);
   color: var(--c--globals--colors--gray-850);
 }
 .c__modal .crop-opt__radio {
@@ -328,7 +328,7 @@
   background: #fff;
 }
 .c__modal .crop-opt--on .crop-opt__radio {
-  border: 5px solid var(--c--globals--colors--brand-550);
+  border: 5px solid var(--dots-primary);
 }
 
 @media (max-width: 720px) {
@@ -366,13 +366,13 @@
   cursor: pointer;
 }
 .c__modal .asset-tile--on {
-  border-color: var(--c--globals--colors--brand-550);
-  background: var(--c--globals--colors--brand-050);
-  box-shadow: 0 0 0 1px var(--c--globals--colors--brand-550);
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
+  box-shadow: 0 0 0 1px var(--dots-primary);
 }
 .c__modal .asset-tile:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px #fff, 0 0 0 4px var(--c--contextuals--border--semantic--brand--primary);
+  box-shadow: 0 0 0 1px #fff, 0 0 0 4px var(--dots-primary);
 }
 .c__modal .asset-tile img {
   width: 100%;
