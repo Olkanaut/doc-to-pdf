@@ -115,13 +115,34 @@ export async function compileToPdfDetailed(
   return runTypstCompileDetailed(request, "out.pdf");
 }
 
-const THUMBNAIL_SWATCH_BODY = `= Titre de démonstration
+export const THUMBNAIL_PPI = 120;
 
-Ceci est un aperçu du template appliqué à un contenu type, pour comparer les styles en un coup d'œil.
+const THUMBNAIL_SWATCH_BODY = `= Note de synthèse
 
-- Premier point
-- Second point
-- Troisième point
+#text(size: 9pt)[Publié le 17 septembre 2026]
+
+Ce document donne un aperçu fidèle de la template avec un contenu administratif court. Il permet de comparer les marges, les en-têtes, les pieds de page, les titres, les tableaux et les listes en un coup d'œil.
+
+== Décisions
+
+- Valider le calendrier de déploiement.
+- Consolider les retours des équipes pilotes.
+- Préparer la communication aux services concernés.
+
+== Suivi budgétaire
+
+#table(
+  columns: (1.4fr, .8fr, 1fr),
+  table.header([Objet], [Montant], [Statut]),
+  [Accompagnement], [12 500 €], [Validé],
+  [Formation], [8 200 €], [En cours],
+  [Documentation], [3 600 €], [À planifier],
+)
+
+#align(right)[
+  #strong[Signature] \
+  Direction générale
+]
 `;
 
 export interface ThumbnailRequest {
@@ -140,7 +161,7 @@ export async function compileToThumbnail(
       bodyImages: [],
     },
     "thumbnail.png",
-    ["--format", "png", "--ppi", "72", "--pages", "1"],
+    ["--format", "png", "--ppi", String(THUMBNAIL_PPI), "--pages", "1"],
   );
 }
 
