@@ -94,7 +94,7 @@ export function LoginPage() {
     <div className="dots-page">
       <div className="dots-page-header">
         <div>
-          <h1>Un doc, un PDF</h1>
+          <img className="dots-auth-logo" src="/logo_full.svg" alt="Un doc, un PDF" />
           <p>Connectez-vous pour retrouver vos documents Docs et les rendre en PDF.</p>
         </div>
       </div>
