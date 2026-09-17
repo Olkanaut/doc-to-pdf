@@ -243,6 +243,12 @@ body {
   margin: 6px 0 0;
   color: var(--dots-grey-600);
 }
+.dots-auth-logo {
+  display: block;
+  width: auto;
+  height: 42px;
+  margin: 0 0 10px;
+}
 .dots-actions {
   display: flex;
   gap: 8px;

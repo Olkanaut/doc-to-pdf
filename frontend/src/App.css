@@ -43,6 +43,18 @@ body {
   text-transform: uppercase;
 }
 
+.auth-callback-error {
+  width: min(100%, 420px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.auth-callback-error h1 {
+  margin: 0;
+}
+
 .page-header {
   display: flex;
   align-items: center;

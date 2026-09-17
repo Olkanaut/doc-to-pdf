@@ -1,3 +1,4 @@
+import { Loader } from "@gouvfr-lasuite/ui-components";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { completeLogin } from "../api/client";
@@ -39,8 +40,7 @@ export function AuthCallbackPage() {
   if (error) {
     return (
       <main className="auth-shell">
-        <section className="auth-card" aria-labelledby="callback-error-title">
-          <p className="auth-kicker">Dots local</p>
+        <section className="auth-callback-error" aria-labelledby="callback-error-title">
           <h1 id="callback-error-title">Connexion impossible</h1>
           <div className="error" role="alert">{error}</div>
           <Link className="button-link" to="/login">
@@ -52,12 +52,8 @@ export function AuthCallbackPage() {
   }
 
   return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        <p className="auth-kicker">Dots local</p>
-        <h1>Un doc, un PDF</h1>
-        <p>Connexion en cours...</p>
-      </section>
+    <main className="auth-shell" role="status" aria-label="Connexion en cours">
+      <Loader aria-label="Connexion en cours…" />
     </main>
   );
 }
