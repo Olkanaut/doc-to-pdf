@@ -310,25 +310,36 @@ export interface IngestRect {
   height: number;
 }
 
-/** Visuel sorti tel quel d'un .docx : il n'y a pas de page à recadrer. */
-export interface IngestAsset {
-  id: string;
-  name: string;
-  kind: "header" | "footer" | "body";
-  vector: boolean;
+export type IngestDocxScope = "all" | "first" | "except-first";
+
+export interface IngestDocxBand {
+  file: string;
+  kind: "header" | "footer";
+  scope: IngestDocxScope;
   bytes: number;
   widthPt: number;
   heightPt: number;
 }
 
+export interface IngestDocxPagination {
+  kind: "header" | "footer";
+  scope: IngestDocxScope;
+  numbering: "n" | "n-of-total" | "page-n-of-total";
+  align: "left" | "center" | "right";
+}
+
+export interface IngestDocxAnalysis {
+  bands: IngestDocxBand[];
+  pagination: IngestDocxPagination[];
+  differentFirstPage: boolean;
+  evenOddDifferent: boolean;
+  sectionCount: number;
+  warnings: string[];
+}
+
 export interface IngestAnalysis {
   jobId: string;
-  /**
-   * « page » : la première page est rendue et des bandes y sont proposées.
-   * « assets » : le .docx portait ses visuels en clair, ils sont repris tels
-   * quels — rien n'est rendu, donc il n'y a rien à recadrer.
-   */
-  mode: "page" | "assets";
+  mode: "page";
   page: {
     widthPt: number;
     heightPt: number;
@@ -336,7 +347,8 @@ export interface IngestAnalysis {
     previewScale: number;
   };
   regions: IngestRegion[];
-  assets?: IngestAsset[];
+  /** Présent uniquement pour un DOCX rendu. */
+  docx?: IngestDocxAnalysis;
   layout: Pick<
     LayoutConfig,
     "paper" | "orientation" | "margins" | "font" | "fontSize" | "lineHeight"
@@ -370,18 +382,13 @@ export function ingestPreviewUrl(jobId: string): string {
   return `/api/ingest/${jobId}/preview`;
 }
 
-/** Vignette d'un visuel sorti d'un .docx, désigné par son rang dans `assets`. */
-export function ingestAssetUrl(jobId: string, index: number): string {
-  return `/api/ingest/${jobId}/asset/${index}`;
-}
-
 /** Découpe une zone et la range dans les assets : elle devient choisissable comme visuel. */
 export async function extractFragment(
   jobId: string,
   input: {
-    /** Mode « page » : la zone découpée. Mode « assets » : `asset` à la place. */
     rect?: IngestRect;
-    asset?: string;
+    /** DOCX rendered band; no private filename crosses the client boundary. */
+    docxBand?: "header" | "footer";
     vector?: boolean;
     kind: "en-tete" | "pied-de-page" | "fragment";
   },
@@ -402,8 +409,11 @@ export async function createTemplateFromIngest(
     name: string;
     header?: IngestRect | null;
     footer?: IngestRect | null;
-    /** Mode « assets » : visuel du .docx à poser en en-tête. */
-    headerAsset?: string | null;
+    docx?: {
+      header: boolean;
+      footer: boolean;
+      differentFirstPage: boolean;
+    };
     vector?: boolean;
   },
 ): Promise<{

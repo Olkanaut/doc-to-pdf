@@ -52,18 +52,6 @@ export interface Region {
   vector: boolean;
 }
 
-/** Legacy contract kept until the old asset endpoints are removed in PR 2. */
-export interface DocxAsset {
-  /** Chemin dans le zip, seule forme acceptée pour le ressortir. */
-  id: string;
-  name: string;
-  kind: "header" | "footer" | "body";
-  vector: boolean;
-  bytes: number;
-  widthPt: number;
-  heightPt: number;
-}
-
 export type DocxBandScope = "all" | "first" | "except-first";
 
 /** Full-width visual composed by Word/LibreOffice, never a loose media file. */
@@ -95,11 +83,7 @@ export interface DocxAnalysis {
 }
 
 export interface Analysis {
-  /**
-   * Les nouvelles analyses renvoient toujours « page ». « assets » reste dans
-   * le type jusqu'au nettoyage du client historique en PR 2.
-   */
-  mode: "page" | "assets";
+  mode: "page";
   page: {
     widthPt: number;
     heightPt: number;
@@ -108,8 +92,6 @@ export interface Analysis {
     preview: string | null;
   };
   regions: Region[];
-  /** Legacy field; new analyses never return it. */
-  assets?: DocxAsset[];
   /** Renseigné pour un DOCX rendu ; absent pour un PDF. */
   docx?: DocxAnalysis;
   /** Sous-ensemble de LayoutConfig relevé sur la page : pas d'en-tête ni de pied. */
@@ -175,16 +157,6 @@ function parse(raw: string): (Record<string, unknown> & { ok?: unknown }) | null
 
 export async function analyzeDocument(input: string, outDir: string): Promise<Analysis> {
   return run<Analysis>(["analyze", "--input", input, "--out", outDir]);
-}
-
-/** Sort un visuel d'un .docx sans le recoder ni composer le document. */
-export async function takeAsset(
-  input: string,
-  outDir: string,
-  entry: string,
-  name: string,
-): Promise<Fragment> {
-  return run<Fragment>(["asset", "--input", input, "--out", outDir, "--entry", entry, "--name", name]);
 }
 
 export interface CropRequest {

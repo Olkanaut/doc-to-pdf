@@ -67,6 +67,13 @@ reported as dynamic pagination metadata, so their sample values are never
 baked into the image. Multiple sections, mixed pagination content and distinct
 even-page bands produce explicit warnings.
 
+The import modal displays the rendered source page and only asks whether the
+header and footer should be retained. A detected first-page difference enables
+the matching switch automatically. Template creation copies both selected
+bands in one request, preserves their scopes and dimensions, and maps supported
+Word pagination to `LayoutConfig.footer.numbering`. The source document body is
+never imported.
+
 LibreOffice is consequently required for every DOCX import. Without
 `soffice`/`libreoffice` on `PATH`, the route responds with `no_libreoffice`.
 On macOS the standard application path is detected as well.

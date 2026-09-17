@@ -10,7 +10,11 @@
 import {
   INLINE_LOGO_HEIGHT_MM,
   sanitizeLayout,
+  type Align,
+  type Block,
+  type BlockScope,
   type LayoutConfig,
+  type Numbering,
 } from "../layout/layoutConfig.js";
 import { applyLayout } from "../layout/layoutTypst.js";
 import type { Analysis, Fragment } from "./sidecar.js";
@@ -42,12 +46,25 @@ export interface Placement {
    * largeur de la page — un visuel de 183 × 88 px y ferait 104 mm de haut.
    */
   fullBleed: boolean;
+  /** Page scope for a rendered DOCX band. PDF crops leave it unset. */
+  scope?: BlockScope;
+}
+
+export interface PaginationPlacement {
+  numbering: Exclude<Numbering, "none">;
+  align: Align;
+  scope: BlockScope;
 }
 
 export interface BuildInput {
   analysis: Analysis;
   header?: Placement;
   footer?: Placement;
+  /** Composed DOCX bands. Presence selects the scoped path, even when empty. */
+  headers?: Placement[];
+  footers?: Placement[];
+  /** `null` explicitly disables numbering for a DOCX import. */
+  pagination?: PaginationPlacement | null;
 }
 
 /**
@@ -64,6 +81,9 @@ export function buildLayout({
   analysis,
   header,
   footer,
+  headers,
+  footers,
+  pagination,
 }: BuildInput): LayoutConfig {
   const pageWidthPt = analysis.page.widthPt;
   const margins = { ...analysis.layout.margins };
@@ -81,29 +101,71 @@ export function buildLayout({
         // lui suffisent et laisseraient ici le logo déborder de la page.
         INLINE_LOGO_HEIGHT_MM / (1 - HEADER_ASCENT) + BLEED_SLACK_MM;
 
-  if (header) margins.top = round(Math.max(margins.top, needed(header)));
-  if (footer) margins.bottom = round(Math.max(margins.bottom, needed(footer)));
+  const docxMode = headers !== undefined || footers !== undefined || pagination !== undefined;
+  if (!docxMode) {
+    if (header) margins.top = round(Math.max(margins.top, needed(header)));
+    if (footer) margins.bottom = round(Math.max(margins.bottom, needed(footer)));
 
-  // sanitizeLayout borne tout : un relevé aberrant retombe sur les valeurs par défaut.
+    // This legacy-shaped input deliberately stays untouched for the PDF flow.
+    return sanitizeLayout({
+      ...analysis.layout,
+      margins,
+      header: {
+        text: "",
+        logo: header?.file ?? null,
+        fullBleed: Boolean(header?.fullBleed),
+        align: "left",
+        rule: false,
+      },
+      footer: {
+        text: "",
+        logo: footer?.file ?? null,
+        fullBleed: Boolean(footer?.fullBleed),
+        numbering: footer ? "none" : "n-of-total",
+        align: "right",
+        firstPage: true,
+        rule: false,
+      },
+    });
+  }
+
+  const headerBands = headers ?? [];
+  const footerBands = footers ?? [];
+  const headerHeight = Math.max(0, ...headerBands.map(needed));
+  const footerHeight = Math.max(0, ...footerBands.map(needed));
+  if (headerHeight) margins.top = round(Math.max(margins.top, headerHeight));
+  if (footerHeight) margins.bottom = round(Math.max(margins.bottom, footerHeight));
+
+  const imageBlock = (placement: Placement): Block => ({
+    kind: "custom",
+    scope: placement.scope ?? "all",
+    image: placement.file,
+    imagePosition: "left",
+    imageHeightMm: placement.fullBleed ? 0 : INLINE_LOGO_HEIGHT_MM,
+    title: "",
+    subtitle: "",
+    align: "left",
+    spaceAboveMm: 0,
+    spaceBelowMm: 0,
+    rule: {
+      on: false,
+      color: analysis.layout.headings.color,
+      widthPt: 1,
+    },
+  });
+
+  // sanitizeLayout remains the trust boundary for the generated configuration.
   return sanitizeLayout({
     ...analysis.layout,
     margins,
     header: {
-      text: "",
-      logo: header?.file ?? null,
-      fullBleed: Boolean(header?.fullBleed),
-      align: "left",
-      // Le bandeau porte déjà son propre trait s'il en a un.
-      rule: false,
+      blocks: headerBands.map(imageBlock),
     },
     footer: {
-      text: "",
-      logo: footer?.file ?? null,
-      fullBleed: Boolean(footer?.fullBleed),
-      numbering: footer ? "none" : "n-of-total",
-      align: "right",
-      firstPage: true,
-      rule: false,
+      blocks: footerBands.map(imageBlock),
+      numbering: pagination?.numbering ?? "none",
+      numberingAlign: pagination?.align ?? "center",
+      numberingScope: pagination?.scope ?? "all",
     },
   });
 }

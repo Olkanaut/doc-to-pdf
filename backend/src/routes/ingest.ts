@@ -4,8 +4,8 @@
  * Trois temps, un dossier de travail par import (ingest/jobs.ts) :
  *   POST /api/ingest                → dépôt, analyse, zones proposées
  *   GET  /api/ingest/:id/preview    → rendu de la première page (pour le recadrage)
- *   POST /api/ingest/:id/fragment   → découpe une zone, la range dans les assets
- *   POST /api/ingest/:id/template   → découpe puis crée le template dans Docs
+ *   POST /api/ingest/:id/fragment   → importe une zone PDF ou un bandeau DOCX
+ *   POST /api/ingest/:id/template   → compose puis crée le template dans Docs
  *
  * Le fichier arrive en base64 dans du JSON, comme /api/ai/template-from-pdf :
  * pas de dépendance multipart pour un seul champ.
@@ -24,8 +24,8 @@ import {
   analyzeDocument,
   cropRegion,
   SidecarError,
-  takeAsset,
   type Analysis,
+  type DocxBand,
   type Region,
 } from "../ingest/sidecar.js";
 import {
@@ -38,6 +38,7 @@ import {
 import {
   buildLayout,
   buildSource,
+  type PaginationPlacement,
   type Placement,
 } from "../ingest/templateFromAnalysis.js";
 
@@ -61,18 +62,23 @@ interface Rect {
 
 interface FragmentBody {
   rect?: Rect;
-  /** Mode « assets » : chemin du visuel dans le zip, au lieu d'une zone. */
-  asset?: string;
+  /** Rendered DOCX band; the server chooses the known private file. */
+  docxBand?: "header" | "footer";
   vector?: boolean;
   kind?: string;
+}
+
+interface DocxTemplateSelection {
+  header?: boolean;
+  footer?: boolean;
+  differentFirstPage?: boolean;
 }
 
 interface TemplateBody {
   name?: string;
   header?: Rect | null;
   footer?: Rect | null;
-  /** Mode « assets » : visuel à poser en en-tête. */
-  headerAsset?: string | null;
+  docx?: DocxTemplateSelection;
   vector?: boolean;
 }
 
@@ -212,51 +218,7 @@ export async function ingestRoutes(
     },
   );
 
-  /**
-   * Octets d'un visuel du .docx, pour la vignette du choix. L'index vaut
-   * indirection : aucun chemin venant du client n'atteint le zip.
-   */
-  app.get<{ Params: { id: string; index: string } }>(
-    "/api/ingest/:id/asset/:index",
-    async (req, reply) => {
-      const session = await requireSession(req, reply);
-      if (!session) return;
-
-      const job = await findJob(req.params.id);
-      if (!job)
-        return reply
-          .code(404)
-          .send({ ok: false, error: "Import inconnu ou expiré" });
-
-      try {
-        const analysis = await loadAnalysis(job);
-        const index = Number(req.params.index);
-        const asset = Number.isInteger(index)
-          ? analysis.assets?.[index]
-          : undefined;
-        if (!asset)
-          return reply.code(404).send({ ok: false, error: "Visuel inconnu" });
-
-        // Sorti une fois puis relu : la vignette et le choix final le demandent.
-        const name = `preview-${index}`;
-        const fragment = await takeAsset(job.input, job.dir, asset.id, name);
-        const bytes = await readFile(path.join(job.dir, fragment.file));
-        const type = fragment.file.endsWith(".svg")
-          ? "image/svg+xml"
-          : /\.jpe?g$/i.test(fragment.file)
-            ? "image/jpeg"
-            : "image/png";
-        return reply
-          .type(type)
-          .header("Cache-Control", "private, max-age=600")
-          .send(bytes);
-      } catch (error) {
-        return sendSidecarError(reply, error);
-      }
-    },
-  );
-
-  /** Découpe une zone et la range dans les assets partagés (galerie de l'éditeur). */
+  /** Importe une zone PDF ou un bandeau DOCX dans les assets de l'éditeur. */
   app.post<{ Params: { id: string }; Body: FragmentBody }>(
     "/api/ingest/:id/fragment",
     async (req, reply) => {
@@ -273,15 +235,13 @@ export async function ingestRoutes(
         const analysis = await loadAnalysis(job);
         const kind = req.body?.kind;
 
-        if (req.body?.asset) {
-          const placement = await pickAsset(
-            job,
-            analysis,
-            req.body.asset,
-            kind,
-          );
-          if (!placement)
-            return reply.code(400).send({ ok: false, error: "Visuel inconnu" });
+        if (req.body?.docxBand) {
+          if (!analysis.docx)
+            return reply.code(400).send({ ok: false, error: "Cet import n'est pas un DOCX" });
+          const selected = selectDocxBands(analysis, req.body.docxBand, false)[0];
+          if (!selected)
+            return reply.code(400).send({ ok: false, error: "Bandeau absent du DOCX" });
+          const placement = await copyDocxBand(job, selected, "all");
           return { ok: true, ...placement };
         }
 
@@ -319,18 +279,38 @@ export async function ingestRoutes(
 
       try {
         const analysis = await loadAnalysis(job);
-        const vector = req.body?.vector === true;
-        const headerRect = sanitizeRect(req.body?.header, analysis);
-        const footerRect = sanitizeRect(req.body?.footer, analysis);
+        let layout: ReturnType<typeof buildLayout>;
+        let fragments: Placement[];
 
-        const header = req.body?.headerAsset
-          ? ((await pickAsset(
-              job,
-              analysis,
-              req.body.headerAsset,
-              "en-tete",
-            )) ?? undefined)
-          : headerRect
+        if (req.body?.docx !== undefined) {
+          if (!analysis.docx)
+            return reply.code(400).send({ ok: false, error: "Cet import n'est pas un DOCX" });
+          if (!req.body.docx || typeof req.body.docx !== "object")
+            return reply.code(400).send({ ok: false, error: "Sélection DOCX invalide" });
+          const differentFirstPage =
+            req.body.docx.differentFirstPage === true && analysis.docx.differentFirstPage;
+          const headerBands = req.body.docx.header === true
+            ? selectDocxBands(analysis, "header", differentFirstPage)
+            : [];
+          const footerBands = req.body.docx.footer === true
+            ? selectDocxBands(analysis, "footer", differentFirstPage)
+            : [];
+          const headers = await Promise.all(
+            headerBands.map((band) => copyDocxBand(job, band, band.scope)),
+          );
+          const footers = await Promise.all(
+            footerBands.map((band) => copyDocxBand(job, band, band.scope)),
+          );
+          const pagination = req.body.docx.footer === true
+            ? selectDocxPagination(analysis, differentFirstPage)
+            : null;
+          fragments = [...headers, ...footers];
+          layout = buildLayout({ analysis, headers, footers, pagination });
+        } else {
+          const vector = req.body?.vector === true;
+          const headerRect = sanitizeRect(req.body?.header, analysis);
+          const footerRect = sanitizeRect(req.body?.footer, analysis);
+          const header = headerRect
             ? await extract(
                 job.input,
                 job.dir,
@@ -340,18 +320,20 @@ export async function ingestRoutes(
                 analysis.page.widthPt,
               )
             : undefined;
-        const footer = footerRect
-          ? await extract(
-              job.input,
-              job.dir,
-              footerRect,
-              vector,
-              "pied-de-page",
-              analysis.page.widthPt,
-            )
-          : undefined;
+          const footer = footerRect
+            ? await extract(
+                job.input,
+                job.dir,
+                footerRect,
+                vector,
+                "pied-de-page",
+                analysis.page.widthPt,
+              )
+            : undefined;
+          fragments = [header, footer].filter((item): item is Placement => Boolean(item));
+          layout = buildLayout({ analysis, header, footer });
+        }
 
-        const layout = buildLayout({ analysis, header, footer });
         const created = await createTemplate(
           {
             name: (req.body?.name ?? "").trim() || "Template importée",
@@ -364,7 +346,7 @@ export async function ingestRoutes(
           ok: true,
           id: created.id,
           layout,
-          fragments: [header, footer].filter(Boolean),
+          fragments,
           fontSubstitution: analysis.fontSubstitution,
         });
       } catch (error) {
@@ -383,32 +365,62 @@ async function loadAnalysis(job: Job): Promise<Analysis> {
   return analysis;
 }
 
-/**
- * Mode « assets » : le visuel demandé doit être l'un de ceux que l'analyse a
- * listés — c'est ce qui empêche un chemin quelconque d'atteindre le zip.
- */
-async function pickAsset(
-  job: Job,
+function selectDocxBands(
   analysis: Analysis,
-  entry: string,
-  kind: string | undefined,
-): Promise<Placement | null> {
-  const known = analysis.assets?.find((a) => a.id === entry);
-  if (!known) return null;
-  const base = kind && /^[a-z-]{1,20}$/.test(kind) ? kind : "fragment";
-  const fragment = await takeAsset(job.input, job.dir, known.id, base);
-  const file = assetName(base, fragment.file.split(".").pop() ?? "png");
-  await copyFile(
-    path.join(job.dir, fragment.file),
-    path.join(TEMPLATES_ASSETS_DIR, file),
-  );
-  // Le .docx ne dit pas à quelle largeur le visuel était posé : un logo étiré
-  // sur la page serait grotesque, donc placement normal, à hauteur fixe.
+  kind: DocxBand["kind"],
+  differentFirstPage: boolean,
+): DocxBand[] {
+  const bands = analysis.docx?.bands.filter((band) => band.kind === kind) ?? [];
+  const all = bands.find((band) => band.scope === "all");
+  if (all) return [all];
+  if (differentFirstPage) {
+    return ["first", "except-first"]
+      .map((scope) => bands.find((band) => band.scope === scope))
+      .filter((band): band is DocxBand => Boolean(band));
+  }
+  const normal =
+    bands.find((band) => band.scope === "except-first") ??
+    bands.find((band) => band.scope === "first");
+  return normal ? [{ ...normal, scope: "all" }] : [];
+}
+
+function selectDocxPagination(
+  analysis: Analysis,
+  differentFirstPage: boolean,
+): PaginationPlacement | null {
+  const choices = analysis.docx?.pagination.filter((item) => item.kind === "footer") ?? [];
+  const selected =
+    choices.find((item) => item.scope === "all") ??
+    choices.find((item) => item.scope === "except-first") ??
+    choices.find((item) => item.scope === "first");
+  if (!selected) return null;
+  return {
+    numbering: selected.numbering,
+    align: selected.align,
+    scope: differentFirstPage ? selected.scope : "all",
+  };
+}
+
+async function copyDocxBand(
+  job: Job,
+  band: DocxBand,
+  scope: Placement["scope"],
+): Promise<Placement> {
+  if (
+    path.basename(band.file) !== band.file ||
+    !/^docx-(header|footer)-(all|first|except-first)\.png$/.test(band.file)
+  ) {
+    throw new SidecarError("Bandeau DOCX invalide", "invalid_docx_band");
+  }
+  const base = `${band.kind === "header" ? "docx-h" : "docx-f"}-${scope ?? "all"}`;
+  const file = assetName(base, "png");
+  await copyFile(path.join(job.dir, band.file), path.join(TEMPLATES_ASSETS_DIR, file));
   return {
     file,
-    widthPt: fragment.widthPt,
-    heightPt: fragment.heightPt,
-    fullBleed: false,
+    widthPt: band.widthPt,
+    heightPt: band.heightPt,
+    fullBleed: true,
+    scope,
   };
 }
 

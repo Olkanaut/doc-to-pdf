@@ -195,6 +195,39 @@ describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
     expect(layout.margins.top).toBeGreaterThan(INLINE_LOGO_HEIGHT_MM);
   });
 
+  it("compose les bandes DOCX avec leurs scopes et une pagination dynamique", async () => {
+    const analysis = await analyzeDocument(pdf, dir);
+    const layout = buildLayout({
+      analysis,
+      headers: [
+        { file: "h-first.png", widthPt: 595.28, heightPt: 72, fullBleed: true, scope: "first" },
+        { file: "h-rest.png", widthPt: 595.28, heightPt: 54, fullBleed: true, scope: "except-first" },
+      ],
+      footers: [
+        { file: "f-all.png", widthPt: 595.28, heightPt: 36, fullBleed: true, scope: "all" },
+      ],
+      pagination: { numbering: "page-n-of-total", align: "right", scope: "except-first" },
+    });
+
+    expect(layout.header.blocks.map((block) => [block.image, block.scope])).toEqual([
+      ["h-first.png", "first"],
+      ["h-rest.png", "except-first"],
+    ]);
+    expect(layout.footer.blocks[0]).toMatchObject({ image: "f-all.png", scope: "all" });
+    expect(layout.footer).toMatchObject({
+      numbering: "page-n-of-total",
+      numberingAlign: "right",
+      numberingScope: "except-first",
+    });
+    expect(layout.margins.top).toBeGreaterThanOrEqual((72 / 72) * 25.4);
+
+    const source = buildSource(layout);
+    expect(source).toContain('image("assets/h-first.png"');
+    expect(source).toContain('image("assets/h-rest.png"');
+    expect(source).toContain("counter(page).get().first() == 1");
+    expect(source).toContain("counter(page).get().first() > 1");
+  });
+
   it("refuse un fichier qui n'est ni PDF ni docx, sur ses octets", async () => {
     const fake = path.join(dir, "note.pdf");
     await writeFile(fake, "ceci n'est pas un PDF", "utf8");
@@ -303,8 +336,17 @@ const PROBE_SOURCE = `#set page(
 #box(width: 0pt, height: 0pt)
 `;
 
+const BLANK_PROBE_SOURCE = `#set page(paper: "a4")
+#box(width: 0pt, height: 0pt)
+#pagebreak()
+#box(width: 0pt, height: 0pt)
+#pagebreak()
+#box(width: 0pt, height: 0pt)
+`;
+
 describe.skipIf(!enabled)("import d'un DOCX rendu", () => {
   let dir = "";
+  let blankProbePdf = "";
   let previousPath: string | undefined;
 
   beforeAll(async () => {
@@ -313,10 +355,14 @@ describe.skipIf(!enabled)("import d'un DOCX rendu", () => {
     const probeTyp = path.join(dir, "probe-fixture.typ");
     const sourcePdf = path.join(dir, "source-fixture.pdf");
     const probePdf = path.join(dir, "probe-fixture.pdf");
+    const blankProbeTyp = path.join(dir, "blank-probe-fixture.typ");
+    blankProbePdf = path.join(dir, "blank-probe-fixture.pdf");
     await writeFile(sourceTyp, SOURCE_DOC, "utf8");
     await writeFile(probeTyp, PROBE_SOURCE, "utf8");
+    await writeFile(blankProbeTyp, BLANK_PROBE_SOURCE, "utf8");
     await execFileAsync("typst", ["compile", "--root", dir, sourceTyp, sourcePdf]);
     await execFileAsync("typst", ["compile", "--root", dir, probeTyp, probePdf]);
+    await execFileAsync("typst", ["compile", "--root", dir, blankProbeTyp, blankProbePdf]);
 
     const bin = path.join(dir, "bin");
     await execFileAsync("mkdir", ["-p", bin]);
@@ -410,7 +456,6 @@ cp "$source" "$out/$name.pdf"
 
     expect(analysis.mode).toBe("page");
     expect(analysis.page.count).toBe(1);
-    expect(analysis.assets).toBeUndefined();
     expect(analysis.docx).toMatchObject({
       differentFirstPage: true,
       evenOddDifferent: true,
@@ -435,6 +480,29 @@ cp "$source" "$out/$name.pdf"
       expect(bytes.subarray(1, 4).toString()).toBe("PNG");
       expect(band.widthPt).toBeCloseTo(595.28, 1);
       expect(band.bytes).toBe(bytes.length);
+    }
+  });
+
+  it("détecte une première page différente quand seule la pagination change", async () => {
+    const input = await buildDocx(dir);
+    const output = path.join(dir, "pagination-only-analysis");
+    await execFileAsync("mkdir", ["-p", output]);
+    const regularProbe = process.env.DOTS_FAKE_PROBE_PDF;
+    process.env.DOTS_FAKE_PROBE_PDF = blankProbePdf;
+    try {
+      const analysis = await analyzeDocument(input, output);
+      expect(analysis.docx?.bands).toEqual([]);
+      expect(analysis.docx?.pagination).toEqual([
+        {
+          kind: "footer",
+          scope: "except-first",
+          numbering: "page-n-of-total",
+          align: "right",
+        },
+      ]);
+      expect(analysis.docx?.differentFirstPage).toBe(true);
+    } finally {
+      process.env.DOTS_FAKE_PROBE_PDF = regularProbe;
     }
   });
 });

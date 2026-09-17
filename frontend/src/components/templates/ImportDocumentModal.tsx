@@ -17,10 +17,8 @@ import {
   createTemplate,
   createTemplateFromIngest,
   extractFragment,
-  ingestAssetUrl,
   ingestPreviewUrl,
   type IngestAnalysis,
-  type IngestAsset,
   type IngestRect,
   type IngestRegion,
 } from "../../api/client";
@@ -31,7 +29,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 /** Un échec d'analyse s'affiche, puis la fenêtre se ferme d'elle-même. */
 const ERROR_LINGER_MS = 4000;
 
-type Stage = "drop" | "loading" | "crop" | "assets" | "typ" | "error";
+type Stage = "drop" | "loading" | "crop" | "docx" | "typ" | "error";
 /** Ce à quoi sert la zone choisie : une template entière, ou le seul visuel d'une section. */
 export type ImportTarget = "template" | "header" | "footer";
 
@@ -85,8 +83,9 @@ export function ImportDocumentModal({
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<IngestAnalysis | null>(null);
   const [rect, setRect] = useState<IngestRect | null>(null);
-  /** Mode « assets » : visuel retenu parmi ceux sortis du .docx. */
-  const [asset, setAsset] = useState<IngestAsset | null>(null);
+  const [includeHeader, setIncludeHeader] = useState(false);
+  const [includeFooter, setIncludeFooter] = useState(false);
+  const [differentFirstPage, setDifferentFirstPage] = useState(false);
   const [picked, setPicked] = useState<IngestRegion["kind"] | "custom">("page");
   const [vector, setVector] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -158,16 +157,15 @@ export function ImportDocumentModal({
       if (id !== run.current) return;
       setAnalysis(result);
 
-      // Un .docx qui porte ses visuels en clair n'a pas de page rendue : il n'y
-      // a rien à recadrer, seulement un visuel à choisir.
-      if (result.mode === "assets") {
-        const wanted = target === "footer" ? "footer" : "header";
-        const first =
-          result.assets?.find((a) => a.kind === wanted) ??
-          result.assets?.[0] ??
-          null;
-        setAsset(first);
-        setStage("assets");
+      if (result.docx) {
+        const hasHeader = result.docx.bands.some((band) => band.kind === "header");
+        const hasFooter =
+          result.docx.bands.some((band) => band.kind === "footer") ||
+          result.docx.pagination.some((item) => item.kind === "footer");
+        setIncludeHeader(target !== "footer" && hasHeader);
+        setIncludeFooter(target !== "header" && hasFooter);
+        setDifferentFirstPage(result.docx.differentFirstPage);
+        setStage("docx");
         return;
       }
 
@@ -226,7 +224,12 @@ export function ImportDocumentModal({
   }
 
   async function confirm() {
-    if (!analysis || (stage === "crop" ? !rect : !asset)) return;
+    if (!analysis || (stage === "crop" && !rect)) return;
+    if (
+      stage === "docx" &&
+      target !== "template" &&
+      !(target === "header" ? includeHeader : includeFooter)
+    ) return;
     setBusy(true);
     setError(null);
     const name =
@@ -234,16 +237,20 @@ export function ImportDocumentModal({
       "template importée";
 
     try {
-      if (stage === "assets") {
+      if (stage === "docx") {
         if (target === "template") {
           const created = await createTemplateFromIngest(analysis.jobId, {
             name,
-            headerAsset: asset!.id,
+            docx: {
+              header: includeHeader,
+              footer: includeFooter,
+              differentFirstPage,
+            },
           });
           onTemplate?.(created.id);
         } else {
           const fragment = await extractFragment(analysis.jobId, {
-            asset: asset!.id,
+            docxBand: target,
             kind: target === "header" ? "en-tete" : "pied-de-page",
           });
           onFragment?.(fragment.file);
@@ -286,7 +293,7 @@ export function ImportDocumentModal({
   return (
     <Modal
       isOpen
-      size={stage === "crop" ? ModalSize.LARGE : ModalSize.MEDIUM}
+      size={stage === "crop" || stage === "docx" ? ModalSize.LARGE : ModalSize.MEDIUM}
       onClose={onClose}
       closeOnClickOutside
       hideCloseButton
@@ -310,10 +317,16 @@ export function ImportDocumentModal({
         </div>
       }
       rightActions={
-        stage === "crop" || stage === "assets" ? (
+        stage === "crop" || stage === "docx" ? (
           <Button
             type="button"
-            disabled={busy || (stage === "crop" ? !rect : !asset)}
+            disabled={
+              busy ||
+              (stage === "crop" && !rect) ||
+              (stage === "docx" &&
+                target !== "template" &&
+                !(target === "header" ? includeHeader : includeFooter))
+            }
             onClick={() => void confirm()}
           >
             {busy ? "En cours…" : cta}
@@ -367,62 +380,80 @@ export function ImportDocumentModal({
           </div>
         )}
 
-        {/* Mode « assets » : pas de page rendue, donc pas de recadrage — les
-            visuels sortent du .docx tels quels et il n'y a qu'à choisir. */}
-        {stage === "assets" && analysis && (
-          <div className="asset-stage">
-            <p className="crop-stage__label">
-              Visuels trouvés dans le document
-              {analysis.assets && analysis.assets.length > 1
-                ? ` (${analysis.assets.length})`
-                : ""}
-            </p>
-
-            <div className="asset-stage__grid">
-              {analysis.assets?.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`asset-tile${asset?.id === item.id ? " asset-tile--on" : ""}`}
-                  aria-pressed={asset?.id === item.id}
-                  onClick={() => setAsset(item)}
-                >
-                  <img
-                    src={ingestAssetUrl(analysis.jobId, index)}
-                    alt={item.name}
-                    loading="lazy"
-                  />
-                  <span className="asset-tile__name">{item.name}</span>
-                  <span className="asset-tile__meta">
-                    {item.vector ? "vectoriel" : "raster"}
-                    {item.widthPt > 0
-                      ? ` · ${Math.round(item.widthPt)} × ${Math.round(item.heightPt)}`
-                      : ""}
-                    {item.kind !== "body"
-                      ? ` · ${item.kind === "header" ? "en-tête" : "pied de page"}`
-                      : ""}
-                  </span>
-                </button>
-              ))}
+        {stage === "docx" && analysis?.docx && (
+          <div className="docx-stage">
+            <div
+              className="docx-stage__preview"
+              style={{ aspectRatio: `${analysis.page.widthPt} / ${analysis.page.heightPt}` }}
+            >
+              <img
+                src={ingestPreviewUrl(analysis.jobId)}
+                alt="Première page du document Word importé"
+              />
             </div>
 
-            <Alert type={VariantType.INFO}>
-              Le document portait ses visuels en clair : ils sont repris tels
-              quels, sans passer par une image de la page. Format et marges
-              viennent de sa mise en page Word.
-            </Alert>
+            <div className="docx-stage__side">
+              <fieldset className="docx-stage__choices">
+                <legend>Éléments à reprendre</legend>
 
-            {analysis.fontSubstitution && (
-              <Alert type={VariantType.WARNING}>
-                {analysis.fontSubstitution} n'est pas installée sur le serveur :
-                Marianne la remplace.
-              </Alert>
-            )}
-            {error && (
-              <div role="alert">
-                <Alert type={VariantType.ERROR}>{error}</Alert>
-              </div>
-            )}
+                {(target === "template" || target === "header") && (
+                  <label className="docx-choice">
+                    <input
+                      type="checkbox"
+                      checked={includeHeader}
+                      disabled={!analysis.docx.bands.some((band) => band.kind === "header")}
+                      onChange={(event) => setIncludeHeader(event.target.checked)}
+                    />
+                    <span>Reprendre l'en-tête</span>
+                  </label>
+                )}
+
+                {(target === "template" || target === "footer") && (
+                  <label className="docx-choice">
+                    <input
+                      type="checkbox"
+                      checked={includeFooter}
+                      disabled={
+                        !analysis.docx.bands.some((band) => band.kind === "footer") &&
+                        !analysis.docx.pagination.some((item) => item.kind === "footer")
+                      }
+                      onChange={(event) => setIncludeFooter(event.target.checked)}
+                    />
+                    <span>Reprendre le pied de page</span>
+                  </label>
+                )}
+              </fieldset>
+
+              {target === "template" && (
+                <Switch
+                  label="Première page différente"
+                  role="switch"
+                  fullWidth
+                  checked={differentFirstPage}
+                  disabled={
+                    !analysis.docx.differentFirstPage || (!includeHeader && !includeFooter)
+                  }
+                  onChange={(event) => setDifferentFirstPage(event.target.checked)}
+                />
+              )}
+
+              {analysis.docx.warnings.map((warning) => (
+                <Alert key={warning} type={VariantType.WARNING}>
+                  {warning}
+                </Alert>
+              ))}
+              {analysis.fontSubstitution && (
+                <Alert type={VariantType.WARNING}>
+                  {analysis.fontSubstitution} n'est pas installée sur le serveur :
+                  Marianne la remplace.
+                </Alert>
+              )}
+              {error && (
+                <div role="alert">
+                  <Alert type={VariantType.ERROR}>{error}</Alert>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

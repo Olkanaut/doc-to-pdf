@@ -13,6 +13,8 @@ import { promisify } from "node:util";
 import Fastify from "fastify";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { TemplateDetail } from "../clients/templatesClient.js";
+import { cacheAnalysis, createJob } from "../ingest/jobs.js";
+import type { Analysis } from "../ingest/sidecar.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import type { AuthSession } from "./auth.js";
 import { ingestRoutes } from "./ingest.js";
@@ -269,6 +271,90 @@ describe.skipIf(!enabled)("routes d'import", () => {
     expect(res.json().layout.header.blocks).toEqual([]);
     expect(created?.source).not.toContain("image(");
 
+    await app.close();
+  });
+
+  it("crée en un clic un template DOCX avec les deux bandeaux et leurs scopes", async () => {
+    const app = await buildApp();
+    const job = await createJob(Buffer.from("PK\x03\x04probe"), "lettre.docx");
+    const bands = [
+      { kind: "header" as const, scope: "first" as const, file: "docx-header-first.png", widthPt: 595.28, heightPt: 72, bytes: 5 },
+      { kind: "header" as const, scope: "except-first" as const, file: "docx-header-except-first.png", widthPt: 595.28, heightPt: 54, bytes: 4 },
+      { kind: "footer" as const, scope: "all" as const, file: "docx-footer-all.png", widthPt: 595.28, heightPt: 36, bytes: 6 },
+    ];
+    const analysis: Analysis = {
+      mode: "page",
+      page: { widthPt: 595.28, heightPt: 841.89, count: 1, previewScale: 2, preview: "page-1.png" },
+      regions: [],
+      layout: {
+        paper: "a4",
+        orientation: "portrait",
+        margins: { top: 20, bottom: 20, left: 20, right: 20 },
+        font: "Marianne",
+        fontSize: 11,
+        lineHeight: 1.2,
+        headings: { scale: "normal", color: "#000091" },
+      },
+      fontSubstitution: null,
+      counts: { text: 1, shapes: 0, images: 0 },
+      docx: {
+        bands,
+        pagination: [
+          { kind: "footer", scope: "except-first", numbering: "page-n-of-total", align: "right" },
+        ],
+        differentFirstPage: true,
+        evenOddDifferent: false,
+        sectionCount: 1,
+        warnings: [],
+      },
+    };
+    await Promise.all(
+      bands.map((band) => writeFile(path.join(job.dir, band.file), `fake-${band.scope}`, "utf8")),
+    );
+    await cacheAnalysis(job, analysis);
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${job.id}/template`,
+      payload: {
+        name: "Papier Word",
+        docx: { header: true, footer: true, differentFirstPage: true },
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const result = res.json();
+    written.push(...result.fragments.map((fragment: { file: string }) => fragment.file));
+
+    expect(result.layout.header.blocks.map((block: { scope: string }) => block.scope)).toEqual([
+      "first",
+      "except-first",
+    ]);
+    expect(result.layout.footer.blocks).toHaveLength(1);
+    expect(result.layout.footer).toMatchObject({
+      numbering: "page-n-of-total",
+      numberingAlign: "right",
+      numberingScope: "except-first",
+    });
+    expect(created?.source).toContain("counter(page).get().first() == 1");
+    expect(created?.source).toContain("counter(page).get().first() > 1");
+    expect(result.fragments).toHaveLength(3);
+
+    const uniform = await app.inject({
+      method: "POST",
+      url: `/api/ingest/${job.id}/template`,
+      payload: {
+        name: "Papier Word uniforme",
+        docx: { header: true, footer: false, differentFirstPage: false },
+      },
+    });
+    expect(uniform.statusCode).toBe(201);
+    const uniformResult = uniform.json();
+    written.push(...uniformResult.fragments.map((fragment: { file: string }) => fragment.file));
+    expect(uniformResult.layout.header.blocks).toHaveLength(1);
+    expect(uniformResult.layout.header.blocks[0].scope).toBe("all");
+    expect(uniformResult.layout.footer.numbering).toBe("none");
+
+    await rm(job.dir, { recursive: true, force: true });
     await app.close();
   });
 });

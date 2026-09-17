@@ -516,23 +516,15 @@ def analyze_docx(input_path: Path, out_dir: Path) -> dict:
     result["docx"] = {
         "bands": bands,
         "pagination": metadata.get("pagination", []),
-        "differentFirstPage": any(band["scope"] != "all" for band in bands),
+        "differentFirstPage": any(
+            item["scope"] != "all"
+            for item in [*bands, *metadata.get("pagination", [])]
+        ),
         "evenOddDifferent": even_odd_different,
         "sectionCount": metadata.get("sectionCount", 1),
         "warnings": list(dict.fromkeys(warnings)),
     }
     return result
-
-
-def take_asset(input_path: Path, out_dir: Path, entry: str, name: str) -> dict:
-    """Sort un visuel du .docx sans le recoder : l'original, octet pour octet."""
-    try:
-        with zipfile.ZipFile(input_path) as zf:
-            return docx_zip.extract_media(zf, entry, out_dir, name)
-    except KeyError:
-        fail("Visuel introuvable dans le document", "unknown_asset")
-    except zipfile.BadZipFile:
-        fail("Document illisible", "unreadable_docx")
 
 
 def has_vector(rect: pymupdf.Rect, shapes: list[dict], image_rects: list[pymupdf.Rect]) -> bool:
@@ -665,12 +657,6 @@ def main() -> None:
     analyze_cmd.add_argument("--input", required=True)
     analyze_cmd.add_argument("--out", required=True)
 
-    asset_cmd = sub.add_parser("asset")
-    asset_cmd.add_argument("--input", required=True)
-    asset_cmd.add_argument("--out", required=True)
-    asset_cmd.add_argument("--entry", required=True)
-    asset_cmd.add_argument("--name", required=True)
-
     crop_cmd = sub.add_parser("crop")
     crop_cmd.add_argument("--input", required=True)
     crop_cmd.add_argument("--out", required=True)
@@ -687,8 +673,6 @@ def main() -> None:
 
     if args.command == "analyze":
         result = analyze(input_path, out_dir)
-    elif args.command == "asset":
-        result = take_asset(input_path, out_dir, args.entry, args.name)
     else:
         if not args.name.isidentifier() and not args.name.replace("-", "_").isidentifier():
             fail("--name invalide", "bad_name")
