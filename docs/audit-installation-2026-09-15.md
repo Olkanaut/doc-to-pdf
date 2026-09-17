@@ -11,12 +11,12 @@
 20 pistes examinées, **3 retenues** après vérification contradictoire. Une quatrième
 anomalie, la plus importante, a été trouvée **en dehors** de l'audit.
 
-| # | Constat | Gravité | Section |
-|---|---|---|---|
-| D | Le dépôt et la machine de référence ont divergé | **élevée** | [D](#d--divergence-entre-le-dépôt-et-la-machine-hors-audit) |
-| A.1 | `--verify` ne sonde jamais y-provider (:4444) | gênant | [A.1](#a1--y-provider-4444-nest-jamais-sondé) |
-| A.2 | `--verify` ne sonde jamais minio (:9000) | gênant | [A.2](#a2--minio-9000-nest-jamais-sondé) |
-| B.1 | La Resource Server API n'est pas ouverte par l'installation livrée | partiel | [B.1](#b1--la-resource-server-api-nest-pas-ouverte-par-linstallation-livrée) |
+| #   | Constat                                                            | Gravité    | Section                                                                      |
+| --- | ------------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------- |
+| D   | Le dépôt et la machine de référence ont divergé                    | **élevée** | [D](#d--divergence-entre-le-dépôt-et-la-machine-hors-audit)                  |
+| A.1 | `--verify` ne sonde jamais y-provider (:4444)                      | gênant     | [A.1](#a1--y-provider-4444-nest-jamais-sondé)                                |
+| A.2 | `--verify` ne sonde jamais minio (:9000)                           | gênant     | [A.2](#a2--minio-9000-nest-jamais-sondé)                                     |
+| B.1 | La Resource Server API n'est pas ouverte par l'installation livrée | partiel    | [B.1](#b1--la-resource-server-api-nest-pas-ouverte-par-linstallation-livrée) |
 
 Aucun constat n'empêche l'installation de fonctionner aujourd'hui. Les trois premiers
 décrivent des pannes que `--verify` **déclarerait vertes**.
@@ -130,16 +130,16 @@ sur disque local. L'impact est en amont, sur Docs.
 Elles sont listées parce que chacune paraissait solide et ne l'était pas — c'est utile à
 savoir avant de les re-signaler.
 
-| Piste | Pourquoi écartée |
-|---|---|
-| `python3` invoqué 3× sans être déclaré par `besoin` | présent partout sur macOS récent ; l'absence se verrait immédiatement à l'étape 3 |
-| `make` invoqué sans être déclaré | idem, et `besoin` ne pourrait pas l'attraper tel qu'écrit |
-| `jq` requis par le parcours de `SETUP-LOCAL.md` sans être déclaré | outil du guide, pas du script ; échec franc et lisible |
-| `python3` porte l'étape 2 du guide | même raison que ci-dessus |
-| Aucun gabarit ne déclare de police | Typst retombe sur son défaut embarqué, rendu déterministe |
-| Chemins d'inclusion des gabarits (`assets/`) | présents, vérifiés |
-| `typst` résolu sur le PATH à chaque requête | c'est le fonctionnement voulu ; `besoin typst` le couvre |
-| Aucune version de Node épinglée (ni `.nvmrc` ni `engines`) | réel mais théorique ici : Node 22 installé, aucun conflit constaté |
+| Piste                                                             | Pourquoi écartée                                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `python3` invoqué 3× sans être déclaré par `besoin`               | présent partout sur macOS récent ; l'absence se verrait immédiatement à l'étape 3 |
+| `make` invoqué sans être déclaré                                  | idem, et `besoin` ne pourrait pas l'attraper tel qu'écrit                         |
+| `jq` requis par le parcours de `SETUP-LOCAL.md` sans être déclaré | outil du guide, pas du script ; échec franc et lisible                            |
+| `python3` porte l'étape 2 du guide                                | même raison que ci-dessus                                                         |
+| Aucun template ne déclare de police                               | Typst retombe sur son défaut embarqué, rendu déterministe                         |
+| Chemins d'inclusion des templates (`assets/`)                     | présents, vérifiés                                                                |
+| `typst` résolu sur le PATH à chaque requête                       | c'est le fonctionnement voulu ; `besoin typst` le couvre                          |
+| Aucune version de Node épinglée (ni `.nvmrc` ni `engines`)        | réel mais théorique ici : Node 22 installé, aucun conflit constaté                |
 
 ---
 
@@ -183,17 +183,17 @@ n'est vérifiée (`SETUP-LOCAL.md:282-299`, « Aucun en-tête Authorization »).
 Écartées comme **développement produit restant**, pas comme défauts d'installation. Elles
 constituent de fait la liste de ce qui reste à écrire :
 
-| Axe | Constat |
-|---|---|
-| ProConnect | Le mini-site n'implémente aucune authentification, ni ProConnect ni Keycloak |
-| Resource Server API | Le backend ne lit que des fixtures JSON locales, il n'appelle jamais Docs |
-| Resource Server API | L'API du parcours documenté est `/api/v1.0/`, en anonyme, pas la Resource Server API |
-| Geste d'une lettre | Irreproductible en local : deux ports, pas deux noms d'hôte |
-| Geste d'une lettre | Ni route `/d/:id`, ni champ « coller l'URL » |
-| Gabarits | Un gabarit écrit par l'utilisateur ne peut être ni enregistré ni réutilisé |
-| Gabarits | Aucun import de gabarit `.typ`, aucun logo d'administration |
-| BlockNote | La piste BlockNote signalée par le sujet n'a pas été prise (aucune dépendance `@blocknote`) |
-| BlockNote | Le convertisseur maison gère 6 des ~20 types de blocs du schéma Docs, et jette les autres en silence |
+| Axe                 | Constat                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| ProConnect          | Le mini-site n'implémente aucune authentification, ni ProConnect ni Keycloak                         |
+| Resource Server API | Le backend ne lit que des fixtures JSON locales, il n'appelle jamais Docs                            |
+| Resource Server API | L'API du parcours documenté est `/api/v1.0/`, en anonyme, pas la Resource Server API                 |
+| Geste d'une lettre  | Irreproductible en local : deux ports, pas deux noms d'hôte                                          |
+| Geste d'une lettre  | Ni route `/d/:id`, ni champ « coller l'URL »                                                         |
+| templates           | Un template écrit par l'utilisateur ne peut être ni enregistré ni réutilisé                          |
+| templates           | Aucun import de template `.typ`, aucun logo d'administration                                         |
+| BlockNote           | La piste BlockNote signalée par le sujet n'a pas été prise (aucune dépendance `@blocknote`)          |
+| BlockNote           | Le convertisseur maison gère 6 des ~20 types de blocs du schéma Docs, et jette les autres en silence |
 
 Le dernier mérite l'attention indépendamment de l'audit : **jeter des blocs en silence**
 est un comportement à décider, pas à subir.
@@ -209,15 +209,15 @@ dépôt. Ce n'en est pas une version modifiée : c'est un autre fichier, écrit 
 `dev/setup-local.sh:219` dit `présent — laissé tel quel` : le script ne l'écrase jamais,
 par conception. L'écart est donc permanent et invisible.
 
-| Réglage | Dépôt (ce qu'un coéquipier obtient) | Machine de référence |
-|---|---|---|
-| `docspec` (port 4000) | libéré | libéré — **seul point commun** |
-| `frontend-development` | **3000** (défaut) | **3011** |
-| `nginx-frontend` | 3000 (défaut) | 3010 |
-| `kc_postgresql` | publié (5433) | non publié |
-| Les 4 `LOGIN_REDIRECT_URL` | absents | présents, alignés sur 3011 |
-| Resource Server API | désactivée | activée |
-| `EXTERNAL_API` | 2 ressources | 4 ressources (+ `document_access`, `document_invitation`, `duplicate`) |
+| Réglage                    | Dépôt (ce qu'un coéquipier obtient) | Machine de référence                                                   |
+| -------------------------- | ----------------------------------- | ---------------------------------------------------------------------- |
+| `docspec` (port 4000)      | libéré                              | libéré — **seul point commun**                                         |
+| `frontend-development`     | **3000** (défaut)                   | **3011**                                                               |
+| `nginx-frontend`           | 3000 (défaut)                       | 3010                                                                   |
+| `kc_postgresql`            | publié (5433)                       | non publié                                                             |
+| Les 4 `LOGIN_REDIRECT_URL` | absents                             | présents, alignés sur 3011                                             |
+| Resource Server API        | désactivée                          | activée                                                                |
+| `EXTERNAL_API`             | 2 ressources                        | 4 ressources (+ `document_access`, `document_invitation`, `duplicate`) |
 
 Trois conséquences :
 
@@ -238,7 +238,7 @@ Trois conséquences :
   Rancher Desktop et Podman n'ont pas été essayés — aucun n'est installé ici.
 - **Pas de démarrage à froid de Docs.** Le `--up` a été vérifié à froid pour le mini-site
   (ports libérés, serveurs démarrés, PDF rendu, trap contrôlé), jamais pour la pile Docs.
-- **Aucun PDF n'a été ouvert.** 15 combinaisons fixture × gabarit répondent 200 avec des
+- **Aucun PDF n'a été ouvert.** 15 combinaisons fixture × template répondent 200 avec des
   fichiers de 19 ko à 321 ko. Taille et code HTTP ne prouvent pas un rendu correct.
 - **Le correctif Python a été vérifié, lui, contre l'amont vivant** : `main` (`d596df9`)
   porte toujours les 5 occurrences, réparties sur 4 fichiers.
@@ -251,7 +251,7 @@ Laissé ouvert, pour revue humaine.
 
 - Sonder y-provider et minio dans `--verify` ? (A.1, A.2)
 - Faire détecter la divergence `compose.override.yml` par `--verify` ? (D)
-- Reporter le bloc Resource Server API enrichi dans le gabarit du dépôt ? (D)
+- Reporter le bloc Resource Server API enrichi dans le template du dépôt ? (D)
 - Aligner `SETUP-LOCAL.md` sur le dépôt, ou expliciter que 3011 est un cas particulier ? (D)
 - Que faire des blocs non gérés par le convertisseur : échouer, avertir, ou continuer à
   les jeter ? (B, ligne BlockNote)

@@ -28,15 +28,19 @@ export function TemplateBrowser({
   renderBadge,
   renderActions,
   onCreateNew,
-  createNewLabel = "Nouveau gabarit",
-  emptyLabel = "Aucun gabarit pour le moment.",
+  createNewLabel = "Nouvelle template",
+  emptyLabel = "Aucune template pour le moment.",
 }: TemplateBrowserProps) {
   const isGrid = view === "grid";
 
   return (
     <ul className={isGrid ? "template-grid" : "template-rows"}>
       {onCreateNew && (
-        <li className={isGrid ? "template-tile template-tile-new" : "template-row"}>
+        <li
+          className={
+            isGrid ? "template-tile template-tile-new" : "template-row"
+          }
+        >
           <button
             type="button"
             className={isGrid ? "template-tile-new-btn" : "template-row-new"}
@@ -61,25 +65,58 @@ export function TemplateBrowser({
         </li>
       )}
 
-      {templates.length === 0 && !onCreateNew && <li className="template-empty">{emptyLabel}</li>}
+      {templates.length === 0 && !onCreateNew && (
+        <li className="template-empty">{emptyLabel}</li>
+      )}
 
       {templates.map((t) => (
         <li key={t.id} className={isGrid ? "template-tile" : "template-row"}>
-          <OpenTarget
-            id={t.id}
-            href={getOpenHref?.(t.id)}
-            onOpen={onOpen}
-            className={isGrid ? "template-tile-open" : "template-row-open"}
-          >
-            {isGrid && <ThumbnailImage template={t} />}
-            <span className={isGrid ? "template-tile-title" : "template-row-title"}>{t.name}</span>
-            {!isGrid && (
-              <span className="template-row-description">{t.description || "Sans description"}</span>
-            )}
-          </OpenTarget>
+          {isGrid ? (
+            <>
+              <OpenTarget
+                id={t.id}
+                href={getOpenHref?.(t.id)}
+                onOpen={onOpen}
+                className="template-tile-open"
+              >
+                <ThumbnailImage template={t} />
+              </OpenTarget>
+              <div className="template-tile-meta">
+                <OpenTarget
+                  id={t.id}
+                  href={getOpenHref?.(t.id)}
+                  onOpen={onOpen}
+                  className="template-tile-title-link"
+                >
+                  <span className="template-tile-title">{t.name}</span>
+                </OpenTarget>
+                {renderActions && (
+                  <div className="template-tile-actions">
+                    {renderActions(t)}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <OpenTarget
+              id={t.id}
+              href={getOpenHref?.(t.id)}
+              onOpen={onOpen}
+              className="template-row-open"
+            >
+              <span className="template-row-title">{t.name}</span>
+              <span className="template-row-description">
+                {t.description || "Sans description"}
+              </span>
+            </OpenTarget>
+          )}
           {!isGrid && renderBadge?.(t)}
-          {renderActions && (
-            <div className={isGrid ? "template-tile-actions" : "template-row-actions"}>
+          {!isGrid && renderActions && (
+            <div
+              className={
+                isGrid ? "template-tile-actions" : "template-row-actions"
+              }
+            >
               {renderActions(t)}
             </div>
           )}
@@ -93,7 +130,10 @@ function ThumbnailImage({ template }: { template: TemplateSummary }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <span className="template-tile-thumb template-tile-thumb-fallback" aria-hidden="true">
+      <span
+        className="template-tile-thumb template-tile-thumb-fallback"
+        aria-hidden="true"
+      >
         {template.name.slice(0, 1)}
       </span>
     );

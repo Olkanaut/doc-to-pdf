@@ -1,6 +1,6 @@
 /**
  * Les routes d'import, appelées en HTTP (app.inject) sur un vrai PDF fabriqué
- * avec typst : dépôt, aperçu, découpe, création du gabarit. Ce qui est vérifié
+ * avec typst : dépôt, aperçu, découpe, création du template. Ce qui est vérifié
  * ici, c'est le contrat des routes ; le relevé lui-même l'est dans
  * ingest/ingest.test.ts.
  */
@@ -64,7 +64,11 @@ describe.skipIf(!enabled)("routes d'import", () => {
     const app = Fastify();
     await app.register(ingestRoutes, {
       getSession: async () => SESSION,
-      createTemplate: async (input: { name: string; description: string; source: string }) => {
+      createTemplate: async (input: {
+        name: string;
+        description: string;
+        source: string;
+      }) => {
         created = {
           id: "11111111-2222-3333-4444-555555555555",
           name: input.name,
@@ -107,13 +111,19 @@ describe.skipIf(!enabled)("routes d'import", () => {
     if (dir) await rm(dir, { recursive: true, force: true });
     // Les fragments partent dans le dossier d'assets partagé : on les retire.
     await Promise.all(
-      written.map((file) => unlink(path.join(TEMPLATES_ASSETS_DIR, file)).catch(() => {})),
+      written.map((file) =>
+        unlink(path.join(TEMPLATES_ASSETS_DIR, file)).catch(() => {}),
+      ),
     );
   });
 
   it("exige une session", async () => {
     const app = await buildApp({ getSession: async () => null });
-    const res = await app.inject({ method: "POST", url: "/api/ingest", payload: { fileBase64: "AA==" } });
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/ingest",
+      payload: { fileBase64: "AA==" },
+    });
     expect(res.statusCode).toBe(401);
     await app.close();
   });
@@ -121,7 +131,11 @@ describe.skipIf(!enabled)("routes d'import", () => {
   it("refuse ce qui n'est pas du base64, et ce qui est trop gros", async () => {
     const app = await buildApp();
 
-    const bad = await app.inject({ method: "POST", url: "/api/ingest", payload: { fileBase64: "pas du base64 !" } });
+    const bad = await app.inject({
+      method: "POST",
+      url: "/api/ingest",
+      payload: { fileBase64: "pas du base64 !" },
+    });
     expect(bad.statusCode).toBe(400);
 
     const huge = await app.inject({
@@ -141,7 +155,10 @@ describe.skipIf(!enabled)("routes d'import", () => {
       method: "POST",
       url: "/api/ingest",
       // Extension trompeuse : le type se lit sur le contenu.
-      payload: { fileBase64: Buffer.from("texte brut").toString("base64"), filename: "faux.pdf" },
+      payload: {
+        fileBase64: Buffer.from("texte brut").toString("base64"),
+        filename: "faux.pdf",
+      },
     });
     expect(res.statusCode).toBe(415);
     expect(res.json().code).toBe("unsupported_format");
@@ -154,10 +171,15 @@ describe.skipIf(!enabled)("routes d'import", () => {
 
     expect(body.jobId).toMatch(/^[0-9a-f-]{36}$/);
     expect(body.page.widthPt).toBeCloseTo(595.28, 1);
-    expect(body.regions.some((r: { kind: string }) => r.kind === "header")).toBe(true);
+    expect(
+      body.regions.some((r: { kind: string }) => r.kind === "header"),
+    ).toBe(true);
     expect(body.layout.margins.left).toBeCloseTo(25, 0);
 
-    const preview = await app.inject({ method: "GET", url: `/api/ingest/${body.jobId}/preview` });
+    const preview = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}/preview`,
+    });
     expect(preview.statusCode).toBe(200);
     expect(preview.headers["content-type"]).toBe("image/png");
     expect(preview.rawPayload.subarray(1, 4).toString()).toBe("PNG");
@@ -167,15 +189,19 @@ describe.skipIf(!enabled)("routes d'import", () => {
 
   it("répond 404 pour un import inconnu, sans toucher au disque", async () => {
     const app = await buildApp();
-    const res = await app.inject({ method: "GET", url: "/api/ingest/../../etc/preview" });
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/ingest/../../etc/preview",
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
-
   it("découpe une zone et la range dans les assets", async () => {
     const app = await buildApp();
     const body = await ingest(app);
-    const header = body.regions.find((r: { kind: string }) => r.kind === "header");
+    const header = body.regions.find(
+      (r: { kind: string }) => r.kind === "header",
+    );
 
     const res = await app.inject({
       method: "POST",
@@ -189,16 +215,20 @@ describe.skipIf(!enabled)("routes d'import", () => {
     // Nom tiré par le serveur : jamais celui du client, et sans collision.
     expect(fragment.file).toMatch(/^en-tete-[0-9a-f]{8}\.png$/);
     expect(fragment.widthPt).toBeCloseTo(595.28, 1);
-    const bytes = await readFile(path.join(TEMPLATES_ASSETS_DIR, fragment.file));
+    const bytes = await readFile(
+      path.join(TEMPLATES_ASSETS_DIR, fragment.file),
+    );
     expect(bytes.subarray(1, 4).toString()).toBe("PNG");
 
     await app.close();
   });
 
-  it("crée un gabarit dont la marge haute loge le bandeau", async () => {
+  it("crée un template dont la marge haute loge le bandeau", async () => {
     const app = await buildApp();
     const body = await ingest(app);
-    const header = body.regions.find((r: { kind: string }) => r.kind === "header");
+    const header = body.regions.find(
+      (r: { kind: string }) => r.kind === "header",
+    );
 
     const res = await app.inject({
       method: "POST",
@@ -215,14 +245,15 @@ describe.skipIf(!enabled)("routes d'import", () => {
     // Chemin relatif simple : typst refuse tout chemin qui remonte.
     expect(created?.source).not.toContain("..");
 
-    const bandHeight = (210 * result.fragments[0].heightPt) / result.fragments[0].widthPt;
+    const bandHeight =
+      (210 * result.fragments[0].heightPt) / result.fragments[0].widthPt;
     expect(result.layout.margins.top).toBeGreaterThanOrEqual(bandHeight);
     expect(result.layout.header.fullBleed).toBe(true);
 
     await app.close();
   });
 
-  it("crée un gabarit sans bandeau quand aucune zone n'est retenue", async () => {
+  it("crée un template sans bandeau quand aucune zone n'est retenue", async () => {
     const app = await buildApp();
     const body = await ingest(app);
 

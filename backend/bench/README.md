@@ -1,6 +1,6 @@
 # Banc d'essai de l'assistant IA
 
-Mesure ce que l'assistant de l'éditeur de gabarits fait vraiment d'une instruction en
+Mesure ce que l'assistant de l'éditeur de templates fait vraiment d'une instruction en
 français : est-ce que ça compile, est-ce que ça fait ce qui était demandé, est-ce que ça
 survit à la régénération du bloc `dots:layout`, et qu'est-ce que ça casse au passage.
 
@@ -37,21 +37,21 @@ comparaison ne vaut rien.
 
 ## Ce que les colonnes veulent dire
 
-| colonne | question |
-|---|---|
-| `compile` | la compilation Typst réelle, celle que le backend fait déjà avant de proposer |
-| `inclus` | `#include "body.typ"` toujours présent une fois — sinon le corps disparaît du PDF |
-| `bloc` | le bloc `dots:layout` est préservé (ou pas créé s'il n'y en avait pas) |
-| `cohérent` | régénérer le bloc depuis son JSON redonne la source. Faux = ce que l'assistant a écrit à la main sera écrasé au premier réglage touché dans le panneau |
-| `intention` | le contrôle propre au cas (marges à 30 mm, `flipped: true`, pied absent de la première page…) |
-| `collatéral` | champs du JSON modifiés sans avoir été demandés. **Attention** : calculé après `sanitizeLayout`, donc une valeur hors bornes n'y apparaît jamais — voir `borne` |
-| `borne` | champs que `sanitizeLayout` a réécrits en silence à la relecture |
-| `encre` / `mots` / `pages` | ce que le PDF montre. Beaucoup de mots avec peu d'encre = texte présent mais invisible |
+| colonne                    | question                                                                                                                                                        |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compile`                  | la compilation Typst réelle, celle que le backend fait déjà avant de proposer                                                                                   |
+| `inclus`                   | `#include "body.typ"` toujours présent une fois — sinon le corps disparaît du PDF                                                                               |
+| `bloc`                     | le bloc `dots:layout` est préservé (ou pas créé s'il n'y en avait pas)                                                                                          |
+| `cohérent`                 | régénérer le bloc depuis son JSON redonne la source. Faux = ce que l'assistant a écrit à la main sera écrasé au premier réglage touché dans le panneau          |
+| `intention`                | le contrôle propre au cas (marges à 30 mm, `flipped: true`, pied absent de la première page…)                                                                   |
+| `collatéral`               | champs du JSON modifiés sans avoir été demandés. **Attention** : calculé après `sanitizeLayout`, donc une valeur hors bornes n'y apparaît jamais — voir `borne` |
+| `borne`                    | champs que `sanitizeLayout` a réécrits en silence à la relecture                                                                                                |
+| `encre` / `mots` / `pages` | ce que le PDF montre. Beaucoup de mots avec peu d'encre = texte présent mais invisible                                                                          |
 
 ## Ajouter un cas
 
 Dans `cases.ts` : un objet `{ id, base, instruction, allowed?, check }`. `base` vaut
-`gere` (gabarit avec bloc `dots:layout`) ou `libre` (gabarit écrit à la main,
+`gere` (template avec bloc `dots:layout`) ou `libre` (template écrit à la main,
 `templates/republique-francaise.typ`). `allowed` liste les chemins du JSON dont le
 changement est demandé ; tout le reste compte comme collatéral. `check` renvoie `null` si
 l'intention est tenue, sinon la raison.

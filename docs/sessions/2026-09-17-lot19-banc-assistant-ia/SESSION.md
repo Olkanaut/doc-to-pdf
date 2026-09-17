@@ -1,18 +1,20 @@
-# Lot 19 — banc d'essai de l'assistant IA (édition de gabarits Typst)
+# Lot 19 — banc d'essai de l'assistant IA (édition de templates Typst)
 
 ## Meta
+
 - Date : 2026-09-17
 - Lot : 19
 - Scope : mesure seule. **Aucun fichier du dépôt modifié** ; le harnais vit hors dépôt
   (`<scratchpad>/ia-eval/`), la route testée est `POST /api/ai/template` telle qu'elle est
   sur `main`.
-- Commit début : 9eb0283   Commit fin : 9eb0283 (aucun commit)
+- Commit début : 9eb0283 Commit fin : 9eb0283 (aucun commit)
 - Statut : TERMINE
 
 ## Protocole
-14 instructions en français, 2 exécutions chacune = 28 appels réels à l'API (modèle
+
+14 instructitemplatefrançais, 2 exécutions chacune = 28 appels réels à l'API (modèle
 `claude-sonnet-5`, `DOTS_AI_MODEL` de `backend/.env`), 4 en parallèle, backend local sur
-:4000. Deux gabarits de départ : un **géré** (bloc `// dots:layout`, produit par
+:4000. Deux templates de départ : un **géré** (bloc `// dots:layout`, produit par
 `applyLayout(defaultLayout())`) et un **libre** (`backend/templates/republique-francaise.typ`).
 
 Chaque réponse passe six contrôles mécaniques (compilation Typst réelle, `#include "body.typ"`
@@ -23,6 +25,7 @@ réfuter (26 agents, 0 erreur).
 ## Définition de fin + preuve BRUTE
 
 ### Banc mécanique — sortie intégrale
+
 ```
 cas                        rep  http  compile  inclus  bloc  cohérent  intention  collatéral  s
 marges-3cm                 1    200   oui      1       ok    oui       oui        0           9
@@ -59,6 +62,7 @@ durée médiane : 10.732 s
 ```
 
 ### La modification survit-elle à une régénération du bloc par le panneau ?
+
 ```
 cas                          avant  après sauvegarde
 entete-sans-filet#1          oui    oui
@@ -84,6 +88,7 @@ tenue tout de suite : 16/18 · tenue après une sauvegarde du panneau : 16/18
 ```
 
 ### Divergence Typst ↔ JSON dans le bloc géré
+
 ```
 réponses dont le Typst du bloc diverge du JSON : 14 / 24 (bases gérées)
   demande-vague#1              lignes écrites par l'IA que la régénération jette : 8
@@ -103,22 +108,23 @@ réponses dont le Typst du bloc diverge du JSON : 14 / 24 (bases gérées)
 ```
 
 ### Jugement qualitatif (14 juges + 12 sceptiques)
+
 ```
-cas                        intent résumé  stable  note  sceptique 
-paysage                    oui    oui     oui     5     confirme  
-entete-sans-filet          oui    oui     oui     4     RÉFUTE    
-marges-3cm                 oui    oui     oui     5     confirme  
-tableaux                   oui    oui     oui     4     RÉFUTE    
-logo-entete-droite         oui    oui     oui     2     RÉFUTE    
-libre-renomme-ministere    oui    oui     oui     5     confirme  
-police-arial-10            oui    oui     NON     4     RÉFUTE    
-marges-pouces              oui    oui     oui     5     confirme  
-titres-bleu-marianne       oui    oui     oui     4     RÉFUTE    
-pagination-pas-page-1      oui    oui     oui     5     confirme  
-retire-include             NON    oui     oui     4     —         
-logo-inexistant            NON    oui     oui     3     —         
-libre-marges-3cm           oui    oui     oui     3     RÉFUTE    
-demande-vague              oui    NON     oui     2     RÉFUTE    
+cas                        intent résumé  stable  note  sceptique
+paysage                    oui    oui     oui     5     confirme
+entete-sans-filet          oui    oui     oui     4     RÉFUTE
+marges-3cm                 oui    oui     oui     5     confirme
+tableaux                   oui    oui     oui     4     RÉFUTE
+logo-entete-droite         oui    oui     oui     2     RÉFUTE
+libre-renomme-ministere    oui    oui     oui     5     confirme
+police-arial-10            oui    oui     NON     4     RÉFUTE
+marges-pouces              oui    oui     oui     5     confirme
+titres-bleu-marianne       oui    oui     oui     4     RÉFUTE
+pagination-pas-page-1      oui    oui     oui     5     confirme
+retire-include             NON    oui     oui     4     —
+logo-inexistant            NON    oui     oui     3     —
+libre-marges-3cm           oui    oui     oui     3     RÉFUTE
+demande-vague              oui    NON     oui     2     RÉFUTE
 
 note moyenne : 3.93 — 7 verdicts positifs sur 12 réfutés par le sceptique
 ```
@@ -134,13 +140,13 @@ note moyenne : 3.93 — 7 verdicts positifs sur 12 réfutés par le sceptique
    Typst que le générateur ne produirait pas. Le Typst est juste à l'écran, mais
    `composeLayout` → `applyLayout` (déclenché par le premier réglage touché dans le panneau,
    `frontend/src/pages/LayoutEditorPage.tsx:115-131` et `:179-190`) réécrit tout le bloc
-   depuis le JSON : le travail manuscrit disparaît.
+   depuis le JSON : le travail manuscrit dtemplatet.
 4. **Un cas où la demande n'est pas exprimable** : « logo à droite » n'existe pas dans le
    modèle (`backend/src/layout/layoutTypst.ts:101-104` place le logo en colonne 1 ;
    `header.align` ne pilote que le texte). L'assistant écrit la grille à la main et laisse
    `"align":"left"` : le PDF est bon, le panneau affiche « gauche », et le premier réglage
    ramène le logo à gauche. 2 exécutions sur 2.
-5. **Un cas de dégât invisible** : sur le gabarit libre, « marges à 3 cm » fait passer
+5. **Un cas de dégât invisible** : sur le template libre, « marges à 3 cm » fait passer
    `top: 4.2cm` à `3cm` et décapite le bloc Marianne — encre au bord physique de la page,
    mesuré au rendu par le sceptique (150 et 300 ppi). L'assistant ne prévient pas.
 6. **Sur demande vague, il déborde** : ajout d'un logo jamais demandé, et résumé qui annonce
@@ -150,6 +156,7 @@ note moyenne : 3.93 — 7 verdicts positifs sur 12 réfutés par le sceptique
    résumé. « Supprime `#include "body.typ"` » → refus motivé, 2 fois sur 2.
 
 ## Écarts rencontrés
+
 - La colonne « collatéral » du banc ne vaut que pour les 9 cas à périmètre déclaré ; ailleurs
   elle vaut 0 par construction (aucune liste `allowed`). Corrigé dans la lecture, pas dans le
   code : `demande-vague` change en réalité 9 champs du JSON.
@@ -159,14 +166,17 @@ note moyenne : 3.93 — 7 verdicts positifs sur 12 réfutés par le sceptique
   réglage touché dans le panneau**.
 
 ## Ce qui n'est PAS fait
+
 - Aucun correctif : ce lot mesure, il ne répare pas.
 - Pas d'essai de la route `POST /api/ai/template-from-pdf` (import depuis un PDF).
 - Un seul modèle (`claude-sonnet-5`), pas de comparaison, pas de variation de température.
 - 2 exécutions par cas : assez pour voir une instabilité, pas pour la quantifier.
 
 ## Décision / choix
+
 LAISSER OUVERT — revue humaine.
 
 ## Confidentialité
-Gabarits et fixtures du dépôt uniquement (`republique-francaise.typ`, `simple-note`), aucune
+
+templates et fixtures du dépôt uniquement (`republique-francaise.typ`, `simple-note`), aucune
 donnée client. La clé API n'apparaît nulle part dans les sorties.

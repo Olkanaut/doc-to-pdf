@@ -1,6 +1,6 @@
 /**
  * Bloc « dots:layout » : la mise en page réglée par des contrôles, traduite en
- * Typst et insérée dans le gabarit juste avant `#include "body.typ"`. En Typst,
+ * Typst et insérée dans le template juste avant `#include "body.typ"`. En Typst,
  * la dernière règle `#set` gagne : placé après les `#set` écrits à la main, le
  * bloc a le dernier mot sur la page, la police, les titres et l'allure des
  * tableaux (leur structure vient du document, voir convert/blocksToTypst.ts).
@@ -58,8 +58,8 @@ const TYPST_NEWLINE = /\r\n?|[\n\x0B\x0C\u0085\u2028\u2029]/;
 function text(raw: string): string {
   return raw
     .split(TYPST_NEWLINE)
-    .map((line) =>
-      escapeTypstText(line), // couvre aussi `/` et les marqueurs de début de ligne
+    .map(
+      (line) => escapeTypstText(line), // couvre aussi `/` et les marqueurs de début de ligne
     )
     .join(" \\ ");
 }
@@ -88,23 +88,39 @@ function contentBlock(parts: string[], indent: string): string {
  * concerné doit valoir au moins la hauteur rendue, sinon Typst rogne l'image —
  * c'est l'appelant qui la règle (voir ingest/templateFromAnalysis.ts).
  */
-function bleed(file: string, side: "top" | "bottom", cfg: LayoutConfig): string {
+function bleed(
+  file: string,
+  side: "top" | "bottom",
+  cfg: LayoutConfig,
+): string {
   const { left, right } = cfg.margins;
   return `#place(${side} + left, dx: -${left}mm, image("assets/${file}", width: 100% + ${left + right}mm))`;
 }
 
-function pageBand(defaultParts: string[], firstParts: string[], mode: PageBandMode): string {
+function pageBand(
+  defaultParts: string[],
+  firstParts: string[],
+  mode: PageBandMode,
+): string {
   const defaultBlock = contentBlock(defaultParts, "      ");
   const firstBlock = contentBlock(firstParts, "      ");
   if (mode === "all") return contentBlock(defaultParts, "    ");
   if (mode === "except-first") {
-    return contentBlock([`#context { if counter(page).get().first() > 1 ${defaultBlock} }`], "    ");
+    return contentBlock(
+      [`#context { if counter(page).get().first() > 1 ${defaultBlock} }`],
+      "    ",
+    );
   }
   if (mode === "first-only") {
-    return contentBlock([`#context { if counter(page).get().first() == 1 ${defaultBlock} }`], "    ");
+    return contentBlock(
+      [`#context { if counter(page).get().first() == 1 ${defaultBlock} }`],
+      "    ",
+    );
   }
   return contentBlock(
-    [`#context { if counter(page).get().first() == 1 ${firstBlock} else ${defaultBlock} }`],
+    [
+      `#context { if counter(page).get().first() == 1 ${firstBlock} else ${defaultBlock} }`,
+    ],
     "    ",
   );
 }
@@ -122,7 +138,11 @@ function headerParts(h: HeaderContent, cfg: LayoutConfig): string[] {
   } else if (h.text) {
     parts.push(`#align(${h.align})${body}`);
   }
-  if (h.rule) parts.push("#v(0.2cm)", `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`);
+  if (h.rule)
+    parts.push(
+      "#v(0.2cm)",
+      `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`,
+    );
   return parts;
 }
 
@@ -135,10 +155,18 @@ function header(cfg: LayoutConfig): string {
 function footerParts(f: FooterContent, cfg: LayoutConfig): string[] {
   const parts: string[] = [];
   if (f.logo && f.fullBleed) parts.push(bleed(f.logo, "bottom", cfg));
-  else if (f.logo) parts.push(`#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`);
-  if (f.rule) parts.push(`#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`, "#v(0.2cm)");
+  else if (f.logo)
+    parts.push(
+      `#align(${f.align})[#image("assets/${f.logo}", height: ${INLINE_LOGO_HEIGHT_MM}mm)]`,
+    );
+  if (f.rule)
+    parts.push(
+      `#line(length: 100%, stroke: 0.5pt + ${rgb(cfg.headings.color)})`,
+      "#v(0.2cm)",
+    );
   const pieces = [text(f.text), NUMBERING[f.numbering]].filter(Boolean);
-  if (pieces.length) parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
+  if (pieces.length)
+    parts.push(`#align(${f.align})[${pieces.join("#h(1em)")}]`);
   return parts;
 }
 
@@ -150,12 +178,24 @@ function footer(cfg: LayoutConfig): string {
 
 function hasFullBleedHeader(cfg: LayoutConfig): boolean {
   const h = cfg.header;
-  return h.enabled && Boolean((h.logo && h.fullBleed) || (h.mode === "different-first" && h.first.logo && h.first.fullBleed));
+  return (
+    h.enabled &&
+    Boolean(
+      (h.logo && h.fullBleed) ||
+      (h.mode === "different-first" && h.first.logo && h.first.fullBleed),
+    )
+  );
 }
 
 function hasFullBleedFooter(cfg: LayoutConfig): boolean {
   const f = cfg.footer;
-  return f.enabled && Boolean((f.logo && f.fullBleed) || (f.mode === "different-first" && f.first.logo && f.first.fullBleed));
+  return (
+    f.enabled &&
+    Boolean(
+      (f.logo && f.fullBleed) ||
+      (f.mode === "different-first" && f.first.logo && f.first.fullBleed),
+    )
+  );
 }
 
 /**
@@ -169,11 +209,18 @@ function hasFullBleedFooter(cfg: LayoutConfig): boolean {
  */
 function table(cfg: LayoutConfig, color: string): string[] {
   const t = cfg.table;
-  const headerFill = t.headerFill === "grey" ? "luma(240)" : t.headerFill === "brand" ? color : undefined;
+  const headerFill =
+    t.headerFill === "grey"
+      ? "luma(240)"
+      : t.headerFill === "brand"
+        ? color
+        : undefined;
   const branches: string[] = [];
   if (headerFill) branches.push(`if y == 0 { ${headerFill} }`);
   if (t.zebra) branches.push(`if calc.odd(y) { luma(248) }`);
-  const fill = branches.length ? `, fill: (x, y) => ${branches.join(" else ")}` : "";
+  const fill = branches.length
+    ? `, fill: (x, y) => ${branches.join(" else ")}`
+    : "";
   const headerShow =
     t.headerFill === "brand"
       ? `it => { set text(weight: "bold"); set text(fill: white) if it.fill == auto; it }`
@@ -224,7 +271,8 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     `#${textSet(cfg.textStyles.body)}`,
     `#set par(leading: ${leading}em)`,
     ...(["h1", "h2", "h3"] as const).map(
-      (key, i) => `#show heading.where(level: ${i + 1}): ${textSet(cfg.textStyles[key])}`,
+      (key, i) =>
+        `#show heading.where(level: ${i + 1}): ${textSet(cfg.textStyles[key])}`,
     ),
     ...table(cfg, color),
     LAYOUT_END,
@@ -246,7 +294,10 @@ export function applyLayout(source: string, cfg: LayoutConfig): string {
   const block = layoutToTypst(cfg);
   const lines = source.split("\n");
   const begin = lines.findIndex((l) => l.trim() === LAYOUT_BEGIN);
-  const end = begin < 0 ? -1 : lines.findIndex((l, i) => i > begin && l.trim() === LAYOUT_END);
+  const end =
+    begin < 0
+      ? -1
+      : lines.findIndex((l, i) => i > begin && l.trim() === LAYOUT_END);
   if (begin >= 0 && end > begin) {
     lines.splice(begin, end - begin + 1, block);
     return lines.join("\n");
@@ -267,7 +318,10 @@ export function applyLayout(source: string, cfg: LayoutConfig): string {
  * présent mais JSON illisible : défauts, managed:true (le bloc sera régénéré à
  * la prochaine sauvegarde).
  */
-export function readLayout(source: string): { layout: LayoutConfig; managed: boolean } {
+export function readLayout(source: string): {
+  layout: LayoutConfig;
+  managed: boolean;
+} {
   const lines = source.split("\n");
   const begin = lines.findIndex((l) => l.trim() === LAYOUT_BEGIN);
   if (begin < 0) return { layout: deduceLayout(source), managed: false };
@@ -277,7 +331,12 @@ export function readLayout(source: string): { layout: LayoutConfig; managed: boo
     .map((l) => l.trim())
     .find((l) => l.startsWith(`${LAYOUT_MARK} {`));
   try {
-    return { layout: sanitizeLayout(JSON.parse(json ? json.slice(LAYOUT_MARK.length) : "")), managed: true };
+    return {
+      layout: sanitizeLayout(
+        JSON.parse(json ? json.slice(LAYOUT_MARK.length) : ""),
+      ),
+      managed: true,
+    };
   } catch {
     return { layout: defaultLayout(), managed: true };
   }
@@ -286,7 +345,12 @@ export function readLayout(source: string): { layout: LayoutConfig; managed: boo
 // ── Déduction depuis une source écrite à la main ─────────────────────────────
 
 /** Indice du `close` apparié au `open` situé en `from`, ou -1. */
-function closing(src: string, from: number, open: string, close: string): number {
+function closing(
+  src: string,
+  from: number,
+  open: string,
+  close: string,
+): number {
   let depth = 0;
   for (let i = from; i < src.length; i++) {
     if (src[i] === "\\") i++;
@@ -309,7 +373,12 @@ function contentArg(args: string, key: string): string | undefined {
 function toMm(len: string | undefined): number | undefined {
   const m = len?.trim().match(/^([\d.]+)(cm|mm|pt|in)$/);
   if (!m) return undefined;
-  const per: Record<string, number> = { cm: 10, mm: 1, pt: 25.4 / 72, in: 25.4 };
+  const per: Record<string, number> = {
+    cm: 10,
+    mm: 1,
+    pt: 25.4 / 72,
+    in: 25.4,
+  };
   return Math.round(Number(m[1]) * per[m[2]]);
 }
 
@@ -336,7 +405,10 @@ function headerText(content: string): string {
 }
 
 function numbering(footer: string): Numbering {
-  const m = /(Page\s+)?#context\s+counter\(page\)\.display\("[^"]*"(,\s*both:\s*true)?\)/.exec(footer);
+  const m =
+    /(Page\s+)?#context\s+counter\(page\)\.display\("[^"]*"(,\s*both:\s*true)?\)/.exec(
+      footer,
+    );
   if (!m) return "none";
   if (m[1]) return "page-n-of-total";
   return m[2] ? "n-of-total" : "n";
@@ -356,14 +428,18 @@ export function deduceLayout(source: string): LayoutConfig {
   const close = open < 0 ? -1 : closing(source, open, "(", ")");
   const page = close < 0 ? "" : source.slice(open + 1, close);
 
-  const margin = /(?:^|[,(\s])margin:\s*(\([^)]*\)|[^,\n]+)/.exec(page)?.[1]?.trim();
+  const margin = /(?:^|[,(\s])margin:\s*(\([^)]*\)|[^,\n]+)/
+    .exec(page)?.[1]
+    ?.trim();
   const sides: Record<string, number | undefined> = {};
   if (margin?.startsWith("(")) {
-    for (const [, k, v] of margin.matchAll(/(\w+):\s*([^,()]+)/g)) sides[k] = toMm(v);
+    for (const [, k, v] of margin.matchAll(/(\w+):\s*([^,()]+)/g))
+      sides[k] = toMm(v);
   } else {
     sides.rest = toMm(margin);
   }
-  const side = (k: string, axis: string) => sides[k] ?? sides[axis] ?? sides.rest;
+  const side = (k: string, axis: string) =>
+    sides[k] ?? sides[axis] ?? sides.rest;
 
   const header = contentArg(page, "header");
   const footer = contentArg(page, "footer");
@@ -391,36 +467,57 @@ export function deduceLayout(source: string): LayoutConfig {
     font: font ?? "Libertinus Serif",
     fontSize,
     // En-tête ou pied absent : seul `enabled` passe à false, le reste garde ses défauts.
-    header: header === undefined ? { enabled: false } : {
-      enabled: true,
-      text: headerText(header),
-      logo: /image\("assets\/([^"]+)"/.exec(header)?.[1] ?? null,
-      rule: /#line\(/.test(header),
-    },
-    footer: footer === undefined ? { enabled: false } : {
-      enabled: true,
-      numbering: numbering(footer),
-      align: /#align\((left|center|right)\)/.exec(footer)?.[1],
-      firstPage: !/counter\(page\)\.get\(\)\.first\(\)\s*>\s*1/.test(footer),
-      rule: /#line\(/.test(footer),
-    },
-    headings: { color },
-    textStyles: font || fontSize || color
-      ? {
-        body: { font: font ?? "Libertinus Serif", fontSize, color: "#000000" },
-        ...(["h1", "h2", "h3"] as const).reduce<Record<string, { font: string | undefined; fontSize: number | undefined; color: string | undefined }>>(
-          (acc, key, i) => {
-            const scale = HEADING_SIZE_FACTORS.normal[i];
-            acc[key] = {
-              font: font ?? "Libertinus Serif",
-              fontSize: fontSize ? Math.round(fontSize * scale * 10) / 10 : undefined,
-              color,
-            };
-            return acc;
+    header:
+      header === undefined
+        ? { enabled: false }
+        : {
+            enabled: true,
+            text: headerText(header),
+            logo: /image\("assets\/([^"]+)"/.exec(header)?.[1] ?? null,
+            rule: /#line\(/.test(header),
           },
-          {},
-        ),
-      }
-      : undefined,
+    footer:
+      footer === undefined
+        ? { enabled: false }
+        : {
+            enabled: true,
+            numbering: numbering(footer),
+            align: /#align\((left|center|right)\)/.exec(footer)?.[1],
+            firstPage: !/counter\(page\)\.get\(\)\.first\(\)\s*>\s*1/.test(
+              footer,
+            ),
+            rule: /#line\(/.test(footer),
+          },
+    headings: { color },
+    textStyles:
+      font || fontSize || color
+        ? {
+            body: {
+              font: font ?? "Libertinus Serif",
+              fontSize,
+              color: "#000000",
+            },
+            ...(["h1", "h2", "h3"] as const).reduce<
+              Record<
+                string,
+                {
+                  font: string | undefined;
+                  fontSize: number | undefined;
+                  color: string | undefined;
+                }
+              >
+            >((acc, key, i) => {
+              const scale = HEADING_SIZE_FACTORS.normal[i];
+              acc[key] = {
+                font: font ?? "Libertinus Serif",
+                fontSize: fontSize
+                  ? Math.round(fontSize * scale * 10) / 10
+                  : undefined,
+                color,
+              };
+              return acc;
+            }, {}),
+          }
+        : undefined,
   });
 }

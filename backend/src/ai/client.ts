@@ -27,7 +27,10 @@ export async function callMessages(input: {
   content: ContentBlock[];
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new AiApiError("ANTHROPIC_API_KEY absente côté serveur (backend/.env)");
+  if (!apiKey)
+    throw new AiApiError(
+      "ANTHROPIC_API_KEY absente côté serveur (backend/.env)",
+    );
 
   let res: Response;
   try {
@@ -46,7 +49,7 @@ export async function callMessages(input: {
       },
       body: JSON.stringify({
         model: process.env.DOTS_AI_MODEL ?? "claude-sonnet-5",
-        // ponytail: un gabarit complet dépasse 4096 jetons de sortie ; réglable, 16k par défaut.
+        // ponytail: un template complet dépasse 4096 jetons de sortie ; réglable, 16k par défaut.
         max_tokens: Number(process.env.DOTS_AI_MAX_TOKENS) || 16384,
         system: input.system,
         messages: [{ role: "user", content: input.content }],
@@ -67,16 +70,22 @@ export async function callMessages(input: {
     const data = (await res.json().catch(() => ({}))) as {
       error?: { type?: string; message?: string };
     };
-    const detail = [data.error?.type, data.error?.message?.slice(0, 120)].filter(Boolean).join(" : ");
-    throw new AiApiError(`API Anthropic : HTTP ${res.status}${detail ? ` (${detail})` : ""}`);
+    const detail = [data.error?.type, data.error?.message?.slice(0, 120)]
+      .filter(Boolean)
+      .join(" : ");
+    throw new AiApiError(
+      `API Anthropic : HTTP ${res.status}${detail ? ` (${detail})` : ""}`,
+    );
   }
 
   const data = (await res.json()) as {
     stop_reason?: string;
     content?: { type: string; text?: string }[];
   };
-  if (data.stop_reason === "max_tokens") throw new AiApiError("réponse tronquée par le modèle (max_tokens)");
-  if (data.stop_reason === "refusal") throw new AiApiError("requête refusée par le modèle");
+  if (data.stop_reason === "max_tokens")
+    throw new AiApiError("réponse tronquée par le modèle (max_tokens)");
+  if (data.stop_reason === "refusal")
+    throw new AiApiError("requête refusée par le modèle");
   return (data.content ?? [])
     .filter((b) => b.type === "text")
     .map((b) => b.text ?? "")

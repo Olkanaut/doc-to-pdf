@@ -4,7 +4,7 @@ export interface TemplateSummary {
   description: string;
   createdAt: string;
   updatedAt: string;
-  /** Posé par le backend : ce gabarit est celui appliqué par défaut. */
+  /** Posé par le backend : cette template est celle appliquée par défaut. */
   isDefault?: boolean;
 }
 
@@ -60,7 +60,10 @@ async function asJson<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
   return fetch(input, {
     ...init,
     credentials: "include",
@@ -141,7 +144,9 @@ export async function fetchFixtures(): Promise<FixtureSummary[]> {
   return asJson(await apiFetch("/api/fixtures"));
 }
 
-export async function fetchDocumentContent(documentId: string): Promise<DocsDocumentContent> {
+export async function fetchDocumentContent(
+  documentId: string,
+): Promise<DocsDocumentContent> {
   return asJson(
     await apiFetch(`/api/documents/${encodeURIComponent(documentId)}/content`),
   );
@@ -156,7 +161,9 @@ export async function searchDocsDocuments(
     q: query,
     limit: String(limit),
   });
-  return asJson(await apiFetch(`/api/documents/search?${params.toString()}`, { signal }));
+  return asJson(
+    await apiFetch(`/api/documents/search?${params.toString()}`, { signal }),
+  );
 }
 
 export interface RenderRequest {
@@ -176,7 +183,9 @@ export interface RenderError {
   details?: string;
 }
 
-export async function renderPdf(req: RenderRequest): Promise<RenderResult | RenderError> {
+export async function renderPdf(
+  req: RenderRequest,
+): Promise<RenderResult | RenderError> {
   const res = await apiFetch("/api/render", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -184,13 +193,17 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult | Rend
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
-    return { ok: false, error: data.error ?? "Unknown error", details: data.details };
+    return {
+      ok: false,
+      error: data.error ?? "Unknown error",
+      details: data.details,
+    };
   }
   const blob = await res.blob();
   return { ok: true, blob };
 }
 
-// ── Gabarit par défaut ────────────────────────────────────────────────────────
+// ── Template par défaut ───────────────────────────────────────────────────────
 
 export async function fetchDefaultTemplate(): Promise<TemplateSummary | null> {
   const res = await fetch("/api/templates/default");
@@ -198,7 +211,9 @@ export async function fetchDefaultTemplate(): Promise<TemplateSummary | null> {
   return asJson(res);
 }
 
-export async function setDefaultTemplate(templateId: string): Promise<TemplateSummary> {
+export async function setDefaultTemplate(
+  templateId: string,
+): Promise<TemplateSummary> {
   return asJson(
     await fetch("/api/templates/default", {
       method: "PUT",
@@ -253,7 +268,10 @@ export function assetUrl(file: string): string {
 
 /** Only available when DOTS_ENABLE_ASSET_DELETE=1 (demo cleanup). */
 export async function deleteTemplateAsset(file: string): Promise<void> {
-  const res = await apiFetch(`/api/templates/assets/${encodeURIComponent(file)}`, { method: "DELETE" });
+  const res = await apiFetch(
+    `/api/templates/assets/${encodeURIComponent(file)}`,
+    { method: "DELETE" },
+  );
   if (!res.ok && res.status !== 204) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(data.error ?? `Request failed (${res.status})`);
@@ -299,10 +317,18 @@ export interface IngestAnalysis {
    * quels — rien n'est rendu, donc il n'y a rien à recadrer.
    */
   mode: "page" | "assets";
-  page: { widthPt: number; heightPt: number; count: number; previewScale: number };
+  page: {
+    widthPt: number;
+    heightPt: number;
+    count: number;
+    previewScale: number;
+  };
   regions: IngestRegion[];
   assets?: IngestAsset[];
-  layout: Pick<LayoutConfig, "paper" | "orientation" | "margins" | "font" | "fontSize" | "lineHeight"> & {
+  layout: Pick<
+    LayoutConfig,
+    "paper" | "orientation" | "margins" | "font" | "fontSize" | "lineHeight"
+  > & {
     headings: LayoutConfig["headings"];
   };
   /** Police du document absente du serveur, remplacée par Marianne. */
@@ -357,7 +383,7 @@ export async function extractFragment(
   );
 }
 
-/** Crée le gabarit : zones découpées + relevé de la page. */
+/** Crée la template : zones découpées + relevé de la page. */
 export async function createTemplateFromIngest(
   jobId: string,
   input: {
@@ -368,7 +394,11 @@ export async function createTemplateFromIngest(
     headerAsset?: string | null;
     vector?: boolean;
   },
-): Promise<{ id: string; layout: LayoutConfig; fontSubstitution: string | null }> {
+): Promise<{
+  id: string;
+  layout: LayoutConfig;
+  fontSubstitution: string | null;
+}> {
   return asJson(
     await apiFetch(`/api/ingest/${jobId}/template`, {
       method: "POST",
@@ -397,7 +427,11 @@ export type PaperSize = "a4" | "a5" | "us-letter";
 export type Align = "left" | "center" | "right";
 export type Numbering = "none" | "n" | "n-of-total" | "page-n-of-total";
 export type TextStyleKey = "body" | "h1" | "h2" | "h3";
-export type PageBandMode = "all" | "except-first" | "first-only" | "different-first";
+export type PageBandMode =
+  | "all"
+  | "except-first"
+  | "first-only"
+  | "different-first";
 
 export interface TextStyle {
   font: string;
@@ -568,16 +602,26 @@ async function renderResponse(
 ): Promise<(RenderResult & { info: RenderInfo }) | RenderError> {
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: "Unknown error" }));
-    return { ok: false, error: data.error ?? "Unknown error", details: data.details };
+    return {
+      ok: false,
+      error: data.error ?? "Unknown error",
+      details: data.details,
+    };
   }
   let unsupported: Record<string, number> = {};
   try {
-    unsupported = JSON.parse(res.headers.get("X-Dots-Unsupported-Blocks") ?? "{}");
+    unsupported = JSON.parse(
+      res.headers.get("X-Dots-Unsupported-Blocks") ?? "{}",
+    );
   } catch {
     // Un en-tête absent ou mal formé ne doit pas empêcher l'affichage du PDF.
   }
   const blockCount = Number(res.headers.get("X-Dots-Block-Count") ?? 0);
-  return { ok: true, blob: await res.blob(), info: { blockCount, unsupported } };
+  return {
+    ok: true,
+    blob: await res.blob(),
+    info: { blockCount, unsupported },
+  };
 }
 
 /** Comme renderPdf, plus les en-têtes X-Dots-* posés par /api/render. */

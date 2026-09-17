@@ -1,10 +1,11 @@
 # Attestation de session — fixture `admin-tableau-complexe` (T1, preuve « avant »)
 
 ## Meta
+
 - Date : 2026-09-15
 - Lot : 7 (numéro déduit : lot 6 note « Tableaux […] Non traité dans ce lot », `docs/sessions/2026-09-15-lot6-ecrans-1-5/SESSION.md:126`). Sous-agent d'orchestration, chantier T1.
 - Scope : `backend/fixtures/admin-tableau-complexe.json` uniquement. Aucun fichier `.ts` touché ; `blocksToTypst.ts`, `escapeTypst.ts`, `types/blocks.ts` lus seulement.
-- Commit début : 3566983c5a15cb08524648973df0cec082703369   Commit fin : 3566983c5a15cb08524648973df0cec082703369 (aucun commit, arbre de travail seulement)
+- Commit début : 3566983c5a15cb08524648973df0cec082703369 Commit fin : 3566983c5a15cb08524648973df0cec082703369 (aucun commit, arbre de travail seulement)
 - Branche : template-editor
 - Statut : TERMINE
 
@@ -74,6 +75,7 @@ $ npm test
       Tests  72 passed (72)
 npm test exit=0
 ```
+
 (`tableToTypst.test.ts` est le chantier parallèle T2, non branché : ses 28 tests passent, mais `blocksToTypst.ts` ne l'appelle pas — `grep -n table blocksToTypst.ts` ne montre que le `case "table"` interne.)
 
 ### 4. Registre : GET /api/fixtures contient l'id
@@ -115,6 +117,7 @@ Page size:       595.276 x 841.89 pts (A4)
   [*Site*], [*Agents*], [*Postes de travail*], [Exempleville (siège)], [200], [215], [Annexe Nord], [45], [50]
 )
 ```
+
 Aucun `columns: (…pt, auto)`, aucun `table.header`, aucun `table.cell(colspan/rowspan/fill/align)`, aucun `#text(fill:)`, aucun `stroke`/`inset` : tout ce que portent `columnWidths`, `headerRows` et `props` est perdu.
 
 ### 7. Preuve « avant » : PNG page 1 et texte en colonnes
@@ -148,6 +151,7 @@ $ pdftotext -layout -f 2 -l 2 avant.pdf -   (tableau simple)
 Description du PNG (page 1, relu à 60 et 110 dpi) :
 
 Tableau 1 « Effectifs par direction » (grille 8 lignes × 5 colonnes, filets noirs fins uniformes) :
+
 - Largeurs : `columnWidths [180,90,90,90,null]` ignorées. Typst dimensionne en `auto` : la colonne « Contractuels » est la plus large (élargie par « Soit 20,8 % de contractuels (51 sur 245) » qui y atterrit), « Total » est la plus étroite (~1 cm), « Direction » et « Observations » se partagent le reste.
 - En-tête : même graisse et même fond que les données ; pas de `table.header` (pas de répétition en cas de saut de page).
 - Nombres (48, 23, 71…) collés à GAUCHE de leur cellule alors que `textAlignment: "right"` est réglé.
@@ -155,6 +159,7 @@ Tableau 1 « Effectifs par direction » (grille 8 lignes × 5 colonnes, filets n
 - Observation « Réorganisation en cours… » : fond blanc (attendu jaune `#fbf3db`). Observation « Taux de contractuels de 38,9 %… » : texte noir (attendu rouge `#e03e3e`).
 
 Tableau 2 « Planning des jalons » (grille 6 lignes × 4 colonnes, colonnes ~égales) :
+
 - Largeurs `[110, null, 200, 90]` ignorées (4 colonnes de largeur voisine).
 - En-tête : ni fond bleu (attendu `#ddebf1`), ni gras.
 - Ligne « T4 2026 » (3 cellules émises) : « T4 2026 » col. 1 (ne s'étend pas sur la ligne suivante), « Recette et mise en production » col. 2 seulement (aurait dû couvrir 2-3), « Prévu » col. 3 « Responsable » (aurait dû être col. 4 « État »), puis la première cellule de la ligne suivante, « Formation des agents (1 200 personnes) », remonte en col. 4 « État » de la ligne T4.
@@ -180,35 +185,40 @@ export const COLORS_DEFAULT = {
 $ grep "\"version\"" /home/frontend/node_modules/@blocknote/core/package.json
   "version": "0.54.0",
 ```
+
 La commande `grep -rhoE "(gray|…)\":\s*\{…"` proposée ne renvoie rien sur `dist/*.js` (clés non citées dans le bundle) ; `grep #ebeced` pointe `src/editor/defaultColors.ts` et `dist/style.css`.
 
 ## Ecarts rencontres
+
 1. Le fichier livrable existait déjà avant la session (voir Meta). Relu et validé, non réécrit : aucune ligne modifiée. Preuve : `git status --short backend/fixtures/admin-tableau-complexe.json` → `?? backend/fixtures/admin-tableau-complexe.json` (non suivi), md5 `0f6d0b08659816ee3d2c0626d04c3ea7`, taille 38 555 octets, mtime 15:51 (avant le démarrage 16:15 de cette session).
 2. Le numéro de lot (7) est déduit, non fourni par l'orchestrateur ; renommer le dossier si le lot réel diffère.
-3. Le script de dump Typst a d'abord échoué sous tsx (`Top-level await is currently not supported with the "cjs" output format`) ; renommé en `.mts`, il a fonctionné. Script dans le scratchpad, hors dépôt.
+3. Le script de dump Typsttemplateord échoué sous tsx (`Top-level await is currently not supported with the "cjs" output format`) ; renommé en `.mts`, il a fonctionné. Script dans le scratchpad, hors dépôt.
 4. `types/blocks.ts` (`TableBlock`, `TableCell`) ne décrit ni `type`, ni `columnWidths`, ni `headerRows`, ni `props` de cellule : la fixture est plus riche que le type, mais `JSON.parse(raw) as Fixture` (registry/fixtures.ts:33) ne vérifie rien, donc aucun échec. Diff proposé dans le rapport (needsElsewhere), fichier d'un coéquipier, non touché.
 
 ## Decision / choix
-Tranché par Abel le 2026-09-15 (« la première s'il te plait ») : **le gabarit pilote le style des tableaux**.
+
+Tranché par Abel le 2026-09-15 (« la première s'il te plait ») : **le template pilote le style des tableaux**.
 Le convertisseur n'émet que la structure et les couleurs de cellules voulues dans Docs ; `stroke:` et `inset:`
 retirés de l'appel `#table` (ils écrasaient le `#set table` du bloc dots:layout, section « Tableaux »).
 Sans `#set table` dans le gabarit : défaut Typst (trait noir 1 pt, marge 5 pt).
 
 Preuve, après modification :
-```
+
+```template
 $ grep -nE "STROKE|INSET|^\s*\`\s+(stroke|inset):" backend/src/convert/tableToTypst.ts
 aucun
 $ npx vitest run src/convert/tableToTypst.test.ts src/layout/layoutTypst.test.ts
  ✓ src/convert/tableToTypst.test.ts (32 tests) 744ms
  ✓ src/layout/layoutTypst.test.ts (30 tests) 1587ms
  Test Files  2 passed (2)
-      Tests  62 passed (62)
+      Tests  62 passed (62)template
 $ npx tsc --noEmit -p .        (backend)   exit 0
 $ npx tsx scratchpad/render-gabarit-pilote.ts     (fixture admin-tableau-complexe, minimal.typ)
 sans-set-table: (pas de #set table)                                   -> pilote-sans-set-table.pdf 47481 octets
 filets-aucun: #set table(stroke: none, inset: 6pt, fill: (x, y) => if y == 0 { luma(240) })   -> 87279 octets
 filets-complets: #set table(stroke: 0.5pt + luma(120), inset: 6pt, fill: …calc.odd(y)…)        -> 91360 octets
 ```
+
 Écart rencontré en chemin : le test « rowspan d'en-tête : b2 tombe sous H2 » mesure des colonnes de caractères
 (`pdftotext -layout`, tolérance 2) sous la géométrie que le module imposait ; sans elle, `expected 4 to be less
 than or equal to 2`. Le préambule des tests de compilation joue désormais le `#set table` du gabarit
@@ -221,13 +231,15 @@ Reste ouvert (revue humaine) : commit ; branchement de `tableToTypst` dans `bloc
 coéquipier, diff de 3 lignes) ; extension de `types/blocks.ts` ; `#set table` par défaut dans les seeds ou non.
 
 ## Confidentialite
+
 Contenu synthétique (Ministère de l'Exemple, Direction du numérique, Exempleville, personnes fictives). Aucune donnée client réelle. La fixture réelle `reel-roadmap.json` n'a été lue que pour la forme des blocs.
 
+## Branchement et échappement (2026-09-15, décisions « 1. corrige » et « 3. Brancher le modultemplate
 
-## Branchement et échappement (2026-09-15, décisions « 1. corrige » et « 3. Brancher le module »)
 Décision humaine : corriger l'échappement des débuts de ligne et brancher `tableToTypst` dans le
 convertisseur (fichiers `backend/src/convert/`, périmètre d'un coéquipier, modifiés sur décision explicite).
 Fait :
+
 - `escapeTypst.ts` : `/` ajouté aux caractères échappés (deux barres ouvrent un commentaire même dans le
   markup) ; `- `, `+ `, `= `, `1. ` échappés en début de ligne (début du texte ou après un retour).
 - `layoutTypst.ts` : son échappement propre des mêmes cas retiré (double échappement sinon).
@@ -239,6 +251,7 @@ Fait :
 - Tests ajoutés : échappement (tiret, numéro, URL) et tableau fusionné via le convertisseur.
 
 Preuves brutes :
+
 ```
 $ npx tsc --noEmit -p .        (backend)   -> tsc OK
 $ npx vitest run --root .
@@ -249,6 +262,7 @@ admin-tableau-complexe           HTTP/1.1 200 OK pages 2  puces 0
 reel-paris-arrete-voirie         HTTP/1.1 200 OK pages 17 puces 27      (57 avant : 30 cellules « - … » en puce)
 reel-paris-arrete-redevances     HTTP/1.1 200 OK pages 6  puces 24
 ```
+
 Aperçus regardés : `branche-effectifs-1.png` (ligne « Total général » fusionnée sur 3 colonnes, en-tête gras,
 fonds jaune/gris, texte rouge, chiffres à droite) ; `branche-voirie-11.png` (« 410 - dans le tiers du
 trottoir » en texte, plus de puce).

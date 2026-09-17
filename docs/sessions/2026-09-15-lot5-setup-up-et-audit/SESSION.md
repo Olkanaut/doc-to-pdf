@@ -69,7 +69,7 @@ Ctrl-C pour arrêter ce que ce script a lancé (ports : 4000 5173).
 ```
 
 23062 octets : **exactement la taille du rendu d'avant le merge**. La refonte du
-registre des gabarits (fichier → `backend/data/templates/`) ne change pas la sortie.
+registre des templates (fichier → `backend/data/templates/`) ne change pas la sortie.
 
 ### 3. Démarrage à froid du mini-site, et arrêt propre
 
@@ -256,7 +256,7 @@ attente, puis un troisième est arrivé pendant l'échange (`e23e7aa` → `36b0e
 **8. Le document d'audit ne portait pas le commit audité.** Omission signalée mais non
 corrigée : `docs/audit-installation-2026-09-15.md` a été écrit contre `a4e8ecc` et ne
 le dit pas. Trois de ses constats sont dépassés par le merge (authentification,
-gabarits enregistrables).
+templates enregistrables).
 
 ---
 
@@ -269,10 +269,10 @@ Points en attente d'arbitrage :
 - Sonder `y-provider` (:4444) et `minio` (:9000) dans `--verify` ? (audit A.1, A.2)
 - Faire détecter par `--verify` la divergence entre `dev/docs-compose.override.yml` et
   le `compose.override.yml` réellement posé ?
-- Reporter le bloc Resource Server API enrichi dans le gabarit du dépôt ?
+- Reporter le bloc Resource Server API enrichi dans le template du dépôt ?
 - Mettre `SETUP-LOCAL.md` à jour : ses sections décrivent encore l'application à un
   seul écran, alors que `/templates`, `/templates/:id` et `/documents/new` existent.
-- Comment un gabarit peaufiné voyage-t-il entre coéquipiers, puisque
+- Comment un template peaufiné voyage-t-il entre coéquipiers, puisque
   `backend/data/templates/` est gitignoré ?
 - Que faire des types de blocs non gérés par le convertisseur : échouer, avertir, ou
   continuer à les jeter en silence ?

@@ -429,7 +429,7 @@ def analyze_docx(input_path: Path) -> dict | None:
             "font": font,
             "fontSize": size,
             # Word donne l'interligne par style, pas globalement : la valeur par
-            # défaut du gabarit vaut mieux qu'une moyenne inventée.
+            # défaut du template vaut mieux qu'une moyenne inventée.
             "lineHeight": 1.2,
             "headings": {"scale": "normal", "color": "#0659c5"},
         },

@@ -1,13 +1,15 @@
 # Lot 20 — quatre modifications du prompt système de l'assistant, mesurées
 
 ## Meta
+
 - Date : 2026-09-17
 - Lot : 20
 - Scope : `backend/src/ai/prompt.ts` (seul fichier du dépôt modifié, +9 −2)
-- Commit début : db56ebd   Commit fin : **aucun** (modification non commitée)
+- Commit début : db56ebd Commit fin : **aucun** (modification non commitée)
 - Statut : TERMINE
 
 ## Ce qui a été changé
+
 1. **Garde-fou marges/bandes** : l'en-tête et le pied vivent dans la marge, bande utile
    ≈ 0,7 × marge ; vérifier avant de réduire `margin.top`/`margin.bottom`, et le dire.
 2. **Le bloc géré est ENGENDRÉ** : le JSON est la seule source durable, le Typst sous lui
@@ -19,6 +21,7 @@
    décrit que ce qui a réellement été écrit.
 
 ## Protocole
+
 Deux passes du même banc (14 instructions × 2 exécutions = 28 appels réels), à modèle
 identique (`db56ebd`, `claude-sonnet-5`), la première avec le prompt d'origine, la seconde
 après le patch. Les deux passes sont **renotées par le même code** après coup
@@ -27,6 +30,7 @@ après le patch. Les deux passes sont **renotées par le même code** après cou
 ## Définition de fin + preuve BRUTE
 
 ### Les deux passes, mêmes contrôles
+
 ```
 runs-avant — compile 28/28 · intention 28/28 · bloc préservé 28/28 · cohérent 11/24 · sans collatéral 27/28 · réponses avec surcharge hors bloc 0/28
    demande-vague#1 — incohérent
@@ -56,12 +60,14 @@ runs-apres — compile 28/28 · intention 28/28 · bloc préservé 28/28 · coh�
 ```
 
 ### Lignes manuscrites que la régénération du panneau jette
+
 ```
 avant : 74
 après : 48
 ```
 
 ### Le cas « logo à droite », rendu réel après régénération du bloc
+
 Avant (prompt d'origine) : le JSON portait `align:"right"` mais le logo est codé en dur en
 première colonne — après régénération, **le logo est à gauche et le texte à droite**, soit
 l'inverse de la demande.
@@ -71,18 +77,21 @@ droite**. Captures : `<scratchpad>/ia-eval/logo-rendu/crop-avant1-regenere.png` 
 `crop-apres1-regenere.png`.
 
 Résumé produit par l'assistant après le patch, exécution 1 :
+
 ```
 Ajout du logo 42_Logo.png aligné à droite dans l'en-tête, via une surcharge après le bloc
 dots:layout car ce positionnement n'est pas exprimable dans le JSON.
 ```
 
 ### Types
+
 ```
 $ npx tsc --noEmit   (backend)
 (exit 0)
 ```
 
 ## Écarts rencontrés
+
 - **Deux contrôles du banc étaient liés au moyen, pas au résultat**, et notaient en échec
   des réponses correctes du prompt patché : `logo-entete-droite` exigeait `header.logo` dans
   le JSON (alors que la bonne réponse est justement de ne pas l'y mettre et de surcharger
@@ -94,6 +103,7 @@ $ npx tsc --noEmit   (backend)
   échantillon trop petit pour conclure.
 
 ## Ce qui n'est PAS fait
+
 - 9 réponses sur 24 restent incohérentes après le patch (`tableaux`, `titres-bleu-marianne`,
   `demande-vague`, `pagination`, `logo-inexistant#2`) : l'assistant met le JSON à jour mais
   réécrit le Typst du bloc dans son style. L'effet demandé survit, la mise en forme non.
@@ -105,7 +115,9 @@ $ npx tsc --noEmit   (backend)
   été relancés) : la comparaison ci-dessus est mécanique.
 
 ## Décision / choix
+
 LAISSER OUVERT — revue humaine. `backend/src/ai/prompt.ts` est modifié dans l'arbre, non commité.
 
 ## Confidentialité
-Gabarits et fixtures du dépôt uniquement. Aucune donnée client. La clé API n'apparaît nulle part.
+
+templates et fixtures du dépôt uniquement. Aucune donnée client. La clé API n'apparaît nulle part.

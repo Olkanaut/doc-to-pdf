@@ -1,5 +1,5 @@
 /* Écran « un document → PDF » : rail gauche (nom du document, ⓘ, recherche,
-   gabarits) et PDF sur toute la surface restante, avec ses actions posées en
+   templates) et PDF sur toute la surface restante, avec ses actions posées en
    bas à droite. Boutons, champs, avis, modale et popover viennent du kit ; ne
    restent ici que la structure et les quelques éléments qu'il n'a pas. */
 
@@ -48,7 +48,7 @@
   font-weight: 600;
 }
 
- /* Les deux boutons tiennent côte à côte dans le rail : sans icône, « Ouvrir dans
+/* Les deux boutons tiennent côte à côte dans le rail : sans icône, « Ouvrir dans
    Docs » et « Changer » font 232 px de large pour 267 px disponibles. */
 .doc-rail__acts {
   display: flex;
@@ -256,7 +256,7 @@
   }
 }
 
-/* ── Gabarits : sélection à la manière de Docs ───────────────────────────── */
+/* ── templates : sélection à la manière de Docs ───────────────────────────── */
 
 /* Dans le panneau de Docs, la ligne sélectionnée ne porte qu'un fond gris : ni
    filet coloré, ni puce. Les tuiles du kit (Radio) gardent leur rôle et leur

@@ -35,8 +35,8 @@ describe("parseAiReply", () => {
     expect(parseAiReply(text)?.source).toBe(TEMPLATE + "\n");
   });
 
-  it("rejette une réponse sans gabarit", () => {
-    expect(parseAiReply("Je ne peux pas modifier ce gabarit.")).toBeNull();
+  it("rejette une réponse sans template", () => {
+    expect(parseAiReply("Je ne peux pas modifier ce template.")).toBeNull();
     expect(parseAiReply("")).toBeNull();
     // une source qui a perdu l'include compilerait sans le corps : refusée
     expect(parseAiReply('<typst>#set page(paper: "a4")</typst>')).toBeNull();

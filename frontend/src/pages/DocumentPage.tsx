@@ -13,8 +13,20 @@ import { PdfPreview } from "../components/PdfPreview";
 import { TemplateTiles } from "../components/compose/TemplateTiles";
 import { DocInfoPopover } from "../components/document/DocInfoPopover";
 import { SendMailModal } from "../components/document/SendMailModal";
-import { Alert, Button, Input, Spinner, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
-import { Download, Mail, StackTemplate, Zoom } from "@gouvfr-lasuite/ui-components/icons";
+import {
+  Alert,
+  Button,
+  Input,
+  Spinner,
+  VariantType,
+  type ButtonProps,
+} from "@gouvfr-lasuite/ui-components";
+import {
+  Download,
+  Mail,
+  StackTemplate,
+  Zoom,
+} from "@gouvfr-lasuite/ui-components/icons";
 import { docsUrl } from "../config";
 import "../components/compose/compose.css";
 import "../components/document/document-page.css";
@@ -47,7 +59,14 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
       href={to}
       onClick={(e: MouseEvent<HTMLAnchorElement & HTMLButtonElement>) => {
         onClick?.(e);
-        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+        if (
+          e.defaultPrevented ||
+          e.button !== 0 ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.altKey
+        )
           return;
         e.preventDefault();
         navigate(to);
@@ -83,7 +102,9 @@ function DocumentView({ documentId }: { documentId: string }) {
           setState({
             status: "error",
             message:
-              reason instanceof Error ? reason.message : "Impossible de charger le document.",
+              reason instanceof Error
+                ? reason.message
+                : "Impossible de charger le document.",
           });
         }
       });
@@ -103,7 +124,8 @@ function DocumentView({ documentId }: { documentId: string }) {
         setTemplates(list);
         setDefaultId(def?.id ?? null);
         const initial =
-          requestedTemplateId && list.some((template) => template.id === requestedTemplateId)
+          requestedTemplateId &&
+          list.some((template) => template.id === requestedTemplateId)
             ? requestedTemplateId
             : (def?.id ?? list[0]?.id ?? "");
         setTemplateId(initial);
@@ -111,7 +133,9 @@ function DocumentView({ documentId }: { documentId: string }) {
       .catch((reason: unknown) => {
         if (!cancelled) {
           setTemplatesError(
-            reason instanceof Error ? reason.message : "Impossible de charger les gabarits.",
+            reason instanceof Error
+              ? reason.message
+              : "Impossible de charger les templates.",
           );
         }
       })
@@ -126,7 +150,9 @@ function DocumentView({ documentId }: { documentId: string }) {
 
   useEffect(() => {
     const requestKey =
-      state.status === "loaded" && templateId ? `${documentId}:${templateId}` : null;
+      state.status === "loaded" && templateId
+        ? `${documentId}:${templateId}`
+        : null;
     if (!requestKey) {
       if (pdfUrlRef.current) {
         URL.revokeObjectURL(pdfUrlRef.current);
@@ -163,7 +189,10 @@ function DocumentView({ documentId }: { documentId: string }) {
         setPdfState({
           status: "error",
           requestKey,
-          message: reason instanceof Error ? reason.message : "Impossible de générer le PDF.",
+          message:
+            reason instanceof Error
+              ? reason.message
+              : "Impossible de générer le PDF.",
         });
       });
 
@@ -178,7 +207,9 @@ function DocumentView({ documentId }: { documentId: string }) {
   );
 
   const renderRequestKey =
-    state.status === "loaded" && templateId ? `${documentId}:${templateId}` : null;
+    state.status === "loaded" && templateId
+      ? `${documentId}:${templateId}`
+      : null;
   const activePdfState: PdfViewState =
     renderRequestKey &&
     pdfState.status !== "idle" &&
@@ -201,11 +232,17 @@ function DocumentView({ documentId }: { documentId: string }) {
           timeStyle: "short",
         }).format(new Date(state.document.updatedAt))
       : null;
-  const title = state.status === "loaded" ? state.document.title : "Document Docs";
+  const title =
+    state.status === "loaded" ? state.document.title : "Document Docs";
   const fileName = `${documentId || "document"}.pdf`;
   const unsupported =
-    activePdfState.status === "ready" ? Object.entries(activePdfState.info.unsupported) : [];
-  const unsupportedTotal = unsupported.reduce((total, [, count]) => total + count, 0);
+    activePdfState.status === "ready"
+      ? Object.entries(activePdfState.info.unsupported)
+      : [];
+  const unsupportedTotal = unsupported.reduce(
+    (total, [, count]) => total + count,
+    0,
+  );
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -215,7 +252,7 @@ function DocumentView({ documentId }: { documentId: string }) {
 
   return (
     <div className="doc-shell">
-      <aside className="doc-rail" aria-label="Document et gabarits">
+      <aside className="doc-rail" aria-label="Document et templates">
         <div className="doc-rail__doc">
           <div className="doc-rail__name-row">
             <span className="doc-rail__name" title={title}>
@@ -230,7 +267,12 @@ function DocumentView({ documentId }: { documentId: string }) {
           </div>
           <div className="doc-rail__acts">
             {/* Docs vit sur une autre origine : lien franc, pas de navigation interne. */}
-            <Button size="small" variant="tertiary" color="neutral" href={documentUrl}>
+            <Button
+              size="small"
+              variant="tertiary"
+              color="neutral"
+              href={documentUrl}
+            >
               Ouvrir dans Docs
             </Button>
             <LinkButton to="/" size="small" variant="tertiary" color="neutral">
@@ -246,12 +288,12 @@ function DocumentView({ documentId }: { documentId: string }) {
         )}
 
         <Input
-          label="Rechercher un gabarit"
+          label="Rechercher une template"
           hideLabel
           variant="classic"
           fullWidth
           type="search"
-          placeholder="Rechercher un gabarit"
+          placeholder="Rechercher une template"
           icon={<Zoom aria-hidden="true" />}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -260,7 +302,7 @@ function DocumentView({ documentId }: { documentId: string }) {
         <div className="doc-rail__templates">
           {templatesLoading && (
             <p className="dots-muted doc-rail__empty" role="status">
-              Chargement des gabarits…
+              Chargement des templates…
             </p>
           )}
           {templatesError && (
@@ -269,11 +311,17 @@ function DocumentView({ documentId }: { documentId: string }) {
             </div>
           )}
           {!templatesLoading && !templatesError && templates.length === 0 && (
-            <p className="dots-muted doc-rail__empty">Aucun gabarit disponible pour le moment.</p>
+            <p className="dots-muted doc-rail__empty">
+              Aucune template disponible pour le moment.
+            </p>
           )}
-          {!templatesLoading && !templatesError && templates.length > 0 && (
-            shown.length === 0 ? (
-              <p className="dots-muted doc-rail__empty">Aucun gabarit ne porte ce nom.</p>
+          {!templatesLoading &&
+            !templatesError &&
+            templates.length > 0 &&
+            (shown.length === 0 ? (
+              <p className="dots-muted doc-rail__empty">
+                Aucune template ne porte ce nom.
+              </p>
             ) : (
               <TemplateTiles
                 templates={shown}
@@ -281,11 +329,9 @@ function DocumentView({ documentId }: { documentId: string }) {
                 defaultId={defaultId}
                 onSelect={setTemplateId}
               />
-            )
-          )}
+            ))}
         </div>
       </aside>
-
       <section className="doc-view" aria-label="Aperçu PDF">
         {(activePdfState.status === "error" || unsupportedTotal > 0) && (
           <div className="doc-view__notices">
@@ -297,7 +343,9 @@ function DocumentView({ documentId }: { documentId: string }) {
                     {activePdfState.details && (
                       <details>
                         <summary>Détails</summary>
-                        <pre className="dots-mono">{activePdfState.details}</pre>
+                        <pre className="dots-mono">
+                          {activePdfState.details}
+                        </pre>
                       </details>
                     )}
                   </div>
@@ -307,9 +355,14 @@ function DocumentView({ documentId }: { documentId: string }) {
             {unsupportedTotal > 0 && (
               <div role="status">
                 <Alert type={VariantType.INFO}>
-                  {unsupportedTotal} bloc{unsupportedTotal > 1 ? "s" : ""} sans équivalent Typst (
-                  {unsupported.map(([type, count]) => `${type} ×${count}`).join(", ")}) ne
-                  {unsupportedTotal > 1 ? " figurent" : " figure"} pas dans le PDF.
+                  {unsupportedTotal} bloc{unsupportedTotal > 1 ? "s" : ""} sans
+                  équivalent Typst (
+                  {unsupported
+                    .map(([type, count]) => `${type} ×${count}`)
+                    .join(", ")}
+                  ) ne
+                  {unsupportedTotal > 1 ? " figurent" : " figure"} pas dans le
+                  PDF.
                 </Alert>
               </div>
             )}
@@ -318,7 +371,9 @@ function DocumentView({ documentId }: { documentId: string }) {
 
         <div className="doc-view__preview">
           <PdfPreview
-            pdfUrl={activePdfState.status === "ready" ? activePdfState.url : null}
+            pdfUrl={
+              activePdfState.status === "ready" ? activePdfState.url : null
+            }
             fileName={fileName}
           />
         </div>
@@ -353,7 +408,9 @@ function DocumentView({ documentId }: { documentId: string }) {
             size="small"
             color="brand"
             icon={<Download aria-hidden="true" />}
-            href={activePdfState.status === "ready" ? activePdfState.url : undefined}
+            href={
+              activePdfState.status === "ready" ? activePdfState.url : undefined
+            }
             download={activePdfState.status === "ready" ? fileName : undefined}
             disabled={activePdfState.status !== "ready"}
           >
@@ -361,7 +418,6 @@ function DocumentView({ documentId }: { documentId: string }) {
           </Button>
         </div>
       </section>
-
       {mailOpen && (
         <SendMailModal
           documentTitle={title}

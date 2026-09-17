@@ -49,17 +49,17 @@
  * réglée ne suit plus son contenu, et une piste `fr` ne s'élargit pas pour un
  * mot plus long qu'elle (sous ~150 mm de largeur de texte, « Contractuels »
  * en gras dans une piste 90fr sur 570 touche la cellule voisine ; les trois
- * gabarits donnent 160 à 170 mm). Sans `columnWidths` du tout (fixtures
+ * templates donnent 160 à 170 mm). Sans `columnWidths` du tout (fixtures
  * maison), `columns: N` : pistes `auto`, inchangé.
  *
- * Zébrage du gabarit (`#set table(fill: (x, y) => …)`, layout/layoutTypst.ts)
+ * Zébrage du template (`#set table(fill: (x, y) => …)`, layout/layoutTypst.ts)
  * et rowspan : Typst évalue `fill` à la ligne de départ de la cellule
  * fusionnée, qui garde ce fond sur toute sa hauteur pendant que le reste de la
  * ligne suivante est zébré. Comportement Typst, connu, non corrigé ici.
  *
  * Aucun `stroke:` ni `inset:` dans l'appel `#table` : un argument explicite
- * écraserait le `#set table(…)` du gabarit (bloc dots:layout, section
- * « Tableaux »). Décision du 2026-09-15 : le gabarit pilote le style des
+ * écraserait le `#set table(…)` du template (bloc dots:layout, section
+ * « Tableaux »). Décision du 2026-09-15 : le template pilote le style des
  * tableaux, le convertisseur n'émet que la structure et les couleurs de
  * cellules voulues dans Docs. Sans `#set table`, défaut Typst (trait noir 1pt).
  */
@@ -144,7 +144,10 @@ function clampHeaderRows(value: unknown, rowCount: number): number {
   return Math.min(Math.max(0, Math.floor(value)), rowCount);
 }
 
-function colorHex(table: Map<string, string>, name: unknown): string | undefined {
+function colorHex(
+  table: Map<string, string>,
+  name: unknown,
+): string | undefined {
   if (typeof name !== "string") return undefined;
   return table.get(name.trim().toLowerCase());
 }
@@ -164,13 +167,15 @@ const DEFAULT_TRACK = "120fr";
  * invalide) -> DEFAULT_TRACK.
  */
 function trackSpec(width: unknown): string {
-  if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) return DEFAULT_TRACK;
+  if (typeof width !== "number" || !Number.isFinite(width) || width <= 0)
+    return DEFAULT_TRACK;
   const text = String(width);
   return /^\d+(\.\d+)?$/.test(text) ? `${text}fr` : DEFAULT_TRACK;
 }
 
 function columnsSpec(columnWidths: unknown, tracks: number): string {
-  if (!Array.isArray(columnWidths) || columnWidths.length === 0) return String(tracks);
+  if (!Array.isArray(columnWidths) || columnWidths.length === 0)
+    return String(tracks);
   const specs: string[] = [];
   for (let i = 0; i < tracks; i += 1) specs.push(trackSpec(columnWidths[i]));
   return `(${specs.join(", ")})`;
@@ -217,11 +222,16 @@ function placeRows(rows: TableRowLike[], headerRows: number): Grid {
     for (const cell of cells) {
       while (covered[r][col]) col += 1;
       const colspan = clampSpan(cell?.props?.colspan);
-      const docsRowspan = Math.min(clampSpan(cell?.props?.rowspan), rows.length - r);
-      const rowspan = r < headerRows ? Math.min(docsRowspan, headerRows - r) : docsRowspan;
+      const docsRowspan = Math.min(
+        clampSpan(cell?.props?.rowspan),
+        rows.length - r,
+      );
+      const rowspan =
+        r < headerRows ? Math.min(docsRowspan, headerRows - r) : docsRowspan;
       for (let dr = 1; dr < docsRowspan; dr += 1) {
         const state: Covered = dr < rowspan ? "skip" : "fill";
-        for (let dc = 0; dc < colspan; dc += 1) covered[r + dr][col + dc] = state;
+        for (let dc = 0; dc < colspan; dc += 1)
+          covered[r + dr][col + dc] = state;
       }
       out.push({ cell, col, colspan, rowspan });
       col += colspan;
@@ -233,7 +243,11 @@ function placeRows(rows: TableRowLike[], headerRows: number): Grid {
   return { rows: placed, tracks, covered };
 }
 
-function cellToTypst(placed: PlacedCell, header: boolean, renderInlines: RenderInlines): string {
+function cellToTypst(
+  placed: PlacedCell,
+  header: boolean,
+  renderInlines: RenderInlines,
+): string {
   const { cell, colspan, rowspan } = placed;
   const props = cell?.props ?? {};
 
@@ -259,7 +273,10 @@ function cellToTypst(placed: PlacedCell, header: boolean, renderInlines: RenderI
  * Rend un bloc tableau Docs en appel `#table(...)` Typst.
  * Retourne "" pour un tableau sans aucune piste (aucune ligne, aucune cellule).
  */
-export function tableToTypst(block: TableBlockLike, renderInlines: RenderInlines): string {
+export function tableToTypst(
+  block: TableBlockLike,
+  renderInlines: RenderInlines,
+): string {
   const content = block?.content;
   const rows = Array.isArray(content?.rows) ? content.rows : [];
   const headerRows = clampHeaderRows(content?.headerRows, rows.length);

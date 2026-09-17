@@ -1,11 +1,11 @@
 /**
- * Import d'un PDF ou d'un .docx comme gabarit Typst.
+ * Import d'un PDF ou d'un .docx comme template Typst.
  *
  * Trois temps, un dossier de travail par import (ingest/jobs.ts) :
  *   POST /api/ingest                → dépôt, analyse, zones proposées
  *   GET  /api/ingest/:id/preview    → rendu de la première page (pour le recadrage)
  *   POST /api/ingest/:id/fragment   → découpe une zone, la range dans les assets
- *   POST /api/ingest/:id/template   → découpe puis crée le gabarit dans Docs
+ *   POST /api/ingest/:id/template   → découpe puis crée le template dans Docs
  *
  * Le fichier arrive en base64 dans du JSON, comme /api/ai/template-from-pdf :
  * pas de dépendance multipart pour un seul champ.
@@ -15,7 +15,10 @@ import { copyFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
-import { createExternalTemplate, TemplatesApiError } from "../clients/templatesClient.js";
+import {
+  createExternalTemplate,
+  TemplatesApiError,
+} from "../clients/templatesClient.js";
 import { getAuthSession, type AuthSession } from "./auth.js";
 import {
   analyzeDocument,
@@ -25,8 +28,18 @@ import {
   type Analysis,
   type Region,
 } from "../ingest/sidecar.js";
-import { cacheAnalysis, createJob, findJob, readCachedAnalysis, type Job } from "../ingest/jobs.js";
-import { buildLayout, buildSource, type Placement } from "../ingest/templateFromAnalysis.js";
+import {
+  cacheAnalysis,
+  createJob,
+  findJob,
+  readCachedAnalysis,
+  type Job,
+} from "../ingest/jobs.js";
+import {
+  buildLayout,
+  buildSource,
+  type Placement,
+} from "../ingest/templateFromAnalysis.js";
 
 /** 10 Mo de fichier ≈ 13,4 Mo de base64 ; la limite Fastify laisse la marge. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -65,7 +78,10 @@ interface TemplateBody {
 
 /** Points d'injection, comme documentRoutes : les tests branchent une session et Docs. */
 export interface IngestRoutesOptions {
-  getSession?: (req: FastifyRequest, reply: FastifyReply) => Promise<AuthSession | null>;
+  getSession?: (
+    req: FastifyRequest,
+    reply: FastifyReply,
+  ) => Promise<AuthSession | null>;
   createTemplate?: typeof createExternalTemplate;
 }
 
@@ -79,7 +95,8 @@ function assetName(kind: string, ext: string): string {
 function sanitizeRect(raw: unknown, analysis: Analysis): Rect | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : NaN);
+  const num = (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) ? v : NaN;
   const x = Math.max(0, num(r.x));
   const y = Math.max(0, num(r.y));
   const width = num(r.width);
@@ -95,10 +112,14 @@ function sendSidecarError(reply: FastifyReply, error: unknown): FastifyReply {
   if (error instanceof SidecarError) {
     // Format refusé ou LibreOffice absent : la demande est recevable, le fichier non.
     const status = error.code === "unsupported_format" ? 415 : 422;
-    return reply.code(status).send({ ok: false, code: error.code, error: error.message });
+    return reply
+      .code(status)
+      .send({ ok: false, code: error.code, error: error.message });
   }
   if (error instanceof TemplatesApiError) {
-    return reply.code(error.statusCode).send({ ok: false, error: error.message });
+    return reply
+      .code(error.statusCode)
+      .send({ ok: false, error: error.message });
   }
   return reply.code(500).send({ ok: false, error: (error as Error).message });
 }
@@ -123,47 +144,73 @@ export async function ingestRoutes(
   }
 
   /** Analyse : dépose le fichier, rend la page 1, propose les zones. */
-  app.post<{ Body: IngestBody }>("/api/ingest", { bodyLimit: BODY_LIMIT }, async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.post<{ Body: IngestBody }>(
+    "/api/ingest",
+    { bodyLimit: BODY_LIMIT },
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    const { fileBase64, filename } = req.body ?? {};
-    if (typeof fileBase64 !== "string" || !fileBase64) {
-      return reply.code(400).send({ ok: false, error: "fileBase64 requis" });
-    }
-    const data = fileBase64.replace(/^data:[^,]*,/, "").replace(/\s/g, "");
-    if (!/^[A-Za-z0-9+/]+=*$/.test(data)) {
-      return reply.code(400).send({ ok: false, error: "fileBase64 n'est pas du base64" });
-    }
-    const bytes = Buffer.from(data, "base64");
-    if (bytes.length === 0) return reply.code(400).send({ ok: false, error: "Fichier vide" });
-    if (bytes.length > MAX_BYTES) {
-      return reply
-        .code(413)
-        .send({ ok: false, code: "too_large", error: "Fichier trop volumineux : 10 Mo au plus" });
-    }
+      const { fileBase64, filename } = req.body ?? {};
+      if (typeof fileBase64 !== "string" || !fileBase64) {
+        return reply.code(400).send({ ok: false, error: "fileBase64 requis" });
+      }
+      const data = fileBase64.replace(/^data:[^,]*,/, "").replace(/\s/g, "");
+      if (!/^[A-Za-z0-9+/]+=*$/.test(data)) {
+        return reply
+          .code(400)
+          .send({ ok: false, error: "fileBase64 n'est pas du base64" });
+      }
+      const bytes = Buffer.from(data, "base64");
+      if (bytes.length === 0)
+        return reply.code(400).send({ ok: false, error: "Fichier vide" });
+      if (bytes.length > MAX_BYTES) {
+        return reply.code(413).send({
+          ok: false,
+          code: "too_large",
+          error: "Fichier trop volumineux : 10 Mo au plus",
+        });
+      }
 
-    const job = await createJob(bytes, typeof filename === "string" ? filename : "source.pdf");
-    try {
-      const analysis = await analyzeDocument(job.input, job.dir);
-      await cacheAnalysis(job, analysis);
-      return { ok: true, jobId: job.id, ...analysis };
-    } catch (error) {
-      return sendSidecarError(reply, error);
-    }
-  });
+      const job = await createJob(
+        bytes,
+        typeof filename === "string" ? filename : "source.pdf",
+      );
+      try {
+        const analysis = await analyzeDocument(job.input, job.dir);
+        await cacheAnalysis(job, analysis);
+        return { ok: true, jobId: job.id, ...analysis };
+      } catch (error) {
+        return sendSidecarError(reply, error);
+      }
+    },
+  );
 
   /** Rendu de la première page, affiché derrière le rectangle de recadrage. */
-  app.get<{ Params: { id: string } }>("/api/ingest/:id/preview", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.get<{ Params: { id: string } }>(
+    "/api/ingest/:id/preview",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    const job = await findJob(req.params.id);
-    if (!job) return reply.code(404).send({ ok: false, error: "Import inconnu ou expiré" });
-    const bytes = await readFile(path.join(job.dir, "page-1.png")).catch(() => null);
-    if (!bytes) return reply.code(404).send({ ok: false, error: "Aperçu indisponible" });
-    return reply.type("image/png").header("Cache-Control", "private, max-age=600").send(bytes);
-  });
+      const job = await findJob(req.params.id);
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+      const bytes = await readFile(path.join(job.dir, "page-1.png")).catch(
+        () => null,
+      );
+      if (!bytes)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Aperçu indisponible" });
+      return reply
+        .type("image/png")
+        .header("Cache-Control", "private, max-age=600")
+        .send(bytes);
+    },
+  );
 
   /**
    * Octets d'un visuel du .docx, pour la vignette du choix. L'index vaut
@@ -176,13 +223,19 @@ export async function ingestRoutes(
       if (!session) return;
 
       const job = await findJob(req.params.id);
-      if (!job) return reply.code(404).send({ ok: false, error: "Import inconnu ou expiré" });
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
 
       try {
         const analysis = await loadAnalysis(job);
         const index = Number(req.params.index);
-        const asset = Number.isInteger(index) ? analysis.assets?.[index] : undefined;
-        if (!asset) return reply.code(404).send({ ok: false, error: "Visuel inconnu" });
+        const asset = Number.isInteger(index)
+          ? analysis.assets?.[index]
+          : undefined;
+        if (!asset)
+          return reply.code(404).send({ ok: false, error: "Visuel inconnu" });
 
         // Sorti une fois puis relu : la vignette et le choix final le demandent.
         const name = `preview-${index}`;
@@ -193,7 +246,10 @@ export async function ingestRoutes(
           : /\.jpe?g$/i.test(fragment.file)
             ? "image/jpeg"
             : "image/png";
-        return reply.type(type).header("Cache-Control", "private, max-age=600").send(bytes);
+        return reply
+          .type(type)
+          .header("Cache-Control", "private, max-age=600")
+          .send(bytes);
       } catch (error) {
         return sendSidecarError(reply, error);
       }
@@ -208,20 +264,30 @@ export async function ingestRoutes(
       if (!session) return;
 
       const job = await findJob(req.params.id);
-      if (!job) return reply.code(404).send({ ok: false, error: "Import inconnu ou expiré" });
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
 
       try {
         const analysis = await loadAnalysis(job);
         const kind = req.body?.kind;
 
         if (req.body?.asset) {
-          const placement = await pickAsset(job, analysis, req.body.asset, kind);
-          if (!placement) return reply.code(400).send({ ok: false, error: "Visuel inconnu" });
+          const placement = await pickAsset(
+            job,
+            analysis,
+            req.body.asset,
+            kind,
+          );
+          if (!placement)
+            return reply.code(400).send({ ok: false, error: "Visuel inconnu" });
           return { ok: true, ...placement };
         }
 
         const rect = sanitizeRect(req.body?.rect, analysis);
-        if (!rect) return reply.code(400).send({ ok: false, error: "Zone invalide" });
+        if (!rect)
+          return reply.code(400).send({ ok: false, error: "Zone invalide" });
 
         const placement = await extract(
           job.input,
@@ -238,7 +304,7 @@ export async function ingestRoutes(
     },
   );
 
-  /** Crée le gabarit : zones découpées + relevé de la page → .typ dans Docs. */
+  /** Crée le template : zones découpées + relevé de la page → .typ dans Docs. */
   app.post<{ Params: { id: string }; Body: TemplateBody }>(
     "/api/ingest/:id/template",
     async (req, reply) => {
@@ -246,7 +312,10 @@ export async function ingestRoutes(
       if (!session) return;
 
       const job = await findJob(req.params.id);
-      if (!job) return reply.code(404).send({ ok: false, error: "Import inconnu ou expiré" });
+      if (!job)
+        return reply
+          .code(404)
+          .send({ ok: false, error: "Import inconnu ou expiré" });
 
       try {
         const analysis = await loadAnalysis(job);
@@ -255,18 +324,37 @@ export async function ingestRoutes(
         const footerRect = sanitizeRect(req.body?.footer, analysis);
 
         const header = req.body?.headerAsset
-          ? ((await pickAsset(job, analysis, req.body.headerAsset, "en-tete")) ?? undefined)
+          ? ((await pickAsset(
+              job,
+              analysis,
+              req.body.headerAsset,
+              "en-tete",
+            )) ?? undefined)
           : headerRect
-            ? await extract(job.input, job.dir, headerRect, vector, "en-tete", analysis.page.widthPt)
+            ? await extract(
+                job.input,
+                job.dir,
+                headerRect,
+                vector,
+                "en-tete",
+                analysis.page.widthPt,
+              )
             : undefined;
         const footer = footerRect
-          ? await extract(job.input, job.dir, footerRect, vector, "pied-de-page", analysis.page.widthPt)
+          ? await extract(
+              job.input,
+              job.dir,
+              footerRect,
+              vector,
+              "pied-de-page",
+              analysis.page.widthPt,
+            )
           : undefined;
 
         const layout = buildLayout({ analysis, header, footer });
         const created = await createTemplate(
           {
-            name: (req.body?.name ?? "").trim() || "Gabarit importé",
+            name: (req.body?.name ?? "").trim() || "Template importée",
             description: "Déduit d'un document importé",
             source: buildSource(layout),
           },
@@ -310,10 +398,18 @@ async function pickAsset(
   const base = kind && /^[a-z-]{1,20}$/.test(kind) ? kind : "fragment";
   const fragment = await takeAsset(job.input, job.dir, known.id, base);
   const file = assetName(base, fragment.file.split(".").pop() ?? "png");
-  await copyFile(path.join(job.dir, fragment.file), path.join(TEMPLATES_ASSETS_DIR, file));
+  await copyFile(
+    path.join(job.dir, fragment.file),
+    path.join(TEMPLATES_ASSETS_DIR, file),
+  );
   // Le .docx ne dit pas à quelle largeur le visuel était posé : un logo étiré
   // sur la page serait grotesque, donc placement normal, à hauteur fixe.
-  return { file, widthPt: fragment.widthPt, heightPt: fragment.heightPt, fullBleed: false };
+  return {
+    file,
+    widthPt: fragment.widthPt,
+    heightPt: fragment.heightPt,
+    fullBleed: false,
+  };
 }
 
 /** Découpe puis range le fragment à côté des logos, d'où typst le recopie. */
@@ -326,10 +422,19 @@ async function extract(
   pageWidthPt: number,
 ): Promise<Placement> {
   const base = kind && /^[a-z-]{1,20}$/.test(kind) ? kind : "fragment";
-  const fragment = await cropRegion({ input, outDir: dir, rect, vector, name: base });
+  const fragment = await cropRegion({
+    input,
+    outDir: dir,
+    rect,
+    vector,
+    name: base,
+  });
   const ext = fragment.file.endsWith(".svg") ? "svg" : "png";
   const file = assetName(base, ext);
-  await copyFile(path.join(dir, fragment.file), path.join(TEMPLATES_ASSETS_DIR, file));
+  await copyFile(
+    path.join(dir, fragment.file),
+    path.join(TEMPLATES_ASSETS_DIR, file),
+  );
   return {
     file,
     widthPt: fragment.widthPt,

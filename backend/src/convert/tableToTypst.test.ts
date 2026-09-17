@@ -3,16 +3,26 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { tableToTypst, type TableBlockLike, type TableCellLike } from "./tableToTypst.js";
+import {
+  tableToTypst,
+  type TableBlockLike,
+  type TableCellLike,
+} from "./tableToTypst.js";
 import { escapeTypstText } from "./escapeTypst.js";
 import type { InlineContent, TableBlock } from "../types/blocks.js";
 
 // Rendu minimal des inlines, même échappement que blocksToTypst.inlineToTypst
 // pour le texte brut. Au branchement, c'est inlinesToTypst qui sera injecté.
 const render = (inlines: InlineContent[]): string =>
-  inlines.map((inline) => (inline.type === "text" ? escapeTypstText(inline.text) : "")).join("");
+  inlines
+    .map((inline) =>
+      inline.type === "text" ? escapeTypstText(inline.text) : "",
+    )
+    .join("");
 
-const text = (value: string): InlineContent[] => [{ type: "text", text: value }];
+const text = (value: string): InlineContent[] => [
+  { type: "text", text: value },
+];
 
 /** Forme simplifiée (fixtures maison) : `{ content }` seulement. */
 const simple = (value: string): TableCellLike => ({ content: text(value) });
@@ -59,7 +69,7 @@ describe("tableToTypst — forme et pistes", () => {
     ]);
     const typst = tableToTypst(block, render);
     expect(typst).toContain("columns: 3,");
-    // Le gabarit pilote le style (#set table) : rien d'explicite dans l'appel.
+    // Le template pilote le style (#set table) : rien d'explicite dans l'appel.
     expect(typst).not.toMatch(/^\s*stroke:/m);
     expect(typst).not.toMatch(/^\s*inset:/m);
     expect(typst).not.toContain("table.header");
@@ -78,7 +88,9 @@ describe("tableToTypst — forme et pistes", () => {
   });
 
   it("columnWidths [120, null] → columns: (120fr, 120fr) : null vaut defaultCellMinWidth", () => {
-    const block = table([[docsCell("a"), docsCell("b")]], { columnWidths: [120, null] });
+    const block = table([[docsCell("a"), docsCell("b")]], {
+      columnWidths: [120, null],
+    });
     expect(tableToTypst(block, render)).toContain("columns: (120fr, 120fr),");
   });
 
@@ -89,7 +101,9 @@ describe("tableToTypst — forme et pistes", () => {
       columnWidths: [120, 82, 275, null, null],
       headerRows: 0,
     });
-    expect(tableToTypst(block, render)).toContain("columns: (120fr, 82fr, 275fr, 120fr, 120fr),");
+    expect(tableToTypst(block, render)).toContain(
+      "columns: (120fr, 82fr, 275fr, 120fr, 120fr),",
+    );
   });
 
   it("largeur non exploitable (0, négative, NaN, chaîne, exponentielle) → 120fr, jamais auto", () => {
@@ -102,8 +116,12 @@ describe("tableToTypst — forme et pistes", () => {
   });
 
   it("columnWidths plus court que la grille → complété par 120fr", () => {
-    const block = table([[docsCell("a"), docsCell("b"), docsCell("c")]], { columnWidths: [50] });
-    expect(tableToTypst(block, render)).toContain("columns: (50fr, 120fr, 120fr),");
+    const block = table([[docsCell("a"), docsCell("b"), docsCell("c")]], {
+      columnWidths: [50],
+    });
+    expect(tableToTypst(block, render)).toContain(
+      "columns: (50fr, 120fr, 120fr),",
+    );
   });
 
   it("tableau vide → chaîne vide", () => {
@@ -122,7 +140,9 @@ describe("tableToTypst — en-tête", () => {
       { headerRows: 1 },
     );
     const typst = tableToTypst(block, render);
-    expect(typst).toContain("table.header(\n    [#strong[Nom]], [#strong[Origine]],\n  ),");
+    expect(typst).toContain(
+      "table.header(\n    [#strong[Nom]], [#strong[Origine]],\n  ),",
+    );
     expect(typst).toContain("  [Docs], [DINUM],");
     expect(typst).not.toContain("#strong[Docs]");
   });
@@ -130,7 +150,9 @@ describe("tableToTypst — en-tête", () => {
   it("headerRows absent ou 0 → pas d'en-tête ; > nb lignes → borné", () => {
     const rows = [[docsCell("a")], [docsCell("b")]];
     expect(tableToTypst(table(rows), render)).not.toContain("table.header");
-    expect(tableToTypst(table(rows, { headerRows: 0 }), render)).not.toContain("table.header");
+    expect(tableToTypst(table(rows, { headerRows: 0 }), render)).not.toContain(
+      "table.header",
+    );
     const all = tableToTypst(table(rows, { headerRows: 5 }), render);
     expect(all).toContain("[#strong[a]]");
     expect(all).toContain("[#strong[b]]");
@@ -180,7 +202,9 @@ describe("tableToTypst — fusions", () => {
   });
 
   it("colspan/rowspan bornés à des entiers ≥ 1", () => {
-    const rows = [[docsCell("a", { colspan: 0 }), docsCell("b", { rowspan: -3 })]];
+    const rows = [
+      [docsCell("a", { colspan: 0 }), docsCell("b", { rowspan: -3 })],
+    ];
     expect(tableToTypst(table(rows), render)).not.toContain("table.cell");
     const weird = [
       [
@@ -208,7 +232,9 @@ describe("tableToTypst — fusions", () => {
     const typst = tableToTypst(block, render);
     expect(typst).toContain("columns: 3,");
     expect(typst).not.toContain("rowspan");
-    expect(typst).toContain("table.header(\n    [#strong[H1]], [#strong[H2]], [#strong[H3]],\n  ),");
+    expect(typst).toContain(
+      "table.header(\n    [#strong[H1]], [#strong[H2]], [#strong[H3]],\n  ),",
+    );
     expect(typst).toContain("\n  [], [b2], [b3],\n  [c1], [c2], [c3],\n");
   });
 
@@ -234,15 +260,20 @@ describe("tableToTypst — fusions", () => {
   });
 
   it("ligne plus courte que la grille → complétée par des cellules vides", () => {
-    const block = table([[simple("a"), simple("b"), simple("c")], [simple("d")]]);
+    const block = table([
+      [simple("a"), simple("b"), simple("c")],
+      [simple("d")],
+    ]);
     expect(tableToTypst(block, render)).toContain("\n  [d], [], [],\n");
   });
 });
 
 describe("tableToTypst — couleurs et alignement", () => {
-  it("backgroundColor gray → fill: rgb(\"#ebeced\") (hex de @blocknote/core 0.54.0)", () => {
+  it('backgroundColor gray → fill: rgb("#ebeced") (hex de @blocknote/core 0.54.0)', () => {
     const block = table([[docsCell("a", { backgroundColor: "gray" })]]);
-    expect(tableToTypst(block, render)).toContain('table.cell(fill: rgb("#ebeced"))[a]');
+    expect(tableToTypst(block, render)).toContain(
+      'table.cell(fill: rgb("#ebeced"))[a]',
+    );
   });
 
   it("toutes les couleurs de fond BlockNote", () => {
@@ -266,15 +297,19 @@ describe("tableToTypst — couleurs et alignement", () => {
   it("couleur default ou inconnue → pas de fill, et l'entrée n'est jamais recopiée", () => {
     const def = table([[docsCell("a", { backgroundColor: "default" })]]);
     expect(tableToTypst(def, render)).not.toContain("fill");
-    const injected = table([[docsCell("a", { backgroundColor: '")]#eval("1"' })]]);
+    const injected = table([
+      [docsCell("a", { backgroundColor: '")]#eval("1"' })],
+    ]);
     const typst = tableToTypst(injected, render);
     expect(typst).not.toContain("fill");
     expect(typst).not.toContain("eval");
   });
 
-  it("textColor red → #text(fill: rgb(\"#e03e3e\"))[...]", () => {
+  it('textColor red → #text(fill: rgb("#e03e3e"))[...]', () => {
     const block = table([[docsCell("alerte", { textColor: "red" })]]);
-    expect(tableToTypst(block, render)).toContain('[#text(fill: rgb("#e03e3e"))[alerte]]');
+    expect(tableToTypst(block, render)).toContain(
+      '[#text(fill: rgb("#e03e3e"))[alerte]]',
+    );
   });
 
   it("toutes les couleurs de texte BlockNote", () => {
@@ -291,20 +326,29 @@ describe("tableToTypst — couleurs et alignement", () => {
     };
     for (const [name, hex] of Object.entries(expected)) {
       const block = table([[docsCell("x", { textColor: name })]]);
-      expect(tableToTypst(block, render)).toContain(`#text(fill: rgb("${hex}"))`);
+      expect(tableToTypst(block, render)).toContain(
+        `#text(fill: rgb("${hex}"))`,
+      );
     }
   });
 
   it("textColor dans une cellule d'en-tête : #strong enveloppe #text", () => {
-    const block = table([[docsCell("t", { textColor: "blue" })]], { headerRows: 1 });
-    expect(tableToTypst(block, render)).toContain('[#strong[#text(fill: rgb("#0b6e99"))[t]]]');
+    const block = table([[docsCell("t", { textColor: "blue" })]], {
+      headerRows: 1,
+    });
+    expect(tableToTypst(block, render)).toContain(
+      '[#strong[#text(fill: rgb("#0b6e99"))[t]]]',
+    );
   });
-
   it("textAlignment right / center → align ; left / justify → rien", () => {
     const right = table([[docsCell("a", { textAlignment: "right" })]]);
-    expect(tableToTypst(right, render)).toContain("table.cell(align: right)[a]");
+    expect(tableToTypst(right, render)).toContain(
+      "table.cell(align: right)[a]",
+    );
     const center = table([[docsCell("a", { textAlignment: "center" })]]);
-    expect(tableToTypst(center, render)).toContain("table.cell(align: center)[a]");
+    expect(tableToTypst(center, render)).toContain(
+      "table.cell(align: center)[a]",
+    );
     const left = table([[docsCell("a", { textAlignment: "left" })]]);
     expect(tableToTypst(left, render)).not.toContain("align");
     const justify = table([[docsCell("a", { textAlignment: "justify" })]]);
@@ -338,13 +382,16 @@ describe("tableToTypst — couleurs et alignement", () => {
 
 // Compilation réelle : typst 0.15 + pdftotext (poppler) sur le PATH.
 const hasTools =
-  spawnSync("typst", ["--version"]).status === 0 && spawnSync("pdftotext", ["-v"]).status === 0;
+  spawnSync("typst", ["--version"]).status === 0 &&
+  spawnSync("pdftotext", ["-v"]).status === 0;
 
-/** Le gabarit pilote le style des tableaux : ce préambule joue le rôle de son `#set table` (section « Tableaux », filets fins). */
+/** Le template pilote le style des tableaux : ce préambule joue le rôle de son `#set table` (section « Tableaux », filets fins). */
 const TABLE_SET = "#set table(stroke: 0.5pt + luma(200), inset: 6pt)\n";
-const PAGE = "#set page(width: 160mm, height: auto, margin: 10mm)\n" + TABLE_SET;
-/** Largeur de texte du gabarit le plus étroit (minimal.typ, ministere.typ : A4, marges 2,5 cm → 160 mm). */
-const PAGE_A4 = '#set page(paper: "a4", height: auto, margin: 25mm)\n' + TABLE_SET;
+const PAGE =
+  "#set page(width: 160mm, height: auto, margin: 10mm)\n" + TABLE_SET;
+/** Largeur de texte du template le plus étroit (minimal.typ, ministere.typ : A4, marges 2,5 cm → 160 mm). */
+const PAGE_A4 =
+  '#set page(paper: "a4", height: auto, margin: 25mm)\n' + TABLE_SET;
 
 function compileToText(
   name: string,
@@ -356,7 +403,9 @@ function compileToText(
   const pdf = join(dir, `${name}.pdf`);
   writeFileSync(src, page + typstBody + "\n");
   execFileSync("typst", ["compile", src, pdf], { stdio: "pipe" });
-  const layout = execFileSync("pdftotext", ["-layout", pdf, "-"], { encoding: "utf8" });
+  const layout = execFileSync("pdftotext", ["-layout", pdf, "-"], {
+    encoding: "utf8",
+  });
   return { pdfSize: statSync(pdf).size, layout };
 }
 
@@ -370,7 +419,11 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
       [
         [docsCell("H1"), docsCell("H2"), docsCell("H3")],
         [docsCell("A", { colspan: 2, backgroundColor: "gray" }), docsCell("B")],
-        [docsCell("C", { rowspan: 2, textAlignment: "right" }), docsCell("D"), docsCell("E", { textColor: "red" })],
+        [
+          docsCell("C", { rowspan: 2, textAlignment: "right" }),
+          docsCell("D"),
+          docsCell("E", { textColor: "red" }),
+        ],
         [docsCell("F"), docsCell("G", { textAlignment: "center" })],
       ],
       { type: "tableContent", columnWidths: [120, 82, null], headerRows: 1 },
@@ -415,22 +468,43 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
       ],
       { headerRows: 1 },
     );
-    const { pdfSize, layout } = compileToText("entete-rowspan", tableToTypst(block, render));
+    const { pdfSize, layout } = compileToText(
+      "entete-rowspan",
+      tableToTypst(block, render),
+    );
     expect(pdfSize).toBeGreaterThan(0);
     const lines = layout.split("\n").filter((line) => line.trim() !== "");
     expect(lines.length).toBe(3);
     const [header, rowB, rowC] = lines;
     const col = (line: string, label: string) => line.indexOf(label);
-    expect(Math.abs(col(rowB, "b2") - col(header, "H2"))).toBeLessThanOrEqual(2);
-    expect(Math.abs(col(rowB, "b3") - col(header, "H3"))).toBeLessThanOrEqual(2);
-    expect(Math.abs(col(rowC, "c1") - col(header, "H1"))).toBeLessThanOrEqual(2);
+    expect(Math.abs(col(rowB, "b2") - col(header, "H2"))).toBeLessThanOrEqual(
+      2,
+    );
+    expect(Math.abs(col(rowB, "b3") - col(header, "H3"))).toBeLessThanOrEqual(
+      2,
+    );
+    expect(Math.abs(col(rowC, "c1") - col(header, "H1"))).toBeLessThanOrEqual(
+      2,
+    );
   });
 
   it("cas limites : cellules vides, en-tête vide, ligne complétée, toutes couleurs", () => {
     const block = table(
       [
-        [docsCell(""), docsCell("Titre", { textColor: "blue" }), docsCell("", { backgroundColor: "pink" })],
-        [docsCell("x", { colspan: 2, rowspan: 2, backgroundColor: "green", textAlignment: "center" }), docsCell("")],
+        [
+          docsCell(""),
+          docsCell("Titre", { textColor: "blue" }),
+          docsCell("", { backgroundColor: "pink" }),
+        ],
+        [
+          docsCell("x", {
+            colspan: 2,
+            rowspan: 2,
+            backgroundColor: "green",
+            textAlignment: "center",
+          }),
+          docsCell(""),
+        ],
         [docsCell("y", { textAlignment: "justify" })],
         [simple("z")],
       ],
@@ -448,9 +522,15 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
     // Avec `null -> auto`, typst 0.15.1 écrasait les quatre colonnes `fr`
     // (pdftotext -layout : « DirectionTitulaires » puis « Contractuels » puis
     // « TotalObservations » sur trois lignes). Compilé à la largeur de texte
-    // des gabarits (160 mm) : en dessous de ~150 mm, « Contractuels » en gras
+    // des templates (160 mm) : en dessous de ~150 mm, « Contractuels » en gras
     // déborde de sa piste 90fr et touche « Total » (limite des pistes `fr`).
-    const labels = ["Direction", "Titulaires", "Contractuels", "Total", "Observations"];
+    const labels = [
+      "Direction",
+      "Titulaires",
+      "Contractuels",
+      "Total",
+      "Observations",
+    ];
     const block = table(
       [
         labels.map((v) => docsCell(v)),
@@ -459,12 +539,19 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
           docsCell("52", { textAlignment: "right" }),
           docsCell("9", { textAlignment: "right" }),
           docsCell("61", { textAlignment: "right" }),
-          docsCell("Réorganisation en cours ; chiffres provisoires au 30 juin 2026", {
-            backgroundColor: "yellow",
-          }),
+          docsCell(
+            "Réorganisation en cours ; chiffres provisoires au 30 juin 2026",
+            {
+              backgroundColor: "yellow",
+            },
+          ),
         ],
       ],
-      { type: "tableContent", columnWidths: [180, 90, 90, 90, null], headerRows: 1 },
+      {
+        type: "tableContent",
+        columnWidths: [180, 90, 90, 90, null],
+        headerRows: 1,
+      },
     );
     const typst = tableToTypst(block, render);
     expect(typst).toContain("columns: (180fr, 90fr, 90fr, 90fr, 120fr),");
@@ -473,7 +560,10 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
     let previousEnd = -1;
     for (const label of labels) {
       const at = header.indexOf(label);
-      expect(at, `« ${label} » absent de la 1re ligne : ${JSON.stringify(header)}`).toBeGreaterThan(previousEnd);
+      expect(
+        at,
+        `« ${label} » absent de la 1re ligne : ${JSON.stringify(header)}`,
+      ).toBeGreaterThan(previousEnd);
       previousEnd = at + label.length;
     }
   });
@@ -484,7 +574,10 @@ describe.skipIf(!hasTools)("tableToTypst — compilation Typst réelle", () => {
       [simple("Infrastructure"), simple("45 000 €"), simple("30 %")],
       [simple("Développement"), simple("105 000 €"), simple("70 %")],
     ]);
-    const { pdfSize, layout } = compileToText("simple", tableToTypst(block, render));
+    const { pdfSize, layout } = compileToText(
+      "simple",
+      tableToTypst(block, render),
+    );
     expect(pdfSize).toBeGreaterThan(0);
     expect(layout).toContain("Infrastructure");
     expect(layout).toContain("105 000 €");

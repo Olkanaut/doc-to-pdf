@@ -1,9 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import path from "node:path";
 import { readdir, readFile, rm } from "node:fs/promises";
-import {
-  TEMPLATES_ASSETS_DIR,
-} from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import {
   createExternalTemplate,
   deleteExternalTemplate,
@@ -106,7 +104,9 @@ async function markDefaultTemplate(
     await clearDefaultTemplateId(userId);
   }
 
-  const defaultId = storedDefaultExists ? storedDefaultId : (templates[0]?.id ?? null);
+  const defaultId = storedDefaultExists
+    ? storedDefaultId
+    : (templates[0]?.id ?? null);
   return templates.map((template) => ({
     ...template,
     isDefault: template.id === defaultId,
@@ -137,7 +137,9 @@ async function withDefaultFlag(
 
 /** Images du dossier d'assets partagé, utilisables comme logo. */
 async function listAssets(): Promise<string[]> {
-  const entries = await readdir(TEMPLATES_ASSETS_DIR, { withFileTypes: true }).catch(() => []);
+  const entries = await readdir(TEMPLATES_ASSETS_DIR, {
+    withFileTypes: true,
+  }).catch(() => []);
   return entries
     .filter((e) => e.isFile() && ASSET_RE.test(e.name))
     .map((e) => e.name)
@@ -192,7 +194,10 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     if (!session) return;
 
     try {
-      const meta = await getDefaultTemplateFromExternal(session.user.sub, session.accessToken);
+      const meta = await getDefaultTemplateFromExternal(
+        session.user.sub,
+        session.accessToken,
+      );
       if (!meta) return reply.code(404).send({ error: "no default template" });
       return meta;
     } catch (error) {
@@ -200,24 +205,27 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  app.put<{ Body: { templateId?: unknown } }>("/api/templates/default", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.put<{ Body: { templateId?: unknown } }>(
+    "/api/templates/default",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    const id = req.body?.templateId;
-    // Un id est un uuid ou un nom de semis : jamais de chemin (`a/../b` passerait le contrôle d'existence).
-    if (typeof id !== "string" || !/^[\w-]+$/.test(id)) {
-      return reply.code(400).send({ error: "templateId requis" });
-    }
+      const id = req.body?.templateId;
+      // Un id est un uuid ou un nom de semis : jamais de chemin (`a/../b` passerait le contrôle d'existence).
+      if (typeof id !== "string" || !/^[\w-]+$/.test(id)) {
+        return reply.code(400).send({ error: "templateId requis" });
+      }
 
-    try {
-      const meta = await getExternalTemplate(id, session.accessToken);
-      await writeDefaultTemplateId(session.user.sub, meta.id);
-      return { ...meta, isDefault: true };
-    } catch (error) {
-      return sendTemplatesError(req, reply, error);
-    }
-  });
+      try {
+        const meta = await getExternalTemplate(id, session.accessToken);
+        await writeDefaultTemplateId(session.user.sub, meta.id);
+        return { ...meta, isDefault: true };
+      } catch (error) {
+        return sendTemplatesError(req, reply, error);
+      }
+    },
+  );
 
   app.post<{ Body: { source: string; fixtureId?: string } }>(
     "/api/templates/check",
@@ -228,52 +236,71 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get("/api/templates/assets", async () => {
-    return { assets: (await listAssets()).map((file) => ({ file })), canDelete: assetDeleteEnabled() };
+    return {
+      assets: (await listAssets()).map((file) => ({ file })),
+      canDelete: assetDeleteEnabled(),
+    };
   });
 
   /** Octets d'un asset : vignettes de la galerie d'en-tête/pied de page. */
-  app.get<{ Params: { file: string } }>("/api/templates/assets/:file", async (req, reply) => {
-    const { file } = req.params;
-    // Le nom vient de l'URL : il doit être exactement un des fichiers listés.
-    if (!(await listAssets()).includes(file)) {
-      return reply.code(404).send({ error: "Asset inconnu" });
-    }
-    const bytes = await readFile(path.join(TEMPLATES_ASSETS_DIR, file));
-    const type = file.endsWith(".svg")
-      ? "image/svg+xml"
-      : /\.jpe?g$/i.test(file)
-        ? "image/jpeg"
-        : "image/png";
-    return reply.type(type).header("Cache-Control", "private, max-age=3600").send(bytes);
-  });
+  app.get<{ Params: { file: string } }>(
+    "/api/templates/assets/:file",
+    async (req, reply) => {
+      const { file } = req.params;
+      // Le nom vient de l'URL : il doit être exactement un des fichiers listés.
+      if (!(await listAssets()).includes(file)) {
+        return reply.code(404).send({ error: "Asset inconnu" });
+      }
+      const bytes = await readFile(path.join(TEMPLATES_ASSETS_DIR, file));
+      const type = file.endsWith(".svg")
+        ? "image/svg+xml"
+        : /\.jpe?g$/i.test(file)
+          ? "image/jpeg"
+          : "image/png";
+      return reply
+        .type(type)
+        .header("Cache-Control", "private, max-age=3600")
+        .send(bytes);
+    },
+  );
 
   /** Deletes a shared asset. Gated behind DOTS_ENABLE_ASSET_DELETE. */
-  app.delete<{ Params: { file: string } }>("/api/templates/assets/:file", async (req, reply) => {
-    if (!assetDeleteEnabled()) return reply.code(404).send({ error: "Not found" });
+  app.delete<{ Params: { file: string } }>(
+    "/api/templates/assets/:file",
+    async (req, reply) => {
+      if (!assetDeleteEnabled())
+        return reply.code(404).send({ error: "Not found" });
 
-    const session = await requireSession(req, reply);
-    if (!session) return;
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    const { file } = req.params;
-    // The name comes from the URL: it must be exactly one of the listed files.
-    if (!(await listAssets()).includes(file)) {
-      return reply.code(404).send({ error: "Asset inconnu" });
-    }
-    await rm(path.join(TEMPLATES_ASSETS_DIR, file));
-    return reply.code(204).send();
-  });
+      const { file } = req.params;
+      // The name comes from the URL: it must be exactly one of the listed files.
+      if (!(await listAssets()).includes(file)) {
+        return reply.code(404).send({ error: "Asset inconnu" });
+      }
+      await rm(path.join(TEMPLATES_ASSETS_DIR, file));
+      return reply.code(204).send();
+    },
+  );
 
-  app.get<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.get<{ Params: { id: string } }>(
+    "/api/templates/:id",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    try {
-      const template = await getExternalTemplate(req.params.id, session.accessToken);
-      return withDefaultFlag(session.user.sub, template);
-    } catch (error) {
-      return sendTemplatesError(req, reply, error);
-    }
-  });
+      try {
+        const template = await getExternalTemplate(
+          req.params.id,
+          session.accessToken,
+        );
+        return withDefaultFlag(session.user.sub, template);
+      } catch (error) {
+        return sendTemplatesError(req, reply, error);
+      }
+    },
+  );
 
   app.post<{ Body: CreateBody }>("/api/templates", async (req, reply) => {
     const session = await requireSession(req, reply);
@@ -283,13 +310,15 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     try {
       const created = await createExternalTemplate(
         {
-          name: name?.trim() || "Nouveau gabarit",
+          name: name?.trim() || "Nouveau template",
           description: description?.trim() ?? "",
           source: source ?? DEFAULT_SOURCE,
         },
         session.accessToken,
       );
-      return reply.code(201).send(await withDefaultFlag(session.user.sub, created));
+      return reply
+        .code(201)
+        .send(await withDefaultFlag(session.user.sub, created));
     } catch (error) {
       return sendTemplatesError(req, reply, error);
     }
@@ -314,54 +343,69 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.delete<{ Params: { id: string } }>("/api/templates/:id", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.delete<{ Params: { id: string } }>(
+    "/api/templates/:id",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    try {
-      await deleteExternalTemplate(req.params.id, session.accessToken);
-      if ((await readDefaultTemplateId(session.user.sub)) === req.params.id) {
-        await clearDefaultTemplateId(session.user.sub);
+      try {
+        await deleteExternalTemplate(req.params.id, session.accessToken);
+        if ((await readDefaultTemplateId(session.user.sub)) === req.params.id) {
+          await clearDefaultTemplateId(session.user.sub);
+        }
+        return reply.code(204).send();
+      } catch (error) {
+        return sendTemplatesError(req, reply, error);
       }
-      return reply.code(204).send();
-    } catch (error) {
-      return sendTemplatesError(req, reply, error);
-    }
-  });
+    },
+  );
 
-  app.get<{ Params: { id: string } }>("/api/templates/:id/thumbnail", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.get<{ Params: { id: string } }>(
+    "/api/templates/:id/thumbnail",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    try {
-      const template = await getExternalTemplate(req.params.id, session.accessToken);
-      const png = await getCachedTemplateThumbnail({
-        templateId: template.id,
-        updatedAt: template.updatedAt,
-        source: template.source,
-      });
-      if (!png) return reply.code(404).send();
-      reply.header("Cache-Control", "public, max-age=31536000, immutable");
-      reply.header("Content-Type", "image/png");
-      return reply.send(png);
-    } catch (error) {
-      return sendTemplatesError(req, reply, error);
-    }
-  });
+      try {
+        const template = await getExternalTemplate(
+          req.params.id,
+          session.accessToken,
+        );
+        const png = await getCachedTemplateThumbnail({
+          templateId: template.id,
+          updatedAt: template.updatedAt,
+          source: template.source,
+        });
+        if (!png) return reply.code(404).send();
+        reply.header("Cache-Control", "public, max-age=31536000, immutable");
+        reply.header("Content-Type", "image/png");
+        return reply.send(png);
+      } catch (error) {
+        return sendTemplatesError(req, reply, error);
+      }
+    },
+  );
 
   // ── Mise en page (bloc « dots:layout » du .typ) ────────────────────────────
 
-  app.get<{ Params: { id: string } }>("/api/templates/:id/layout", async (req, reply) => {
-    const session = await requireSession(req, reply);
-    if (!session) return;
+  app.get<{ Params: { id: string } }>(
+    "/api/templates/:id/layout",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
 
-    try {
-      const template = await getExternalTemplate(req.params.id, session.accessToken);
-      return readLayout(template.source);
-    } catch (error) {
-      return sendTemplatesError(req, reply, error);
-    }
-  });
+      try {
+        const template = await getExternalTemplate(
+          req.params.id,
+          session.accessToken,
+        );
+        return readLayout(template.source);
+      } catch (error) {
+        return sendTemplatesError(req, reply, error);
+      }
+    },
+  );
 
   app.put<{ Params: { id: string }; Body: { layout?: unknown } }>(
     "/api/templates/:id/layout",
@@ -375,7 +419,10 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        const current = await getExternalTemplate(req.params.id, session.accessToken);
+        const current = await getExternalTemplate(
+          req.params.id,
+          session.accessToken,
+        );
         const cfg = await withExistingLogo(sanitizeLayout(layout));
         const source = applyLayout(current.source, cfg);
         const meta = await updateExternalTemplate(
@@ -395,15 +442,20 @@ export async function templatesRoutes(app: FastifyInstance): Promise<void> {
     "/api/layout/compose",
     async (req, reply) => {
       const { source, layout } = req.body ?? {};
-      if (typeof source !== "string") return reply.code(400).send({ error: "source is required" });
+      if (typeof source !== "string")
+        return reply.code(400).send({ error: "source is required" });
       const cfg = await withExistingLogo(sanitizeLayout(layout));
       return { source: applyLayout(source, cfg) };
     },
   );
 
-  app.post<{ Body: { source?: unknown } }>("/api/layout/read", async (req, reply) => {
-    const source = req.body?.source;
-    if (typeof source !== "string") return reply.code(400).send({ error: "source is required" });
-    return readLayout(source);
-  });
+  app.post<{ Body: { source?: unknown } }>(
+    "/api/layout/read",
+    async (req, reply) => {
+      const source = req.body?.source;
+      if (typeof source !== "string")
+        return reply.code(400).send({ error: "source is required" });
+      return readLayout(source);
+    },
+  );
 }

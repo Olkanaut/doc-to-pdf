@@ -11,7 +11,7 @@ interface ViewSwitcherProps {
 export function ViewSwitcher({ view, onChange }: ViewSwitcherProps) {
   return (
     <SegmentedIconSwitch
-      ariaLabel="Mode d'affichage des gabarits"
+      ariaLabel="Mode d'affichage des templates"
       value={view}
       items={[
         {

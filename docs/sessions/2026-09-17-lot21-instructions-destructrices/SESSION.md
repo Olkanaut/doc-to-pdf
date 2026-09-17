@@ -1,12 +1,13 @@
 # Lot 21 — instructions destructrices : prévenir au lieu d'obéir en silence
 
 ## Meta
+
 - Date : 2026-09-17
 - Lot : 21
 - Scope : `backend/src/ai/prompt.ts` (prompt système de l'assistant), portage du banc
   d'essai dans `backend/bench/`, `.gitignore`, scripts npm. **Aucun fichier du frontend
   touché** (preuve ci-dessous).
-- Commit début : db56ebd   Commit fin : *(non commité — en attente de relecture)*
+- Commit début : db56ebd Commit fin : _(non commité — en attente de relecture)_
 - Statut : PARTIEL — le travail est fait et mesuré ; deux erreurs de ma part corrigées
   après coup (voir « Écarts »), et l'audit des contrôles du banc interrompu avant terme.
 
@@ -58,9 +59,9 @@ $ npm run bench:score -- runs-destructif-a
 runs-destructif-a — compile 14/14 · intention 12/14 · bloc préservé 14/14 · cohérent 10/14 · sans collatéral 14/14 · réponses avec surcharge hors bloc 3/14
    ⌦ police-3pt#1 — réécrit en silence par sanitizeLayout : fontSize, textStyles.body.fontSize
    ⌦ police-3pt#2 — réécrit en silence par sanitizeLayout : fontSize, textStyles.body.fontSize
-   ⚠ police-3pt#1 — encre 39 % du gabarit de départ, 64 mots, 1 page(s) (+0)
-   ⚠ police-3pt#2 — encre 39 % du gabarit de départ, 64 mots, 1 page(s) (+0)
-   ⚠ texte-blanc#1 — encre 0 % du gabarit de départ, 64 mots, 1 page(s) (+0)
+   ⚠ police-3pt#1 — encre 39 % du templatee de départ, 64 mots, 1 page(s) (+0)
+   ⚠ police-3pt#2 — encre 39 % du template de départ, 64 mots, 1 page(s) (+0)
+   ⚠ texte-blanc#1 — encre 0 % du gtemplatede départ, 64 mots, 1 page(s) (+0)
    ⚠ texte-blanc#2 — encre 10 % du gabarit de départ, 64 mots, 1 page(s) (+0)
    enleve-entete#1 — incohérent
    enleve-entete#2 — incohérent
@@ -70,8 +71,8 @@ runs-destructif-a — compile 14/14 · intention 12/14 · bloc préservé 14/14 
    police-3pt#2 — incohérent
 
 $ npm run bench:score -- runs-destructif-b
-runs-destructif-b — compile 14/14 · intention 12/14 · bloc préservé 14/14 · cohérent 14/14 · sans collatéral 14/14 · réponses avec surcharge hors bloc 2/14
-   ⚠ texte-blanc#1 — encre 0 % du gabarit de départ, 64 mots, 1 page(s) (+0)
+runs-destructif-b — compile 14/14 templatetion 12/14 · bloc préservé 14/14 · cohérent 14/14 · sans collatéral 14/14 · réponses avec surcharge hors bloc 2/14
+   ⚠ texte-blanc#1 — encre 0 % du template de départ, 64 mots, 1 page(s) (+0)
    ⚠ texte-blanc#2 — encre 0 % du gabarit de départ, 64 mots, 1 page(s) (+0)
    majuscules#1 — intention: pose une règle upper qui réécrit le corps sans l'avoir vu
    majuscules#2 — intention: pose une règle upper qui réécrit le corps sans l'avoir vu
@@ -82,6 +83,7 @@ runs-destructif-b — compile 14/14 · intention 12/14 · bloc préservé 14/14 
 rien — ce n'est pas ce qu'elle visait.
 
 Trois écarts, tous dans le même sens :
+
 - **cohérent 10/14 → 14/14** : plus une seule réponse dont le Typst du bloc diverge du
   JSON, donc plus rien que la régénération du bloc jetterait sans prévenir.
 - **borne 2/14 → 0/14** : plus une seule valeur écrite hors bornes puis réécrite en
@@ -189,7 +191,7 @@ $ git status --short -- frontend/ | grep -v '^??'
   Relevé par le critique, pas par les juges.
 - **Le critique relève deux dégâts qu'aucun juge n'a mesurés** : le texte blanc n'est pas
   un caviardage (64 mots restent extractibles au `pdftotext` sur une page à 0 pixel encré,
-  ce qu'aucun résumé ne dit) ; et à 0 mm le H1 est déjà tronqué dans le PDF rendu, ce dont
+  ce qu'aucun résumé ne dit) ; et à 0 mm le H1 est déjà tronqué dantemplateF rendu, ce dont
   aucun résumé ne prévient non plus.
 - **La suite E2E complète ne passe pas dans cet environnement** : `gabarits`,
   `mise-en-page`, `assistant-ia`, `rendu`, `accueil`, `smoke` échouent sur
@@ -217,16 +219,18 @@ $ git status --short -- frontend/ | grep -v '^??'
     venir de `header.first.rule` quand `mode === "different-first"` ;
   - `titres-bleu-marianne` contrôle `headings.color`, qui ne peint pas les titres ;
   - `paysage` et `pagination-pas-page-1` : trous confirmés dans les deux sens.
-  Les 17 autres verdicts n'ont pas été réfutés et ne valent donc rien.
+    Les 17 autres verdicts n'ont pas été réfutés et ne valent donc rien.
 - **2 exécutions par cas** : assez pour voir une instabilité, pas pour la quantifier.
 - Un seul modèle (`claude-sonnet-5`), pas de comparaison, pas de variation de température.
 - Les sorties du banc (`backend/bench/runs*/`, `rendu/`, `*-scores.json`) sont ignorées
   par git : elles sont sur la machine, pas dans le dépôt. Les rejouer coûte des appels API.
 
 ## Décision / choix
-LAISSER OUVERT — revue humaine.
+
+template OUVERT — revue humaine.
 
 ## Confidentialité
+
 Gabarits et fixtures du dépôt uniquement (`republique-francaise.typ`, `simple-note`),
 aucune donnée client. La clé API n'apparaît dans aucune sortie ; `backend/.env.bak` a été
 ajouté au `.gitignore` pour qu'il ne parte jamais par accident.

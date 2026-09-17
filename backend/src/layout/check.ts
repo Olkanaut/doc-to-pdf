@@ -2,7 +2,10 @@ import path from "node:path";
 import { getFixture, FIXTURES_DIR } from "../registry/fixtures.js";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
 import { blocksToTypst } from "../convert/blocksToTypst.js";
-import { compileToPdfDetailed, TypstCompileError } from "../compile/typstCompile.js";
+import {
+  compileToPdfDetailed,
+  TypstCompileError,
+} from "../compile/typstCompile.js";
 
 /** Même forme que CheckResult / CheckFailure dans frontend/src/api/client.ts. */
 export interface CheckResult {
@@ -39,13 +42,17 @@ export function typstWarnings(stderr: string): string[] {
     const line = lines[i].trim();
     if (!line.startsWith("warning:")) continue;
     const loc = lines[i + 1]?.trim();
-    out.push(loc && loc.startsWith("┌─") ? `${line} (${loc.replace(/^┌─\s*/, "")})` : line);
+    out.push(
+      loc && loc.startsWith("┌─")
+        ? `${line} (${loc.replace(/^┌─\s*/, "")})`
+        : line,
+    );
   }
   return out;
 }
 
 /**
- * Compilation de test d'une source de gabarit sur une fixture : c'est ce que
+ * Compilation de test d'une source de template sur une fixture : c'est ce que
  * l'import et l'assistant IA appellent avant de proposer quoi que ce soit.
  */
 export async function checkTemplateSource(input: {
@@ -57,7 +64,8 @@ export async function checkTemplateSource(input: {
   }
   const fixtureId = input.fixtureId ?? DEFAULT_CHECK_FIXTURE;
   const fixture = await getFixture(fixtureId);
-  if (!fixture) return { ok: false, error: `fixture "${fixtureId}" introuvable` };
+  if (!fixture)
+    return { ok: false, error: `fixture "${fixtureId}" introuvable` };
 
   const { typst, images } = blocksToTypst(fixture.blocks);
   const t0 = performance.now();
@@ -66,7 +74,10 @@ export async function checkTemplateSource(input: {
       templateSource: input.source,
       templateAssetsDir: TEMPLATES_ASSETS_DIR,
       bodyTypst: typst,
-      bodyImages: images.map((img) => ({ ...img, src: path.resolve(FIXTURES_DIR, img.src) })),
+      bodyImages: images.map((img) => ({
+        ...img,
+        src: path.resolve(FIXTURES_DIR, img.src),
+      })),
     });
     return {
       ok: true,

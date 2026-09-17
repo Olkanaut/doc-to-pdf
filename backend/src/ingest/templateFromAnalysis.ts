@@ -2,7 +2,7 @@
  * Analyse d'un PDF/DOCX → LayoutConfig, puis source .typ.
  *
  * Le relevé (format, marges, police, interligne, couleur) vient du script
- * Python ; ce qui se décide ici, c'est ce que le gabarit en fait : un fragment
+ * Python ; ce qui se décide ici, c'est ce que le template en fait : un fragment
  * d'en-tête devient un bandeau bord à bord, et la marge correspondante est
  * élargie à la hauteur rendue de l'image — sinon Typst la rogne, sans rien
  * signaler.
@@ -60,7 +60,11 @@ function bleedHeightMm(placement: Placement, pageWidthPt: number): number {
   return (placement.heightPt * scale) / PT_PER_MM;
 }
 
-export function buildLayout({ analysis, header, footer }: BuildInput): LayoutConfig {
+export function buildLayout({
+  analysis,
+  header,
+  footer,
+}: BuildInput): LayoutConfig {
   const pageWidthPt = analysis.page.widthPt;
   const margins = { ...analysis.layout.margins };
 

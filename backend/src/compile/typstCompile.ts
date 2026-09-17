@@ -1,6 +1,13 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, mkdir, copyFile, writeFile, readFile, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  copyFile,
+  writeFile,
+  readFile,
+  rm,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { ImageAsset } from "../convert/blocksToTypst.js";
@@ -36,7 +43,10 @@ export interface CompileOutput {
  * returns the compiled bytes. Shared by PDF export and thumbnail export.
  */
 async function runTypstCompile(
-  request: Pick<CompileRequest, "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages">,
+  request: Pick<
+    CompileRequest,
+    "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages"
+  >,
   outFileName: string,
   extraArgs: string[] = [],
 ): Promise<Buffer> {
@@ -44,14 +54,21 @@ async function runTypstCompile(
 }
 
 async function runTypstCompileDetailed(
-  request: Pick<CompileRequest, "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages">,
+  request: Pick<
+    CompileRequest,
+    "templateSource" | "templateAssetsDir" | "bodyTypst" | "bodyImages"
+  >,
   outFileName: string,
   extraArgs: string[] = [],
 ): Promise<CompileOutput> {
   const dir = await mkdtemp(path.join(tmpdir(), "doc-pdf-"));
   try {
     const templateName = "template.typ";
-    await writeFile(path.join(dir, templateName), request.templateSource, "utf8");
+    await writeFile(
+      path.join(dir, templateName),
+      request.templateSource,
+      "utf8",
+    );
 
     if (request.templateAssetsDir) {
       await copyDir(request.templateAssetsDir, path.join(dir, "assets"));
@@ -92,13 +109,15 @@ export async function compileToPdf(request: CompileRequest): Promise<Buffer> {
 }
 
 /** Comme compileToPdf, avec le stderr de typst (avertissements) en plus. */
-export async function compileToPdfDetailed(request: CompileRequest): Promise<CompileOutput> {
+export async function compileToPdfDetailed(
+  request: CompileRequest,
+): Promise<CompileOutput> {
   return runTypstCompileDetailed(request, "out.pdf");
 }
 
 const THUMBNAIL_SWATCH_BODY = `= Titre de démonstration
 
-Ceci est un aperçu du gabarit appliqué à un contenu type, pour comparer les styles en un coup d'œil.
+Ceci est un aperçu du template appliqué à un contenu type, pour comparer les styles en un coup d'œil.
 
 - Premier point
 - Second point
@@ -110,7 +129,9 @@ export interface ThumbnailRequest {
   templateAssetsDir?: string;
 }
 
-export async function compileToThumbnail(request: ThumbnailRequest): Promise<Buffer> {
+export async function compileToThumbnail(
+  request: ThumbnailRequest,
+): Promise<Buffer> {
   return runTypstCompile(
     {
       templateSource: request.templateSource,

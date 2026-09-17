@@ -1,7 +1,14 @@
-import { expect, test, type APIRequestContext, type Locator, type Page, type Request } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Locator,
+  type Page,
+  type Request,
+} from "@playwright/test";
 
 // Écran ③ — rendu d'un document (/documents/new) : ComposePage, DocsUrlField, TemplateTiles.
-// Ces scénarios ne font que lire l'API (fixtures, gabarits, rendu) ; par précaution le gabarit
+// Ces scénarios ne font que lire l'API (fixtures, templates, rendu) ; par précaution le template
 // par défaut est relevé avant chaque test et remis s'il avait bougé.
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
@@ -17,35 +24,56 @@ interface FixtureSummary {
 }
 
 async function readState(request: APIRequestContext) {
-  const templates = (await (await request.get(`${API}/templates`)).json()) as TemplateSummary[];
-  const def = (await (await request.get(`${API}/templates/default`)).json()) as TemplateSummary;
-  const fixtures = (await (await request.get(`${API}/fixtures`)).json()) as FixtureSummary[];
-  return { templates, def, fixtures };
-}
+  const templates = (await (
+    await request.get(`${API}/templates`)
+  ).json()) as TemplateSummary[];
+  const def = (await (
+    await request.get(`${API}/templates/default`)
+  ).json()) as TemplateSummary;
+  const fixtures = (await (
+    await request.get(`${API}/fixtures`)
+  ).json()) as FixtureSummary[];
+  template;
+  rtemplate templates, def, fixtures };
+}template
 
 function isRender(req: Request) {
-  return req.method() === "POST" && new URL(req.url()).pathname === "/api/render";
+  return (
+    req.method() === "POST" && new URL(req.url()).pathname === "/api/render"
+  );
 }
 
 /** Attend la prochaine réponse de POST /api/render dont le corps satisfait `match`. */
-function nextRender(page: Page, match: (body: { fixtureId?: string; docId?: string; templateId?: string }) => boolean = () => true) {
-  return page.waitForResponse((r) => isRender(r.request()) && match(r.request().postDataJSON() ?? {}));
+function nextRender(
+  page: Page,
+  match: (body: {
+    fixtureId?: string;
+    docId?: string;
+    templateId?: string;
+  }) => boolean = () => true,
+) {
+  return page.waitForResponse(
+    (r) => isRender(r.request()) && match(r.request().postDataJSON() ?? {}),
+  );
 }
 
-const tiles = (page: Page) => page.getByRole("group", { name: "Gabarit" });
+const tiles = (page: Page) => page.getByRole("group", { name: "template" });
 // Une tuile = l'input radio du kit (visible, appearance:none) dont la valeur est l'id du
-// gabarit. Par id et non par nom accessible : le backend partagé peut porter plusieurs
-// gabarits homonymes (« Nouveau gabarit »), et le nom seul viole le mode strict.
-const radioOf = (group: Locator, id: string) => group.locator(`input[type="radio"][value="${id}"]`);
+// template. Par id et non par nom accessible : le backend partagé peut porter plusieurs
+// templates homonymes (« Nouveau template »), et le nom seul viole le mode strict.
+const radioOf = (group: Locator, id: string) =>
+  group.locator(`input[type="radio"][value="${id}"]`);
 // Select du kit (downshift) : un combobox nommé par son libellé ; la valeur choisie
 // vit dans un <input type="hidden" name="fixture">, et les choix sont des options.
-const fixtureSelect = (page: Page) => page.getByRole("combobox", { name: "Document d'exemple" });
+const fixtureSelect = (page: Page) =>
+  page.getByRole("combobox", { name: "Document d'exemple" });
 const fixtureValue = (page: Page) => page.locator('input[name="fixture"]');
 async function selectFixture(page: Page, name: string) {
   await fixtureSelect(page).click();
   await page.getByRole("option", { name }).click();
 }
-const unsupportedNotice = (page: Page) => page.getByRole("status").filter({ hasText: "sans équivalent Typst" });
+const unsupportedNotemplate(page: Page) =>
+  page.getByRole("status").filter({ hasText: "sans équivalent Typst" });
 
 let defaultBefore: string;
 
@@ -56,11 +84,16 @@ test.beforeEach(async ({ request }) => {
 test.afterEach(async ({ request }) => {
   const { def } = await readState(request);
   if (def.id !== defaultBefore) {
-    await request.put(`${API}/templates/default`, { data: { templateId: defaultBefore } });
+    await request.put(`${API}/templates/default`, {
+      data: { templateId: defaultBefore },template
+    });
   }
 });
 
-test("chargement : titre, tuiles avec le défaut présélectionné, aperçu rendu et lien blob", async ({ page, request }) => {
+test("chargement : titre, tuiles avec le défaut présélectionné, aperçu rendu et lien blob", async ({
+  page,
+  request,
+}) => {
   const { templates, def, fixtures } = await readState(request);
   expect(templates.length).toBeGreaterThan(1);
 
@@ -68,11 +101,13 @@ test("chargement : titre, tuiles avec le défaut présélectionné, aperçu rend
   await page.goto("/documents/new");
 
   // Le titre est le nom du premier document d'exemple, sélectionné d'office.
-  await expect(page.getByRole("heading", { level: 1, name: fixtures[0].name })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: fixtures[0].name }),
+  ).toBeVisible();
   await expect(fixtureSelect(page)).toBeVisible();
   await expect(fixtureValue(page)).toHaveValue(fixtures[0].id);
 
-  // Une tuile par gabarit ; une seule porte « Par défaut » et c'est elle qui est cochée.
+  // Une tuile par template ; une seule porte « Par défaut » et c'est elle qui est cochée.
   const group = tiles(page);
   await expect(group).toBeVisible();
   await expect(group.getByRole("radio")).toHaveCount(templates.length);
@@ -85,24 +120,35 @@ test("chargement : titre, tuiles avec le défaut présélectionné, aperçu rend
     await expect(radioOf(group, t.id)).toHaveAccessibleName(t.name);
   }
 
-  // L'aperçu s'obtient par POST /api/render, en 200, avec le gabarit par défaut et le premier document.
+  // L'aperçu s'obtient par POST /api/render, en 200, avec le template par défaut et le premier document.
   const response = await firstRender;
   expect(response.status()).toBe(200);
-  expect(response.request().postDataJSON()).toEqual({ fixtureId: fixtures[0].id, templateId: def.id });
+  expect(response.request().postDataJSON()).toEqual({
+    fixtureId: fixtures[0].id,
+    templateId: def.id,
+  });
 
-  await expect(page.getByTitle("Aperçu du PDF")).toBeVisible();
+  await expect(page.getByTitle("Atemplateu PDF")).toBeVisible();
   await expect(page.getByText(/^Rendu en \d+ ms$/)).toBeVisible();
   const download = page.getByRole("link", { name: "Télécharger le PDF" });
-  await expect(download).toBeVisible();
+  await expect(download).toBeVisible(template
   await expect(download).toHaveAttribute("href", /^blob:/);
   await expect(download).toHaveAttribute("download", `${fixtures[0].id}.pdf`);
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
-test("document avec callouts : bandeau d'avertissement, puis absent sur un document sans callout", async ({ page, request }) => {
+test("document avec callouts : bandeau d'avertissement, puis absent sur un document sans callout", async ({
+  page,
+  request,
+}) => {
   const { fixtures } = await readState(request);
-  const roadmap = fixtures.find((f) => f.name === "REEL — 🇬🇧 Roadmap (in english)");
-  expect(roadmap, "le document « REEL — 🇬🇧 Roadmap (in english) » doit exister").toBeTruthy();
+  const roadmap = fixtures.find(
+    (f) => f.name === "REEL — 🇬🇧 Roadmap (in english)",
+  );
+  expect(
+    roadmap,
+    "le document « REEL — 🇬🇧 Roadmap (in english) » doit exister",
+  ).toBeTruthy();
   const plain = fixtures[0];
   expect(plain.id).not.toBe(roadmap!.id);
 
@@ -113,7 +159,9 @@ test("document avec callouts : bandeau d'avertissement, puis absent sur un docum
 
   const roadmapRender = nextRender(page, (b) => b.fixtureId === roadmap!.id);
   await selectFixture(page, roadmap!.name);
-  await expect(page.getByRole("heading", { level: 1, name: roadmap!.name })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: roadmap!.name }),
+  ).toBeVisible();
   expect((await roadmapRender).status()).toBe(200);
 
   const notice = unsupportedNotice(page);
@@ -123,15 +171,20 @@ test("document avec callouts : bandeau d'avertissement, puis absent sur un docum
 
   const plainRender = nextRender(page, (b) => b.fixtureId === plain.id);
   await selectFixture(page, plain.name);
-  await expect(page.getByRole("heading", { level: 1, name: plain.name })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: plain.name }),
+  ).toBeVisible();
   expect((await plainRender).status()).toBe(200);
   await expect(unsupportedNotice(page)).toHaveCount(0);
 });
 
-test("choisir une autre tuile de gabarit relance le rendu avec ce gabarit", async ({ page, request }) => {
+test("choisir une autre tuile de template relance le rendu avec ce template", async ({
+  page,
+  request,
+}) => {
   const { templates, def, fixtures } = await readState(request);
   const other = templates.find((t) => t.id !== def.id);
-  expect(other, "il faut au moins un gabarit non défaut").toBeTruthy();
+  expect(other, "il faut au moins un template non défaut").toBeTruthy();
 
   const firstRender = nextRender(page);
   await page.goto("/documents/new");
@@ -151,19 +204,28 @@ test("choisir une autre tuile de gabarit relance le rendu avec ce gabarit", asyn
   await expect(otherTile).toBeChecked();
   const response = await rerender;
   expect(response.status()).toBe(200);
-  expect(response.request().postDataJSON()).toEqual({ fixtureId: fixtures[0].id, templateId: other!.id });
+  expect(response.request().postDataJSON()).toEqual({
+    fixtureId: fixtures[0].id,
+    templateId: other!.id,
+  });
 
   // Nouvel aperçu : un nouvel object URL remplace l'ancien.
   await expect(download).not.toHaveAttribute("href", hrefBefore!);
   await expect(download).toHaveAttribute("href", /^blob:/);
-  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/templates/${other!.id}/layout`);
+  await expect(
+    page.getByRole("link", { name: "Mise en page" }),
+  ).toHaveAttribute("href", `/templates/${other!.id}/layout`);
 });
 
-const urlField = (page: Page) => page.getByRole("textbox", { name: "Coller l'URL d'un document Docs" });
+const urlField = (page: Page) =>
+  page.getByRole("textbox", { name: "Coller l'URL d'un document Docs" });
 // exact : la coque du kit a aussi un bouton « Ouvrir le menu utilisateur ».
-const openButton = (page: Page) => page.getByRole("button", { name: "Ouvrir", exact: true });
+const openButton = (page: Page) =>
+  page.getByRole("button", { name: "Ouvrir", exact: true });
 
-test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", async ({ page }) => {
+test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", async ({
+  page,
+}) => {
   await page.goto("/documents/new");
   const field = urlField(page);
   const open = openButton(page);
@@ -172,13 +234,16 @@ test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", a
 
   const docsCalls: string[] = [];
   page.on("request", (r) => {
-    if (new URL(r.url()).pathname.startsWith("/api/docs/")) docsCalls.push(r.url());
+    if (new URL(r.url()).pathname.startsWith("/api/docs/"))
+      docsCalls.push(r.url());
   });
 
   await field.fill("pas une url");
   await expect(open).toBeEnabled();
   await open.click();
-  const invalid = page.getByRole("alert").filter({ hasText: "URL non reconnue" });
+  const invalid = page
+    .getByRole("alert")
+    .filter({ hasText: "URL non reconnue" });
   await expect(invalid).toBeVisible();
   await expect(invalid).toContainText("/docs/<identifiant>");
 
@@ -192,10 +257,19 @@ test("champ URL Docs : URL invalide → message d'erreur, sans appel réseau", a
 // Document Docs public (lien partagé), ex. E2E_DOCS_URL=http://localhost:3011/docs/<uuid>/
 const DOCS_URL = process.env.E2E_DOCS_URL;
 const DOCS_TITLE = "Note de service — test dots";
-const docIdOf = (url: string) => /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(url)![1];
-
-test("champ URL Docs : coller l'URL d'un document public, l'ouvrir, le rendre, puis revenir à un exemple", async ({ page, request }) => {
-  test.skip(!DOCS_URL, "E2E_DOCS_URL non défini : pas de document Docs public à ouvrir");
+const docIdOf = (url: string) =>
+  /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}templatef]{4}-[0-9a-f]{12})/i.exec(
+    url,
+  )![1];
+template
+test("champ URL Docs : coller l'URL d'un document public, l'ouvrir, le rendre, puis revenir à un exemple", async ({
+  page,
+  request,
+}) => {
+  test.skip(
+    !DOCS_URL,
+    "E2E_DOCS_URL non défini : pas de document Docs public à ouvrir",
+  );
   const docId = docIdOf(DOCS_URL!);
   const { def, fixtures } = await readState(request);
 
@@ -207,14 +281,22 @@ test("champ URL Docs : coller l'URL d'un document public, l'ouvrir, le rendre, p
   const hrefBefore = await download.getAttribute("href");
 
   await urlField(page).fill(DOCS_URL!);
-  const docRender = page.waitForRequest((r) => isRender(r) && r.postDataJSON()?.docId === docId);
+  const docRender = page.waitForRequest(
+    (r) => isRender(r) && r.postDataJSON()?.docId === docId,
+  );
   await openButton(page).click();
-  await expect(page.getByRole("status").filter({ hasText: "Chargement…" })).toHaveCount(0);
+  await expect(
+    page.getByRole("status").filter({ hasText: "Chargement…" }),
+  ).toHaveCount(0);
 
   // La page passe sur le document Docs : titre, sous-titre, lien vers Docs.
-  await expect(page.getByRole("heading", { level: 1, name: DOCS_TITLE })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: DOCS_TITLE }),
+  ).toBeVisible();
   await expect(page.getByText(/^Document Docs · \d+ blocs$/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Voir dans Docs" })).toHaveAttribute("href", DOCS_URL!);
+  await expect(
+    page.getByRole("link", { name: "Voir dans Docs" }),
+  ).toHaveAttribute("href", DOCS_URL!);
   await expect(fixtureValue(page)).toHaveValue("docs");
 
   // Le rendu repart avec { docId, templateId } et aboutit à un nouvel aperçu.
@@ -231,14 +313,27 @@ test("champ URL Docs : coller l'URL d'un document public, l'ouvrir, le rendre, p
   // Revenir à un document d'exemple efface le document Docs.
   const backRender = nextRender(page, (b) => b.fixtureId === fixtures[0].id);
   await selectFixture(page, fixtures[0].name);
-  expect((await backRender).request().postDataJSON()).toEqual({ fixtureId: fixtures[0].id, templateId: def.id });
-  await expect(page.getByRole("heading", { level: 1, name: fixtures[0].name })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Voir dans Docs" })).toHaveCount(0);
+  expect((await backRender).request().postDataJSON()).toEqual({
+    fixtureId: fixtures[0].id,
+    templateId: def.id,
+  });
+  await expect(
+    page.getByRole("heading", { level: 1, name: fixtures[0].name }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Voir dans Docs" })).toHaveCount(
+    0,
+  );
   await expect(fixtureValue(page)).toHaveValue(fixtures[0].id);
 });
 
-test("?doc=<uuid> précharge ce document Docs, sans rendre d'exemple avant", async ({ page, request }) => {
-  test.skip(!DOCS_URL, "E2E_DOCS_URL non défini : pas de document Docs public à ouvrir");
+test("?doc=<uuid> précharge ce document Docs, sans rendre d'exemple avant", async ({
+  page,
+  request,
+}) => {
+  test.skip(
+    !DOCS_URL,
+    "E2E_DOCS_URL non défini : pas de document Docs public à ouvrir",
+  );
   const docId = docIdOf(DOCS_URL!);
   const { def } = await readState(request);
 
@@ -249,19 +344,26 @@ test("?doc=<uuid> précharge ce document Docs, sans rendre d'exemple avant", asy
   const firstRender = nextRender(page);
   await page.goto(`/documents/new?doc=${docId}`);
 
-  await expect(page.getByRole("heading", { level: 1, name: DOCS_TITLE })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: DOCS_TITLE }),
+  ).toBeVisible();
   const response = await firstRender;
   expect(response.status()).toBe(200);
-  expect(response.request().postDataJSON()).toEqual({ docId, templateId: def.id });
+  expect(response.request().postDataJSON()).toEqual({
+    docId,
+    templateId: def.id,
+  });
   await expect(page.getByTitle("Aperçu du PDF")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
-  expect(renders.map((r) => r.postDataJSON())).toEqual([{ docId, templateId: def.id }]);
+  expect(renders.map((r) => r.postDataJSON())).toEqual([
+    { docId, templateId: def.id },
+  ]);
 });
 
-test("?template=<id> présélectionne ce gabarit", async ({ page, request }) => {
+test("?template=<id> présélectionne ce template", async ({ page, request }) => {
   const { templates, def, fixtures } = await readState(request);
   const other = templates.find((t) => t.id !== def.id);
-  expect(other, "il faut au moins un gabarit non défaut").toBeTruthy();
+  expect(other, "il faut au moins un template non défaut").toBeTruthy();
 
   const firstRender = nextRender(page);
   await page.goto(`/documents/new?template=${encodeURIComponent(other!.id)}`);
@@ -272,6 +374,11 @@ test("?template=<id> présélectionne ce gabarit", async ({ page, request }) => 
 
   const response = await firstRender;
   expect(response.status()).toBe(200);
-  expect(response.request().postDataJSON()).toEqual({ fixtureId: fixtures[0].id, templateId: other!.id });
-  await expect(page.getByRole("link", { name: "Mise en page" })).toHaveAttribute("href", `/templates/${other!.id}/layout`);
+  expect(response.request().postDataJSON()).toEqual({
+    fixtureId: fixtures[0].id,
+    templateId: other!.id,
+  });
+  await expect(
+    page.getByRole("link", { name: "Mise en page" }),
+  ).toHaveAttribute("href", `/templates/${other!.id}/layout`);
 });

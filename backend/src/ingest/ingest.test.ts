@@ -1,6 +1,6 @@
 /**
  * Bout en bout, sans HTTP : un PDF à en-tête est fabriqué avec typst, relu par
- * l'extracteur Python, puis le gabarit déduit est recompilé. Ce qui est vérifié
+ * l'extracteur Python, puis le template déduit est recompilé. Ce qui est vérifié
  * ici, c'est la chaîne complète — relevé, découpe, marge élargie pour loger le
  * bandeau — et pas seulement chaque maillon.
  *
@@ -51,7 +51,7 @@ async function available(): Promise<boolean> {
 
 const enabled = await available();
 
-describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
+describe.skipIf(!enabled)("import d'un PDF vers un template", () => {
   let dir = "";
   let pdf = "";
 
@@ -90,14 +90,19 @@ describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
     expect(analysis.regions.at(-1)!.kind).toBe("page");
   });
 
-  it("découpe la bande et produit un gabarit qui compile, marge comprise", async () => {
+  it("découpe la bande et produit un template qui compile, marge comprise", async () => {
     const analysis = await analyzeDocument(pdf, dir);
     const region = analysis.regions.find((r) => r.kind === "header")!;
 
     const fragment = await cropRegion({
       input: pdf,
       outDir: dir,
-      rect: { x: region.x, y: region.y, width: region.width, height: region.height },
+      rect: {
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height,
+      },
       vector: false,
       name: "en-tete",
     });
@@ -119,18 +124,24 @@ describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
     const rendered = (210 * fragment.heightPt) / fragment.widthPt;
     expect(layout.margins.top).toBeGreaterThanOrEqual(rendered);
 
-    // Le gabarit compile avec son asset à côté, référencé par son seul nom.
+    // Le template compile avec ses assets à côté, référencé par son seul nom.
     const source = buildSource(layout);
     expect(source).toContain('image("assets/en-tete.png"');
     expect(source).not.toContain("..");
 
-    const out = path.join(dir, "gabarit.typ");
+    const out = path.join(dir, "template.typ");
     const assets = path.join(dir, "assets");
     await execFileAsync("mkdir", ["-p", assets]);
     await execFileAsync("cp", [path.join(dir, "en-tete.png"), assets]);
     await writeFile(out, source, "utf8");
     await writeFile(path.join(dir, "body.typ"), "= Essai\n\nTexte.\n", "utf8");
-    await execFileAsync("typst", ["compile", "--root", dir, out, path.join(dir, "out.pdf")]);
+    await execFileAsync("typst", [
+      "compile",
+      "--root",
+      dir,
+      out,
+      path.join(dir, "out.pdf"),
+    ]);
 
     expect(existsSync(path.join(dir, "out.pdf"))).toBe(true);
     const bytes = await readFile(path.join(dir, "out.pdf"));
@@ -140,7 +151,12 @@ describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
   it("n'étire pas un logo à la largeur de la page", async () => {
     const analysis = await analyzeDocument(pdf, dir);
     // Un logo de 183 × 88 px : étiré sur 210 mm, il ferait 101 mm de haut.
-    const logo = { file: "logo.png", widthPt: 183, heightPt: 88, fullBleed: false };
+    const logo = {
+      file: "logo.png",
+      widthPt: 183,
+      heightPt: 88,
+      fullBleed: false,
+    };
 
     const layout = buildLayout({ analysis, header: logo });
 
@@ -154,11 +170,22 @@ describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
   it("loge un logo dans une marge haute trop courte pour lui", async () => {
     const analysis = await analyzeDocument(pdf, dir);
     // Word compte son en-tête hors marge : 6 mm lui suffisent, pas à Typst.
-    const tight = { ...analysis, layout: { ...analysis.layout, margins: { ...analysis.layout.margins, top: 6.3 } } };
+    const tight = {
+      ...analysis,
+      layout: {
+        ...analysis.layout,
+        margins: { ...analysis.layout.margins, top: 6.3 },
+      },
+    };
 
     const layout = buildLayout({
       analysis: tight,
-      header: { file: "logo.png", widthPt: 183, heightPt: 88, fullBleed: false },
+      header: {
+        file: "logo.png",
+        widthPt: 183,
+        heightPt: 88,
+        fullBleed: false,
+      },
     });
 
     expect(layout.margins.top).toBeGreaterThan(INLINE_LOGO_HEIGHT_MM);
@@ -167,7 +194,9 @@ describe.skipIf(!enabled)("import d'un PDF vers un gabarit", () => {
   it("refuse un fichier qui n'est ni PDF ni docx, sur ses octets", async () => {
     const fake = path.join(dir, "note.pdf");
     await writeFile(fake, "ceci n'est pas un PDF", "utf8");
-    await expect(analyzeDocument(fake, dir)).rejects.toMatchObject({ code: "unsupported_format" });
+    await expect(analyzeDocument(fake, dir)).rejects.toMatchObject({
+      code: "unsupported_format",
+    });
   });
 });
 
@@ -203,15 +232,22 @@ describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
 </w:styles>`;
 
   /** Zip sans dépendance : « store » seul, ce que zipfile relit sans peine. */
-  async function buildDocx(parts: Record<string, Buffer | string>): Promise<string> {
-    const target = path.join(dir, `made-${Math.random().toString(16).slice(2)}.docx`);
+  async function buildDocx(
+    parts: Record<string, Buffer | string>,
+  ): Promise<string> {
+    const target = path.join(
+      dir,
+      `made-${Math.random().toString(16).slice(2)}.docx`,
+    );
     const staging = path.join(dir, `staging-${path.basename(target)}`);
     for (const [name, content] of Object.entries(parts)) {
       const file = path.join(staging, name);
       await execFileAsync("mkdir", ["-p", path.dirname(file)]);
       await writeFile(file, content as never);
     }
-    await execFileAsync("zip", ["-r", "-X", "-q", target, "."], { cwd: staging });
+    await execFileAsync("zip", ["-r", "-X", "-q", target, "."], {
+      cwd: staging,
+    });
     return target;
   }
 
@@ -245,11 +281,16 @@ describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
     expect(analysis.layout.fontSize).toBe(12);
 
     expect(analysis.assets).toHaveLength(1);
-    expect(analysis.assets![0]).toMatchObject({ name: "image1.png", vector: false, widthPt: 2 });
+    expect(analysis.assets![0]).toMatchObject({
+      name: "image1.png",
+      vector: false,
+      widthPt: 2,
+    });
   });
 
   it("préfère le vrai SVG à son repli PNG obligatoire", async () => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40"></svg>';
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40"></svg>';
     const docx = await buildDocx({
       "word/document.xml": DOCUMENT_XML,
       "word/media/image1.png": PNG,
@@ -291,6 +332,8 @@ describe.skipIf(!enabled)("import d'un .docx sans composition", () => {
       "word/styles.xml": STYLES_XML,
     });
 
-    await expect(analyzeDocument(docx, dir)).rejects.toMatchObject({ code: "no_libreoffice" });
+    await expect(analyzeDocument(docx, dir)).rejects.toMatchObject({
+      code: "no_libreoffice",
+    });
   });
 });

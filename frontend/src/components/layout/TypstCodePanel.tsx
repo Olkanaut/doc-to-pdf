@@ -29,24 +29,39 @@ export function TypstCodePanel({
   );
 
   function syncGutterScroll(e: UIEvent<HTMLTextAreaElement>) {
-    if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop;
+    if (gutterRef.current)
+      gutterRef.current.scrollTop = e.currentTarget.scrollTop;
   }
 
   return (
-    <aside className="le-panel le-code-panel" aria-label="Code Typst du gabarit">
+    <aside
+      className="le-panel le-code-panel"
+      aria-label="Code Typst de la template"
+    >
       <div className="le-panel__top">
-        <TemplateNameField value={templateName} isDefault={isDefault} onChange={onTemplateNameChange} />
+        <TemplateNameField
+          value={templateName}
+          isDefault={isDefault}
+          onChange={onTemplateNameChange}
+        />
         {modeMenu}
       </div>
 
       {disabled && (
         <Alert type={VariantType.WARNING} className="le-panel__notice">
-          <span>Une proposition de l'assistant est en attente : appliquez-la ou ignorez-la avant de modifier le code.</span>
+          <span>
+            Une proposition de l'assistant est en attente : appliquez-la ou
+            ignorez-la avant de modifier le code.
+          </span>
         </Alert>
       )}
 
       <div className="le-code-panel__editor" aria-label="Source Typst">
-        <pre ref={gutterRef} className="le-code-panel__gutter" aria-hidden="true">
+        <pre
+          ref={gutterRef}
+          className="le-code-panel__gutter"
+          aria-hidden="true"
+        >
           {lineNumbers}
         </pre>
         <textarea
@@ -62,7 +77,9 @@ export function TypstCodePanel({
 
       <div className="le-code-panel__footer">
         <span>Typst</span>
-        <span>{lineCount} ligne{lineCount > 1 ? "s" : ""}</span>
+        <span>
+          {lineCount} ligne{lineCount > 1 ? "s" : ""}
+        </span>
       </div>
     </aside>
   );

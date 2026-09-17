@@ -1,5 +1,11 @@
 import type { ReactElement } from "react";
-import { Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./components/shell/AppShell";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
@@ -14,34 +20,50 @@ import "./theme.css";
 function LegacyEditorRedirect() {
   const [params] = useSearchParams();
   const id = params.get("id");
-  return <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />;
+  return (
+    <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />
+  );
 }
 
 /** Ancien plan d'adresses : `/templates/:id` → `/t/:id`, avec ou sans `/layout`. */
 function TemplateRedirect({ layout = false }: { layout?: boolean }) {
   const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? `/t/${encodeURIComponent(id)}${layout ? "/layout" : ""}` : "/"} replace />;
+  return (
+    <Navigate
+      to={id ? `/t/${encodeURIComponent(id)}${layout ? "/layout" : ""}` : "/"}
+      replace
+    />
+  );
 }
 
-/** Ancien rendu : `/documents/new?doc=…` → `/docs/:id`, le gabarit demandé est conservé. */
+/** Ancien rendu : `/documents/new?doc=…` → `/docs/:id`, la template demandée est conservée. */
 function DocumentsNewRedirect() {
   const [params] = useSearchParams();
   const doc = params.get("doc");
   const template = params.get("template");
   const search = template ? `?template=${encodeURIComponent(template)}` : "";
-  return <Navigate to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/"}${search}`} replace />;
+  return (
+    <Navigate
+      to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/"}${search}`}
+      replace
+    />
+  );
 }
 
 /** Raccourci `/d/:id`, même cible que le chemin de Docs. */
 function ShortDocRedirect() {
   const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? `/docs/${encodeURIComponent(id)}` : "/docs"} replace />;
+  return (
+    <Navigate to={id ? `/docs/${encodeURIComponent(id)}` : "/docs"} replace />
+  );
 }
 
-/** Entrée canonique d'un gabarit : l'éditeur unifié s'ouvre en mode mise en page. */
+/** Entrée canonique d'une template : l'éditeur unifié s'ouvre en mode mise en page. */
 function TemplateEditorRedirect() {
   const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />;
+  return (
+    <Navigate to={id ? `/t/${encodeURIComponent(id)}/layout` : "/"} replace />
+  );
 }
 
 function guarded(element: ReactElement) {
@@ -64,9 +86,15 @@ export default function App() {
           <Route path="/t/:id/:mode" element={guarded(<LayoutEditorPage />)} />
           <Route path="/templates" element={<Navigate to="/" replace />} />
           <Route path="/templates/:id" element={<TemplateRedirect />} />
-          <Route path="/templates/:id/layout" element={<TemplateRedirect layout />} />
+          <Route
+            path="/templates/:id/layout"
+            element={<TemplateRedirect layout />}
+          />
           <Route path="/template/editor" element={<LegacyEditorRedirect />} />
-          <Route path="/documents/new" element={guarded(<DocumentsNewRedirect />)} />
+          <Route
+            path="/documents/new"
+            element={guarded(<DocumentsNewRedirect />)}
+          />
         </Routes>
       </main>
     </AppShell>

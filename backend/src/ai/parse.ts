@@ -3,7 +3,7 @@
  * <summary>, <changes><item>…</item></changes> et <typst>. Le modèle ne les
  * respecte pas toujours, d'où les tolérances : <typst> non fermée, source
  * enveloppée dans un bloc de code Markdown, ou réponse sans balise du tout
- * quand elle ressemble à un gabarit (elle contient `#include "body.typ"`).
+ * quand elle ressemble à un template (elle contient `#include "body.typ"`).
  */
 
 export interface AiReply {
@@ -30,7 +30,7 @@ function unfence(s: string): string {
 }
 
 /**
- * null = réponse inexploitable : aucun gabarit reconnaissable. Une source sans
+ * null = réponse inexploitable : aucun template reconnaissable. Une source sans
  * `#include "body.typ"` est refusée aussi : elle compilerait, mais sans le corps.
  */
 export function parseAiReply(text: string): AiReply | null {
@@ -43,7 +43,9 @@ export function parseAiReply(text: string): AiReply | null {
   if (!source.includes(BODY_INCLUDE)) return null;
 
   const summary = (tag(text, "summary") ?? "").trim();
-  const changes = [...(tag(text, "changes") ?? "").matchAll(/<item>([\s\S]*?)<\/item>/g)]
+  const changes = [
+    ...(tag(text, "changes") ?? "").matchAll(/<item>([\s\S]*?)<\/item>/g),
+  ]
     .map((m) => m[1].trim())
     .filter(Boolean);
   return { summary, changes, source: source + "\n" };

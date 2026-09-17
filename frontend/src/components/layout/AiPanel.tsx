@@ -1,16 +1,48 @@
-import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
-import { Alert, Badge, Button, Spinner, TextArea, VariantType } from "@gouvfr-lasuite/ui-components";
-import { Checkmark, Send, Sparkle, XMark } from "@gouvfr-lasuite/ui-components/icons";
-import { aiEditTemplate, aiTemplateFromPdf, type AiResult } from "../../api/client";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
+import {
+  Alert,
+  Badge,
+  Button,
+  Spinner,
+  TextArea,
+  VariantType,
+} from "@gouvfr-lasuite/ui-components";
+import {
+  Checkmark,
+  Send,
+  Sparkle,
+  XMark,
+} from "@gouvfr-lasuite/ui-components/icons";
+import {
+  aiEditTemplate,
+  aiTemplateFromPdf,
+  type AiResult,
+} from "../../api/client";
 
-const SUGGESTIONS = ["Logo en en-tête", "Passer en Marianne", "En-tête à droite", "Pagination dès la page 2"];
+const SUGGESTIONS = [
+  "Logo en en-tête",
+  "Passer en Marianne",
+  "En-tête à droite",
+  "Pagination dès la page 2",
+];
 /** 4,5 Mo d'octets = 6 Mo de base64, la limite de backend/src/routes/ai.ts (MAX_PDF_BASE64). */
 const MAX_PDF_BYTES = 4.5 * 1024 * 1024;
 
 type Message =
   | { kind: "user"; text: string }
   | { kind: "error"; text: string }
-  | { kind: "proposal"; result: AiResult; base: string; status: "pending" | "applied" | "ignored" };
+  | {
+      kind: "proposal";
+      result: AiResult;
+      base: string;
+      status: "pending" | "applied" | "ignored";
+    };
 
 interface Props {
   open: boolean;
@@ -25,7 +57,10 @@ interface Props {
 }
 
 /** « +n / −m lignes » par comparaison d'ensembles de lignes : suffit pour situer l'ampleur. */
-function diffSummary(before: string, after: string): { added: number; removed: number } {
+function diffSummary(
+  before: string,
+  after: string,
+): { added: number; removed: number } {
   const a = before.split("\n");
   const b = after.split("\n");
   const inA = new Set(a);
@@ -46,7 +81,16 @@ function readAsBase64(file: File): Promise<string> {
   });
 }
 
-export function AiPanel({ open, source, fixtureId, templateName, onProposal, onApply, onDismiss, onClose }: Props) {
+export function AiPanel({
+  open,
+  source,
+  fixtureId,
+  templateName,
+  onProposal,
+  onApply,
+  onDismiss,
+  onClose,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,7 +104,9 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [messages, busy]);
 
-  const pending = messages.some((m) => m.kind === "proposal" && m.status === "pending");
+  const pending = messages.some(
+    (m) => m.kind === "proposal" && m.status === "pending",
+  );
   const locked = busy || unavailable !== null || pending;
 
   // Fermer le panneau avec une proposition en attente l'ignore : sinon l'éditeur resterait
@@ -68,7 +114,11 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
   useEffect(() => {
     if (open || !pending) return;
     setMessages((prev) =>
-      prev.map((m) => (m.kind === "proposal" && m.status === "pending" ? { ...m, status: "ignored" as const } : m)),
+      prev.map((m) =>
+        m.kind === "proposal" && m.status === "pending"
+          ? { ...m, status: "ignored" as const }
+          : m,
+      ),
     );
     onDismiss();
   }, [open, pending, onDismiss]);
@@ -77,7 +127,10 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
     setMessages((prev) => [...prev, m]);
   }
 
-  async function run(userText: string, call: () => Promise<Awaited<ReturnType<typeof aiEditTemplate>>>) {
+  async function run(
+    userText: string,
+    call: () => Promise<Awaited<ReturnType<typeof aiEditTemplate>>>,
+  ) {
     push({ kind: "user", text: userText });
     setBusy(true);
     try {
@@ -101,7 +154,13 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
     const instruction = input.trim();
     if (!instruction || locked) return;
     setInput("");
-    void run(instruction, () => aiEditTemplate({ source, instruction, fixtureId: fixtureId || undefined }));
+    void run(instruction, () =>
+      aiEditTemplate({
+        source,
+        instruction,
+        fixtureId: fixtureId || undefined,
+      }),
+    );
   }
 
   /** Le champ est une zone de texte : Entrée envoie, Maj+Entrée passe à la ligne. */
@@ -114,22 +173,34 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
 
   async function sendPdf(file: File | undefined) {
     if (!file || locked) return;
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
       push({ kind: "error", text: "Seul un fichier PDF est accepté." });
       return;
     }
     if (file.size > MAX_PDF_BYTES) {
-      push({ kind: "error", text: `PDF trop volumineux (${(file.size / 1048576).toFixed(1)} Mo, maximum 4,5 Mo).` });
+      push({
+        kind: "error",
+        text: `PDF trop volumineux (${(file.size / 1048576).toFixed(1)} Mo, maximum 4,5 Mo).`,
+      });
       return;
     }
     const pdfBase64 = await readAsBase64(file);
-    void run(`PDF de référence : ${file.name}`, () => aiTemplateFromPdf({ pdfBase64, name: templateName }));
+    void run(`PDF de référence : ${file.name}`, () =>
+      aiTemplateFromPdf({ pdfBase64, name: templateName }),
+    );
   }
 
   function settle(index: number, status: "applied" | "ignored") {
     const m = messages[index];
     if (m.kind !== "proposal") return;
-    setMessages((prev) => prev.map((x, i) => (i === index && x.kind === "proposal" ? { ...x, status } : x)));
+    setMessages((prev) =>
+      prev.map((x, i) =>
+        i === index && x.kind === "proposal" ? { ...x, status } : x,
+      ),
+    );
     if (status === "applied") onApply(m.result);
     else onDismiss();
   }
@@ -158,12 +229,17 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
       <div className="le-ai__thread" ref={threadRef}>
         {messages.length === 0 && !busy && (
           <p className="le-hint le-ai__empty">
-            Décrivez la modification souhaitée : l'assistant réécrit le gabarit et l'aperçu montre le résultat avant
-            d'appliquer.
+            Décrivez la modification souhaitée : l'assistant réécrit la template
+            et l'aperçu montre le résultat avant d'appliquer.
           </p>
         )}
         {messages.map((m, i) => {
-          if (m.kind === "user") return <div key={i} className="ai-msg--user">{m.text}</div>;
+          if (m.kind === "user")
+            return (
+              <div key={i} className="ai-msg--user">
+                {m.text}
+              </div>
+            );
           if (m.kind === "error") {
             return (
               <div key={i} role="alert">
@@ -171,7 +247,14 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
               </div>
             );
           }
-          return <ProposalCard key={i} message={m} onApply={() => settle(i, "applied")} onIgnore={() => settle(i, "ignored")} />;
+          return (
+            <ProposalCard
+              key={i}
+              message={m}
+              onApply={() => settle(i, "applied")}
+              onIgnore={() => settle(i, "ignored")}
+            />
+          );
         })}
         {busy && (
           <div className="le-hint le-ai__busy" role="status">
@@ -183,13 +266,22 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
 
       {unavailable && (
         <div className="le-ai__notice" role="status">
-          <Alert type={VariantType.WARNING}>Assistant indisponible : {unavailable}</Alert>
+          <Alert type={VariantType.WARNING}>
+            Assistant indisponible : {unavailable}
+          </Alert>
         </div>
       )}
 
       <div className="le-ai__chips">
         {SUGGESTIONS.map((s) => (
-          <Button key={s} variant="bordered" color="neutral" size="small" disabled={locked} onClick={() => setInput(s)}>
+          <Button
+            key={s}
+            variant="bordered"
+            color="neutral"
+            size="small"
+            disabled={locked}
+            onClick={() => setInput(s)}
+          >
             {s}
           </Button>
         ))}
@@ -206,7 +298,8 @@ export function AiPanel({ open, source, fixtureId, templateName, onProposal, onA
         onDrop={onDrop}
         onClick={() => !locked && fileRef.current?.click()}
       >
-        Déposez un PDF de référence (charte, en-tête) : l'assistant en déduit le gabarit Typst.
+        Déposez un PDF de référence (charte, en-tête) : l'assistant en déduit le
+        template Typst.
         <input
           ref={fileRef}
           type="file"
@@ -283,7 +376,8 @@ function ProposalCard({
       {result.check.ok ? (
         <div className="le-hint">
           <span className="le-ok">
-            Compilé en {result.check.ms} ms · {result.check.pages} page{result.check.pages > 1 ? "s" : ""}
+            Compilé en {result.check.ms} ms · {result.check.pages} page
+            {result.check.pages > 1 ? "s" : ""}
           </span>
           {result.check.warnings.length > 0 && (
             <ul className="le-mono">
@@ -297,29 +391,45 @@ function ProposalCard({
         <Alert type={VariantType.ERROR}>
           <span>
             La proposition ne compile pas : {result.check.error}
-            {result.check.details && <pre className="le-mono">{result.check.details}</pre>}
+            {result.check.details && (
+              <pre className="le-mono">{result.check.details}</pre>
+            )}
           </span>
         </Alert>
       )}
       <span className="le-hint">
-        +{diff.added} / −{diff.removed} ligne{diff.added + diff.removed > 1 ? "s" : ""}
+        +{diff.added} / −{diff.removed} ligne
+        {diff.added + diff.removed > 1 ? "s" : ""}
       </span>
       {status === "pending" ? (
         <>
           <div className="ai-card__actions">
-            <Button variant="primary" size="small" icon={<Checkmark aria-hidden="true" />} onClick={onApply}>
+            <Button
+              variant="primary"
+              size="small"
+              icon={<Checkmark aria-hidden="true" />}
+              onClick={onApply}
+            >
               Appliquer
             </Button>
-            <Button variant="secondary" color="neutral" size="small" onClick={onIgnore}>
+            <Button
+              variant="secondary"
+              color="neutral"
+              size="small"
+              onClick={onIgnore}
+            >
               Ignorer
             </Button>
           </div>
           <span className="le-hint">
-            L'aperçu montre déjà la proposition. Rien n'est enregistré tant que vous n'appliquez pas.
+            L'aperçu montre déjà la proposition. Rien n'est enregistré tant que
+            vous n'appliquez pas.
           </span>
         </>
       ) : (
-        <Badge type="neutral" className="ai-card__status">{status === "applied" ? "Appliquée" : "Ignorée"}</Badge>
+        <Badge type="neutral" className="ai-card__status">
+          {status === "applied" ? "Appliquée" : "Ignorée"}
+        </Badge>
       )}
     </div>
   );

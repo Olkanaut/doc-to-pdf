@@ -1,4 +1,4 @@
-// Gabarit Ville de Paris : logo officiel centré en tête, comme les arrêtés publiés.
+// template Ville de Paris : logo officiel centré en tête, comme les arrêtés publiés.
 #set page(
   paper: "a4",
   margin: (top: 4cm, bottom: 2.5cm, x: 2.2cm),

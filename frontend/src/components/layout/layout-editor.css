@@ -95,7 +95,8 @@
   background: var(--dots-primary);
 }
 .le-resize-handle:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dots-primary), transparent 72%);
+  box-shadow: inset 0 0 0 2px
+    color-mix(in srgb, var(--dots-primary), transparent 72%);
 }
 
 /* Panneau de réglages */
@@ -721,7 +722,7 @@
   min-width: 0;
 }
 
-/* L'aperçu du gabarit sert à juger la mise en page : le PDF n'y est pas un
+/* L'aperçu du template sert à juger la mise en page : le PDF n'y est pas un
    livrable, seul le .typ s'exporte. Le lien de téléchargement que PdfPreview
    porte pour la page de rendu n'a donc pas lieu d'être ici. */
 .le-preview__doc .pdf-preview-toolbar {

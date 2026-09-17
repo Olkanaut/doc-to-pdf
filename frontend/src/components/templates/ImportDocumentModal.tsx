@@ -32,7 +32,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const ERROR_LINGER_MS = 4000;
 
 type Stage = "drop" | "loading" | "crop" | "assets" | "typ" | "error";
-/** Ce à quoi sert la zone choisie : un gabarit entier, ou le seul visuel d'une section. */
+/** Ce à quoi sert la zone choisie : une template entière, ou le seul visuel d'une section. */
 export type ImportTarget = "template" | "header" | "footer";
 
 const REGION_LABEL: Record<IngestRegion["kind"], string> = {
@@ -46,14 +46,19 @@ function ko(bytes: number): string {
 }
 
 function toRect(region: IngestRegion): IngestRect {
-  return { x: region.x, y: region.y, width: region.width, height: region.height };
+  return {
+    x: region.x,
+    y: region.y,
+    width: region.width,
+    height: region.height,
+  };
 }
 
 interface Props {
-  /** « template » crée un gabarit ; « header »/« footer » ne rend qu'un visuel. */
+  /** « template » crée une template ; « header »/« footer » ne rend qu'un visuel. */
   target?: ImportTarget;
   onClose: () => void;
-  /** Gabarit créé (ou .typ importé) : son identifiant. */
+  /** template créé (ou .typ importé) : son identifiant. */
   onTemplate?: (id: string) => void;
   /** Visuel découpé, à poser dans la section d'où la fenêtre a été ouverte. */
   onFragment?: (file: string) => void;
@@ -69,7 +74,12 @@ interface Props {
  * Il n'y a ni « Annuler » ni « Retour » : la croix ferme et abandonne le
  * fichier déposé, que le serveur finit par balayer avec son dossier d'import.
  */
-export function ImportDocumentModal({ target = "template", onClose, onTemplate, onFragment }: Props) {
+export function ImportDocumentModal({
+  target = "template",
+  onClose,
+  onTemplate,
+  onFragment,
+}: Props) {
   const [stage, setStage] = useState<Stage>("drop");
   const [upload, setUpload] = useState<UploadFile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,12 +106,15 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
     setStage("error");
   }
 
-  /** Bouton « Continuer sans import » : même création qu'un gabarit vide, sans passer par un fichier. */
+  /** Bouton « Continuer sans import » : même création qu'une template vide, sans passer par un fichier. */
   async function createBlank() {
     setBusy(true);
     setError(null);
     try {
-      const created = await createTemplate({ name: "Nouveau gabarit", description: "" });
+      const created = await createTemplate({
+        name: "Nouvelle template",
+        description: "",
+      });
       onTemplate?.(created.id);
       onClose();
     } catch (err) {
@@ -117,7 +130,11 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
     setError(null);
 
     if (!/\.(typ|pdf|docx)$/i.test(file.name)) {
-      setUpload({ ...next, status: "error", error: "Déposez un .typ, un .pdf ou un .docx." });
+      setUpload({
+        ...next,
+        status: "error",
+        error: "Déposez un .typ, un .pdf ou un .docx.",
+      });
       return;
     }
     if (file.size > MAX_BYTES) {
@@ -146,7 +163,9 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
       if (result.mode === "assets") {
         const wanted = target === "footer" ? "footer" : "header";
         const first =
-          result.assets?.find((a) => a.kind === wanted) ?? result.assets?.[0] ?? null;
+          result.assets?.find((a) => a.kind === wanted) ??
+          result.assets?.[0] ??
+          null;
         setAsset(first);
         setStage("assets");
         return;
@@ -155,7 +174,11 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
       // La zone proposée par défaut est celle qui correspond à la demande :
       // l'en-tête quand la fenêtre vient de la section En-tête, la page sinon.
       const wanted =
-        target === "header" ? "header" : target === "footer" ? "footer" : "header";
+        target === "header"
+          ? "header"
+          : target === "footer"
+            ? "footer"
+            : "header";
       const region =
         result.regions.find((r) => r.kind === wanted) ??
         result.regions.find((r) => r.kind === "page")!;
@@ -206,7 +229,9 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
     if (!analysis || (stage === "crop" ? !rect : !asset)) return;
     setBusy(true);
     setError(null);
-    const name = upload?.originalFile.name.replace(/\.(pdf|docx)$/i, "") ?? "Gabarit importé";
+    const name =
+      upload?.originalFile.name.replace(/\.(pdf|docx)$/i, "") ??
+      "template importée";
 
     try {
       if (stage === "assets") {
@@ -228,7 +253,7 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
       }
 
       if (target === "template") {
-        // Sans recadrage, la page entière : le gabarit ne reprend alors que le
+        // Sans recadrage, la page entière : la template ne reprend alors que le
         // relevé (format, marges, typographie), sans bandeau.
         const whole = picked === "page";
         const created = await createTemplateFromIngest(analysis.jobId, {
@@ -253,8 +278,10 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
     }
   }
 
-  const cta = target === "template" ? "Créer le gabarit" : "Utiliser comme visuel";
-  const title = target === "template" ? "Nouveau gabarit" : "Importer un document";
+  const cta =
+    target === "template" ? "Créer la template" : "Utiliser comme visuel";
+  const title =
+    target === "template" ? "Nouvelle template" : "Importer un document";
 
   return (
     <Modal
@@ -293,7 +320,11 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
           </Button>
         ) : stage === "drop" && target === "template" && !upload ? (
           // Masqué dès qu'un fichier est déposé : le dépôt devient alors la seule action en cours.
-          <Button type="button" disabled={busy} onClick={() => void createBlank()}>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => void createBlank()}
+          >
             {busy ? "En cours…" : "Continuer sans import"}
           </Button>
         ) : undefined
@@ -342,7 +373,9 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
           <div className="asset-stage">
             <p className="crop-stage__label">
               Visuels trouvés dans le document
-              {analysis.assets && analysis.assets.length > 1 ? ` (${analysis.assets.length})` : ""}
+              {analysis.assets && analysis.assets.length > 1
+                ? ` (${analysis.assets.length})`
+                : ""}
             </p>
 
             <div className="asset-stage__grid">
@@ -354,26 +387,35 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
                   aria-pressed={asset?.id === item.id}
                   onClick={() => setAsset(item)}
                 >
-                  <img src={ingestAssetUrl(analysis.jobId, index)} alt={item.name} loading="lazy" />
+                  <img
+                    src={ingestAssetUrl(analysis.jobId, index)}
+                    alt={item.name}
+                    loading="lazy"
+                  />
                   <span className="asset-tile__name">{item.name}</span>
                   <span className="asset-tile__meta">
                     {item.vector ? "vectoriel" : "raster"}
-                    {item.widthPt > 0 ? ` · ${Math.round(item.widthPt)} × ${Math.round(item.heightPt)}` : ""}
-                    {item.kind !== "body" ? ` · ${item.kind === "header" ? "en-tête" : "pied de page"}` : ""}
+                    {item.widthPt > 0
+                      ? ` · ${Math.round(item.widthPt)} × ${Math.round(item.heightPt)}`
+                      : ""}
+                    {item.kind !== "body"
+                      ? ` · ${item.kind === "header" ? "en-tête" : "pied de page"}`
+                      : ""}
                   </span>
                 </button>
               ))}
             </div>
 
             <Alert type={VariantType.INFO}>
-              Le document portait ses visuels en clair : ils sont repris tels quels, sans passer par
-              une image de la page. Format et marges viennent de sa mise en page Word.
+              Le document portait ses visuels en clair : ils sont repris tels
+              quels, sans passer par une image de la page. Format et marges
+              viennent de sa mise en page Word.
             </Alert>
 
             {analysis.fontSubstitution && (
               <Alert type={VariantType.WARNING}>
-                {analysis.fontSubstitution} n'est pas installée sur le serveur : Marianne la
-                remplace.
+                {analysis.fontSubstitution} n'est pas installée sur le serveur :
+                Marianne la remplace.
               </Alert>
             )}
             {error && (
@@ -412,7 +454,9 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
               ))}
 
               {/* N'existe qu'une fois une zone tracée à la main. */}
-              <span className={`crop-opt crop-opt--custom${picked === "custom" ? " crop-opt--on" : ""}`}>
+              <span
+                className={`crop-opt crop-opt--custom${picked === "custom" ? " crop-opt--on" : ""}`}
+              >
                 <span className="crop-opt__radio" aria-hidden="true" />
                 Zone personnalisée
               </span>
@@ -429,13 +473,14 @@ export function ImportDocumentModal({ target = "template", onClose, onTemplate, 
 
               {analysis.page.count > 1 && (
                 <Alert type={VariantType.WARNING}>
-                  Document de {analysis.page.count} pages : seule la première est analysée.
+                  Document de {analysis.page.count} pages : seule la première
+                  est analysée.
                 </Alert>
               )}
               {analysis.fontSubstitution && (
                 <Alert type={VariantType.WARNING}>
-                  {analysis.fontSubstitution} n'est pas installée sur le serveur : Marianne la
-                  remplace.
+                  {analysis.fontSubstitution} n'est pas installée sur le serveur
+                  : Marianne la remplace.
                 </Alert>
               )}
               {error && (

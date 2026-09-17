@@ -6,7 +6,7 @@ import type { TemplateSummary } from "../../api/client";
 interface Props {
   templates: TemplateSummary[];
   selectedId: string;
-  /** Gabarit par défaut d'après /api/templates/default, si la liste ne porte pas isDefault. */
+  /** Template par défaut d'après /api/templates/default, si la liste ne porte pas isDefault. */
   defaultId: string | null;
   onSelect: (id: string) => void;
 }
@@ -32,11 +32,16 @@ function Thumb({ template }: { template: TemplateSummary }) {
  * Tuiles radio (Radio/RadioGroup du kit) : la miniature, le nom et le badge « Par défaut ».
  * Le fieldset reste : RadioGroup ne pose ni rôle de groupe ni légende.
  */
-export function TemplateTiles({ templates, selectedId, defaultId, onSelect }: Props) {
+export function TemplateTiles({
+  templates,
+  selectedId,
+  defaultId,
+  onSelect,
+}: Props) {
   return (
     <fieldset className="compose-templates">
       <legend>
-        <span>Gabarit</span>
+        <span>Template</span>
         <Link to="/">Gérer</Link>
       </legend>
       <RadioGroup fullWidth>
@@ -53,7 +58,9 @@ export function TemplateTiles({ templates, selectedId, defaultId, onSelect }: Pr
               <>
                 <Thumb template={t} />
                 <span className="compose-tile__name">{t.name}</span>
-                {(t.isDefault || t.id === defaultId) && <Badge type="accent">Par défaut</Badge>}
+                {(t.isDefault || t.id === defaultId) && (
+                  <Badge type="accent">Par défaut</Badge>
+                )}
               </>
             }
           />

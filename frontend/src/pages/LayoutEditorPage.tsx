@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { Alert, Badge, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
+import {
+  Alert,
+  Badge,
+  Button,
+  Loader,
+  VariantType,
+} from "@gouvfr-lasuite/ui-components";
 import { Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
@@ -19,7 +25,10 @@ import { PdfPreview } from "../components/PdfPreview";
 import { LayoutPanel } from "../components/layout/LayoutPanel";
 import { AiPanel } from "../components/layout/AiPanel";
 import { LayoutEditorShell } from "../components/layout/LayoutEditorShell";
-import { EditorModeMenu, type EditorMode } from "../components/layout/EditorModeMenu";
+import {
+  EditorModeMenu,
+  type EditorMode,
+} from "../components/layout/EditorModeMenu";
 import { TypstCodePanel } from "../components/layout/TypstCodePanel";
 import "../components/layout/layout-editor.css";
 
@@ -40,7 +49,10 @@ const PREVIEW_FIXTURE_ID = "apercu-gabarit";
  * qu'elle n'est ni appliquée ni ignorée.
  */
 export function LayoutEditorPage() {
-  const { id = "", mode: rawMode = "layout" } = useParams<{ id: string; mode: string }>();
+  const { id = "", mode: rawMode = "layout" } = useParams<{
+    id: string;
+    mode: string;
+  }>();
   const navigate = useNavigate();
   const mode: EditorMode = rawMode === "code" ? "code" : "layout";
 
@@ -116,7 +128,11 @@ export function LayoutEditorPage() {
         setDescription(t.description);
         setIsDefault(Boolean(t.isDefault));
         setSource(t.source);
-        setSaved({ name: t.name, description: t.description, source: t.source });
+        setSaved({
+          name: t.name,
+          description: t.description,
+          source: t.source,
+        });
       })
       .catch((e) => !cancelled && setLoadError(message(e)))
       .finally(() => !cancelled && setLoading(false));
@@ -174,7 +190,8 @@ export function LayoutEditorPage() {
         setManaged(true);
         setLayoutError(null);
       } catch (e) {
-        if (seq === composeSeq.current) setLayoutError(`Recomposition impossible : ${message(e)}`);
+        if (seq === composeSeq.current)
+          setLayoutError(`Recomposition impossible : ${message(e)}`);
       } finally {
         if (seq === composeSeq.current) setComposePending(false);
       }
@@ -245,7 +262,10 @@ export function LayoutEditorPage() {
     const seq = ++composeSeq.current;
     setComposePending(true);
     try {
-      const r = await composeLayout({ source: sourceRef.current, layout: currentLayout });
+      const r = await composeLayout({
+        source: sourceRef.current,
+        layout: currentLayout,
+      });
       if (seq === composeSeq.current) {
         composeWanted.current = false;
         setLayoutDraftDirty(false);
@@ -256,7 +276,8 @@ export function LayoutEditorPage() {
       }
       return r.source;
     } catch (e) {
-      if (seq === composeSeq.current) setLayoutError(`Recomposition impossible : ${message(e)}`);
+      if (seq === composeSeq.current)
+        setLayoutError(`Recomposition impossible : ${message(e)}`);
       throw e;
     } finally {
       if (seq === composeSeq.current) setComposePending(false);
@@ -276,7 +297,8 @@ export function LayoutEditorPage() {
       setManaged(read.managed);
       setLayoutError(null);
     } catch (e) {
-      if (seq === readSeq.current) setLayoutError(`Relecture des réglages impossible : ${message(e)}`);
+      if (seq === readSeq.current)
+        setLayoutError(`Relecture des réglages impossible : ${message(e)}`);
     } finally {
       if (seq === readSeq.current) setLayoutSyncPending(false);
     }
@@ -315,9 +337,22 @@ export function LayoutEditorPage() {
     guard = true,
     before?: "compose" | "read",
   ) {
-    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey
+    )
+      return;
     e.preventDefault();
-    if (guard && dirty && !window.confirm("Modifications non enregistrées : continuer ?")) return;
+    if (
+      guard &&
+      dirty &&
+      !window.confirm("Modifications non enregistrées : continuer ?")
+    )
+      return;
     if (before === "compose") await flushCompose();
     if (before === "read") await syncLayoutFromSource();
     navigate(to);
@@ -338,8 +373,12 @@ export function LayoutEditorPage() {
     return (
       <div className="le-load-error" role="alert">
         <Alert type={VariantType.ERROR}>{loadError}</Alert>
-        <Button href="/" variant="tertiary" onClick={(e) => void follow(e, "/", false)}>
-          Retour aux gabarits
+        <Button
+          href="/"
+          variant="tertiary"
+          onClick={(e) => void follow(e, "/", false)}
+        >
+          Retour aux templates
         </Button>
       </div>
     );
@@ -407,7 +446,9 @@ export function LayoutEditorPage() {
           ) : (
             <aside className="le-panel" aria-label="Réglages de mise en page">
               <div className="le-panel__notice" role="alert">
-                <Alert type={VariantType.ERROR}>Réglages indisponibles : {layoutError ?? "chargement…"}</Alert>
+                <Alert type={VariantType.ERROR}>
+                  Réglages indisponibles : {layoutError ?? "chargement…"}
+                </Alert>
               </div>
             </aside>
           )
@@ -415,13 +456,18 @@ export function LayoutEditorPage() {
         center={
           <section className="le-preview" aria-label="Aperçu">
             <div className="le-preview__bar">
-              {proposal && <Badge type="accent">Proposition — non enregistrée</Badge>}
+              {proposal && (
+                <Badge type="accent">Proposition — non enregistrée</Badge>
+              )}
               {saveError ? (
-                <span className="le-header__status le-header__status--error" role="alert">{saveError}</span>
-              ) : (
-                <span className="le-header__status">
-                  {status}
+                <span
+                  className="le-header__status le-header__status--error"
+                  role="alert"
+                >
+                  {saveError}
                 </span>
+              ) : (
+                <span className="le-header__status">{status}</span>
               )}
               <Button
                 variant={aiOpen ? "primary" : "secondary"}
@@ -432,7 +478,11 @@ export function LayoutEditorPage() {
                 Assistant IA
               </Button>
               {/* Pendant une proposition, l'aperçu ne montre pas `source` : enregistrer serait trompeur. */}
-              <Button variant="primary" disabled={!dirty || saving || proposal !== null} onClick={handleSave}>
+              <Button
+                variant="primary"
+                disabled={!dirty || saving || proposal !== null}
+                onClick={handleSave}
+              >
                 Enregistrer
               </Button>
             </div>
@@ -446,7 +496,9 @@ export function LayoutEditorPage() {
                 <div role="alert">
                   <Alert type={VariantType.ERROR}>
                     <div className="le-preview__error">
-                      <strong>Le gabarit ne compile pas : {renderError.error}</strong>
+                      <strong>
+                        La template ne compile pas : {renderError.error}
+                      </strong>
                       {renderError.details && (
                         <details>
                           <summary>Sortie de typst</summary>
@@ -457,7 +509,10 @@ export function LayoutEditorPage() {
                   </Alert>
                 </div>
               )}
-              <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />
+              <PdfPreview
+                pdfUrl={pdfUrl}
+                fileName={`${name || "template"}.pdf`}
+              />
             </div>
           </section>
         }

@@ -10,7 +10,12 @@ import {
   TextArea,
   VariantType,
 } from "@gouvfr-lasuite/ui-components";
-import { ChevronDown, ChevronRight, Trash, Upload } from "@gouvfr-lasuite/ui-components/icons";
+import {
+  ChevronDown,
+  ChevronRight,
+  Trash,
+  Upload,
+} from "@gouvfr-lasuite/ui-components/icons";
 import {
   assetUrl,
   deleteTemplateAsset,
@@ -29,9 +34,14 @@ import { TemplateNameField } from "./TemplateNameField";
 type Option = { value: string; label: string };
 
 /** Même liste que backend/src/layout/layoutConfig.ts (FONTS) : hors liste, le backend retombe sur Marianne. */
-const FONTS: Option[] = ["Marianne", "Arial", "Helvetica", "Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"].map(
-  (f) => ({ value: f, label: f }),
-);
+const FONTS: Option[] = [
+  "Marianne",
+  "Arial",
+  "Helvetica",
+  "Libertinus Serif",
+  "New Computer Modern",
+  "DejaVu Sans Mono",
+].map((f) => ({ value: f, label: f }));
 const LINE_HEIGHTS: [number, string][] = [
   [1, "1,0"],
   [1.15, "1,15"],
@@ -96,7 +106,11 @@ const TEXT_STYLE_SECTIONS: { key: TextStyleKey; label: string }[] = [
 ];
 
 /** Les Radio du kit alignés en ligne (le groupe est en colonne par défaut). */
-const RADIO_ROW = { flexDirection: "row", flexWrap: "wrap", gap: "0 0.75rem" } as const;
+const RADIO_ROW = {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: "0 0.75rem",
+} as const;
 type LayoutTab = (typeof TABS)[number]["id"];
 type TextSection = TextStyleKey | "table";
 type BandSlot = "default" | "first";
@@ -138,8 +152,11 @@ export function LayoutPanel({
   // Section d'où la fenêtre d'import a été ouverte ; null tant qu'elle est fermée.
   const [importing, setImporting] = useState<Importing | null>(null);
   const [activeTab, setActiveTab] = useState<LayoutTab>("format");
-  const [openTextSection, setOpenTextSection] = useState<TextSection | null>(null);
-  const set = (patch: Partial<LayoutConfig>) => onChange({ ...layout, ...patch });
+  const [openTextSection, setOpenTextSection] = useState<TextSection | null>(
+    null,
+  );
+  const set = (patch: Partial<LayoutConfig>) =>
+    onChange({ ...layout, ...patch });
   const setHeader = (patch: Partial<LayoutConfig["header"]>) =>
     set({ header: { ...layout.header, ...patch } });
   const setFooter = (patch: Partial<LayoutConfig["footer"]>) =>
@@ -154,7 +171,12 @@ export function LayoutPanel({
   };
   /** The visual is shared: deleting it clears it from every slot that uses it. */
   const handleDeleteAsset = async (file: string) => {
-    if (!window.confirm(`Supprimer ce visuel ? Il sera retiré de tous les gabarits qui l'utilisent.`)) return;
+    if (
+      !window.confirm(
+        `Supprimer ce visuel ? Il sera retiré de tous les templates qui l'utilisent.`,
+      )
+    )
+      return;
     try {
       await deleteTemplateAsset(file);
     } catch (e) {
@@ -165,19 +187,30 @@ export function LayoutPanel({
       header: {
         ...layout.header,
         logo: layout.header.logo === file ? null : layout.header.logo,
-        first: { ...layout.header.first, logo: layout.header.first.logo === file ? null : layout.header.first.logo },
+        first: {
+          ...layout.header.first,
+          logo:
+            layout.header.first.logo === file ? null : layout.header.first.logo,
+        },
       },
       footer: {
         ...layout.footer,
         logo: layout.footer.logo === file ? null : layout.footer.logo,
-        first: { ...layout.footer.first, logo: layout.footer.first.logo === file ? null : layout.footer.first.logo },
+        first: {
+          ...layout.footer.first,
+          logo:
+            layout.footer.first.logo === file ? null : layout.footer.first.logo,
+        },
       },
     });
     onAssetsChanged?.();
   };
   const setTable = (patch: Partial<LayoutConfig["table"]>) =>
     set({ table: { ...layout.table, ...patch } });
-  const setTextStyle = (key: TextStyleKey, patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>) => {
+  const setTextStyle = (
+    key: TextStyleKey,
+    patch: Partial<LayoutConfig["textStyles"][TextStyleKey]>,
+  ) => {
     const nextStyle = { ...layout.textStyles[key], ...patch };
     const next: Partial<LayoutConfig> = {
       textStyles: { ...layout.textStyles, [key]: nextStyle },
@@ -186,7 +219,8 @@ export function LayoutPanel({
       if (patch.font) next.font = patch.font;
       if (typeof patch.fontSize === "number") next.fontSize = patch.fontSize;
     }
-    if (key === "h1" && patch.color) next.headings = { ...layout.headings, color: patch.color };
+    if (key === "h1" && patch.color)
+      next.headings = { ...layout.headings, color: patch.color };
     set(next);
   };
   const setTextStyleSize = (key: TextStyleKey, raw: string) => {
@@ -197,7 +231,9 @@ export function LayoutPanel({
   const setMargin = (side: keyof LayoutConfig["margins"], raw: string) => {
     const n = Number(raw);
     if (raw === "" || !Number.isFinite(n)) return;
-    set({ margins: { ...layout.margins, [side]: Math.min(80, Math.max(0, n)) } });
+    set({
+      margins: { ...layout.margins, [side]: Math.min(80, Math.max(0, n)) },
+    });
   };
   // Le navigateur traite `#tableaux` avant le rendu React : on ouvre l'onglet puis on recale le défilement.
   useEffect(() => {
@@ -206,24 +242,42 @@ export function LayoutPanel({
       setActiveTab("text");
       setOpenTextSection("table");
     }
-    if (hash) window.setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 0);
+    if (hash)
+      window.setTimeout(
+        () => document.getElementById(hash)?.scrollIntoView(),
+        0,
+      );
   }, []);
 
   const lineHeightOptions = useMemo<Option[]>(() => {
     const list = LINE_HEIGHTS.map(([v, l]) => ({ value: String(v), label: l }));
     return LINE_HEIGHTS.some(([v]) => v === layout.lineHeight)
       ? list
-      : [{ value: String(layout.lineHeight), label: String(layout.lineHeight).replace(".", ",") }, ...list];
+      : [
+          {
+            value: String(layout.lineHeight),
+            label: String(layout.lineHeight).replace(".", ","),
+          },
+          ...list,
+        ];
   }, [layout.lineHeight]);
 
   return (
     <aside className="le-panel" aria-label="Réglages de mise en page">
       <div className="le-panel__top">
-        <TemplateNameField value={templateName} isDefault={isDefault} onChange={onTemplateNameChange} />
+        <TemplateNameField
+          value={templateName}
+          isDefault={isDefault}
+          onChange={onTemplateNameChange}
+        />
         {modeMenu}
       </div>
 
-      <nav className="le-panel__tabs" aria-label="Réglages du gabarit" role="tablist">
+      <nav
+        className="le-panel__tabs"
+        aria-label="Réglages de la template"
+        role="tablist"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -244,15 +298,16 @@ export function LayoutPanel({
         {!managed && (
           <Alert type={VariantType.INFO} className="le-panel__notice">
             <span>
-              Ce gabarit n'a pas encore de bloc de mise en page : le premier réglage l'ajoute avant{" "}
-              <code>#include "body.typ"</code>.
+              Cette template n'a pas encore de bloc de mise en page : le premier
+              réglage l'ajoute avant <code>#include "body.typ"</code>.
             </span>
           </Alert>
         )}
         {disabled && (
           <Alert type={VariantType.WARNING} className="le-panel__notice">
             <span>
-              Une proposition de l'assistant est en attente : appliquez-la ou ignorez-la pour reprendre les réglages.
+              Une proposition de l'assistant est en attente : appliquez-la ou
+              ignorez-la pour reprendre les réglages.
             </span>
           </Alert>
         )}
@@ -265,7 +320,9 @@ export function LayoutPanel({
                 clearable={false}
                 options={PAPERS}
                 value={layout.paper}
-                onChange={(e) => set({ paper: String(e.target.value) as PaperSize })}
+                onChange={(e) =>
+                  set({ paper: String(e.target.value) as PaperSize })
+                }
               />
               <fieldset className="le-radios">
                 <legend>Orientation</legend>
@@ -305,7 +362,6 @@ export function LayoutPanel({
                 </div>
               </div>
             </Section>
-
           </TabPanel>
 
           <TabPanel uid={uid} tab="text" activeTab={activeTab}>
@@ -317,18 +373,32 @@ export function LayoutPanel({
                   label={label}
                   style={layout.textStyles[key]}
                   open={openTextSection === key}
-                  onToggle={() => setOpenTextSection((current) => (current === key ? null : key))}
+                  onToggle={() =>
+                    setOpenTextSection((current) =>
+                      current === key ? null : key,
+                    )
+                  }
                   onChange={(patch) => setTextStyle(key, patch)}
                   onSizeChange={(raw) => setTextStyleSize(key, raw)}
                   lineHeight={key === "body" ? layout.lineHeight : undefined}
-                  lineHeightOptions={key === "body" ? lineHeightOptions : undefined}
-                  onLineHeightChange={key === "body" ? (value) => set({ lineHeight: value }) : undefined}
+                  lineHeightOptions={
+                    key === "body" ? lineHeightOptions : undefined
+                  }
+                  onLineHeightChange={
+                    key === "body"
+                      ? (value) => set({ lineHeight: value })
+                      : undefined
+                  }
                 />
               ))}
               <TableStyleSection
                 id={`${uid}-text-table`}
                 open={openTextSection === "table"}
-                onToggle={() => setOpenTextSection((current) => (current === "table" ? null : "table"))}
+                onToggle={() =>
+                  setOpenTextSection((current) =>
+                    current === "table" ? null : "table",
+                  )
+                }
                 table={layout.table}
                 onChange={setTable}
               />
@@ -354,7 +424,8 @@ export function LayoutPanel({
                   const mode = String(e.target.value) as PageBandMode;
                   setHeader({
                     mode,
-                    ...(mode === "different-first" && layout.header.mode !== "different-first"
+                    ...(mode === "different-first" &&
+                    layout.header.mode !== "different-first"
                       ? {
                           first: {
                             text: layout.header.text,
@@ -379,7 +450,9 @@ export function LayoutPanel({
                       onDeleteAsset={handleDeleteAsset}
                       value={layout.header.first}
                       onChange={(patch) => setHeaderContent("first", patch)}
-                      onImport={() => setImporting({ kind: "header", slot: "first" })}
+                      onImport={() =>
+                        setImporting({ kind: "header", slot: "first" })
+                      }
                     />
                   </div>
                   <div className="le-group">
@@ -391,7 +464,9 @@ export function LayoutPanel({
                       onDeleteAsset={handleDeleteAsset}
                       value={layout.header}
                       onChange={(patch) => setHeaderContent("default", patch)}
-                      onImport={() => setImporting({ kind: "header", slot: "default" })}
+                      onImport={() =>
+                        setImporting({ kind: "header", slot: "default" })
+                      }
                     />
                   </div>
                 </>
@@ -403,7 +478,9 @@ export function LayoutPanel({
                   onDeleteAsset={handleDeleteAsset}
                   value={layout.header}
                   onChange={(patch) => setHeaderContent("default", patch)}
-                  onImport={() => setImporting({ kind: "header", slot: "default" })}
+                  onImport={() =>
+                    setImporting({ kind: "header", slot: "default" })
+                  }
                 />
               )}
             </Section>
@@ -429,7 +506,8 @@ export function LayoutPanel({
                   setFooter({
                     mode,
                     firstPage: mode !== "except-first",
-                    ...(mode === "different-first" && layout.footer.mode !== "different-first"
+                    ...(mode === "different-first" &&
+                    layout.footer.mode !== "different-first"
                       ? {
                           first: {
                             text: layout.footer.text,
@@ -455,7 +533,9 @@ export function LayoutPanel({
                       onDeleteAsset={handleDeleteAsset}
                       value={layout.footer.first}
                       onChange={(patch) => setFooterContent("first", patch)}
-                      onImport={() => setImporting({ kind: "footer", slot: "first" })}
+                      onImport={() =>
+                        setImporting({ kind: "footer", slot: "first" })
+                      }
                     />
                   </div>
                   <div className="le-group">
@@ -467,7 +547,9 @@ export function LayoutPanel({
                       onDeleteAsset={handleDeleteAsset}
                       value={layout.footer}
                       onChange={(patch) => setFooterContent("default", patch)}
-                      onImport={() => setImporting({ kind: "footer", slot: "default" })}
+                      onImport={() =>
+                        setImporting({ kind: "footer", slot: "default" })
+                      }
                     />
                   </div>
                 </>
@@ -479,13 +561,14 @@ export function LayoutPanel({
                   onDeleteAsset={handleDeleteAsset}
                   value={layout.footer}
                   onChange={(patch) => setFooterContent("default", patch)}
-                  onImport={() => setImporting({ kind: "footer", slot: "default" })}
+                  onImport={() =>
+                    setImporting({ kind: "footer", slot: "default" })
+                  }
                 />
               )}
             </Section>
           </TabPanel>
         </fieldset>
-
       </div>
 
       {importing && (
@@ -493,13 +576,14 @@ export function LayoutPanel({
           target={importing.kind}
           onClose={() => setImporting(null)}
           onFragment={(file) => {
-            if (importing.kind === "header") setHeaderContent(importing.slot, { logo: file, fullBleed: true });
-            else setFooterContent(importing.slot, { logo: file, fullBleed: true });
+            if (importing.kind === "header")
+              setHeaderContent(importing.slot, { logo: file, fullBleed: true });
+            else
+              setFooterContent(importing.slot, { logo: file, fullBleed: true });
             onAssetsChanged?.();
           }}
         />
       )}
-
     </aside>
   );
 }
@@ -579,18 +663,20 @@ function TextStyleSection({
               onChange={(e) => onSizeChange(e.target.value)}
             />
           </StyleFieldRow>
-          {lineHeight !== undefined && lineHeightOptions && onLineHeightChange && (
-            <StyleFieldRow label="Interligne">
-              <Select
-                label="Interligne"
-                fullWidth
-                clearable={false}
-                options={lineHeightOptions}
-                value={String(lineHeight)}
-                onChange={(e) => onLineHeightChange(Number(e.target.value))}
-              />
-            </StyleFieldRow>
-          )}
+          {lineHeight !== undefined &&
+            lineHeightOptions &&
+            onLineHeightChange && (
+              <StyleFieldRow label="Interligne">
+                <Select
+                  label="Interligne"
+                  fullWidth
+                  clearable={false}
+                  options={lineHeightOptions}
+                  value={String(lineHeight)}
+                  onChange={(e) => onLineHeightChange(Number(e.target.value))}
+                />
+              </StyleFieldRow>
+            )}
           <StyleFieldRow label="Color">
             <span className="le-style__color">
               <input
@@ -608,7 +694,13 @@ function TextStyleSection({
   );
 }
 
-function StyleFieldRow({ label, children }: { label: string; children: ReactNode }) {
+function StyleFieldRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="le-style__row">
       <span className="le-style__label">{label}</span>
@@ -644,7 +736,13 @@ function TableStyleSection({
               clearable={false}
               options={TABLE_STROKES}
               value={table.stroke}
-              onChange={(e) => onChange({ stroke: String(e.target.value) as LayoutConfig["table"]["stroke"] })}
+              onChange={(e) =>
+                onChange({
+                  stroke: String(
+                    e.target.value,
+                  ) as LayoutConfig["table"]["stroke"],
+                })
+              }
             />
           </StyleFieldRow>
           <StyleFieldRow label="Fond">
@@ -654,7 +752,13 @@ function TableStyleSection({
               clearable={false}
               options={TABLE_HEADER_FILLS}
               value={table.headerFill}
-              onChange={(e) => onChange({ headerFill: String(e.target.value) as LayoutConfig["table"]["headerFill"] })}
+              onChange={(e) =>
+                onChange({
+                  headerFill: String(
+                    e.target.value,
+                  ) as LayoutConfig["table"]["headerFill"],
+                })
+              }
             />
           </StyleFieldRow>
           <StyleFieldRow label="Alternance">
@@ -673,7 +777,13 @@ function TableStyleSection({
               clearable={false}
               options={TABLE_FONT_SIZES}
               value={table.fontSize}
-              onChange={(e) => onChange({ fontSize: String(e.target.value) as LayoutConfig["table"]["fontSize"] })}
+              onChange={(e) =>
+                onChange({
+                  fontSize: String(
+                    e.target.value,
+                  ) as LayoutConfig["table"]["fontSize"],
+                })
+              }
             />
           </StyleFieldRow>
         </div>
@@ -793,7 +903,9 @@ function FooterFields({
         clearable={false}
         options={NUMBERINGS}
         value={value.numbering}
-        onChange={(e) => onChange({ numbering: String(e.target.value) as Numbering })}
+        onChange={(e) =>
+          onChange({ numbering: String(e.target.value) as Numbering })
+        }
       />
       <AlignRadios
         name={`${uid}-align`}
@@ -815,7 +927,7 @@ function FooterFields({
 /**
  * Visuels disponibles, en vignettes : les logos livrés et les fragments
  * découpés dans un PDF importé. La dernière tuile ouvre la fenêtre d'import,
- * second point d'entrée du parcours (le premier est la page des gabarits).
+ * second point d'entrée du parcours (le premier est la page des templates).
  */
 function Gallery({
   label,
@@ -871,7 +983,12 @@ function Gallery({
             )}
           </div>
         ))}
-        <button type="button" className="le-thumb le-thumb--add" title="Importer un visuel" onClick={onImport}>
+        <button
+          type="button"
+          className="le-thumb le-thumb--add"
+          title="Importer un visuel"
+          onClick={onImport}
+        >
           <Upload size={16} aria-hidden="true" />
           <span className="le-sr">Importer un visuel</span>
         </button>
@@ -912,7 +1029,11 @@ function SectionToggle({
       onClick={onToggle}
     >
       <span>{children}</span>
-      {open ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+      {open ? (
+        <ChevronDown size={18} aria-hidden="true" />
+      ) : (
+        <ChevronRight size={18} aria-hidden="true" />
+      )}
     </button>
   );
 }
@@ -933,7 +1054,14 @@ function AlignRadios({
       <legend>Alignement</legend>
       <RadioGroup style={RADIO_ROW}>
         {ALIGNS.map(([v, l]) => (
-          <Radio key={v} name={name} label={l} value={v} checked={value === v} onChange={() => onChange(v)} />
+          <Radio
+            key={v}
+            name={name}
+            label={l}
+            value={v}
+            checked={value === v}
+            onChange={() => onChange(v)}
+          />
         ))}
       </RadioGroup>
     </fieldset>

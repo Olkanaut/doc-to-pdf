@@ -6,11 +6,15 @@ interface TemplateNameFieldProps {
   onChange: (value: string) => void;
 }
 
-export function TemplateNameField({ value, isDefault, onChange }: TemplateNameFieldProps) {
+export function TemplateNameField({
+  value,
+  isDefault,
+  onChange,
+}: TemplateNameFieldProps) {
   return (
     <div className="le-template-name">
       <Input
-        label="Nom du gabarit"
+        label="Nom de la template"
         hideLabel
         fullWidth
         value={value}

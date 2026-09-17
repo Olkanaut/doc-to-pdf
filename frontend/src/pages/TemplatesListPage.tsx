@@ -3,14 +3,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Badge, VariantType } from "@gouvfr-lasuite/ui-components";
 import { StarFilled } from "@gouvfr-lasuite/ui-components/icons";
 import {
+  deleteTemplate,
   fetchDefaultTemplate,
   fetchTemplates,
+  setDefaultTemplate,
   type TemplateSummary,
 } from "../api/client";
 import { DocsUrlField } from "../components/compose/DocsUrlField";
 import { ImportDocumentModal } from "../components/templates/ImportDocumentModal";
+import { TemplateActionsMenu } from "../components/templates/TemplateActionsMenu";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
-import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
+import {
+  ViewSwitcher,
+  type TemplateView,
+} from "../components/templates/ViewSwitcher";
 import "../components/templates/templates-page.css";
 
 const VIEW_STORAGE_KEY = "doc-pdf:templates-view";
@@ -26,7 +32,7 @@ function loadStoredView(): TemplateView {
 /** Kit `Button` rendered as a link (`href`), internal navigation without a reload. */
 /**
  * Templates gallery, the app's home page. A single entry point at the top,
- * « Nouveau gabarit », opens the import window: it offers the choice between
+ * « Nouvelle template », opens the import window: it offers the choice between
  * dropping a file (a .typ opens as-is, a PDF or .docx goes through analysis
  * and cropping) and continuing without an import.
  */
@@ -38,6 +44,7 @@ export function TemplatesListPage() {
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const selectedTemplateId = searchParams.get("template");
 
   function reload() {
@@ -47,7 +54,12 @@ export function TemplatesListPage() {
     // /templates/default (null as long as the route is missing or none is set).
     Promise.all([fetchTemplates(), fetchDefaultTemplate().catch(() => null)])
       .then(([list, def]) =>
-        setTemplates(list.map((t) => ({ ...t, isDefault: t.isDefault ?? t.id === def?.id }))),
+        setTemplates(
+          list.map((t) => ({
+            ...t,
+            isDefault: t.isDefault ?? t.id === def?.id,
+          })),
+        ),
       )
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -67,17 +79,63 @@ export function TemplatesListPage() {
   function openDocument(documentId: string) {
     navigate(
       `/docs/${encodeURIComponent(documentId)}${
-        selectedTemplateId ? `?template=${encodeURIComponent(selectedTemplateId)}` : ""
+        selectedTemplateId
+          ? `?template=${encodeURIComponent(selectedTemplateId)}`
+          : ""
       }`,
     );
   }
 
+  function handleShare() {
+    // Placeholder until template sharing is backed by an API/product flow.
+  }
+
+  async function handleDelete(template: TemplateSummary) {
+    if (!window.confirm(`Supprimer la template « ${template.name} » ?`)) return;
+    setPendingActionId(template.id);
+    setError(null);
+    try {
+      await deleteTemplate(template.id);
+      reload();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Impossible de supprimer la template.",
+      );
+    } finally {
+      setPendingActionId(null);
+    }
+  }
+
+  async function handleUseAsDefault(template: TemplateSummary) {
+    setPendingActionId(template.id);
+    setError(null);
+    try {
+      await setDefaultTemplate(template.id);
+      reload();
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Impossible de définir la template par défaut.",
+      );
+    } finally {
+      setPendingActionId(null);
+    }
+  }
+
   return (
     <div className="dots-page templates-home">
-      <section className="templates-home__hero" aria-label="Ouvrir un document Docs">
+      <section
+        className="templates-home__hero"
+        aria-label="Ouvrir un document Docs"
+      >
         <HomeLogo />
         <div className="templates-home__url">
-          <DocsUrlField onOpen={(id) => openDocument(id)} loading={false} error={null} />
+          <DocsUrlField
+            onOpen={(id) => openDocument(id)}
+            loading={false}
+            error={null}
+          />
         </div>
       </section>
 
@@ -97,7 +155,6 @@ export function TemplatesListPage() {
           onTemplate={(id) => navigate(`/t/${id}/layout`)}
         />
       )}
-
 
       {error && (
         <div role="alert">
@@ -124,6 +181,15 @@ export function TemplatesListPage() {
               </Badge>
             ) : null
           }
+          renderActions={(t) => (
+            <TemplateActionsMenu
+              template={t}
+              disabled={pendingActionId === t.id}
+              onShare={handleShare}
+              onDelete={handleDelete}
+              onUseAsDefault={handleUseAsDefault}
+            />
+          )}
         />
       )}
     </div>

@@ -1,7 +1,18 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Button, Input, TextArea, VariantType } from "@gouvfr-lasuite/ui-components";
-import { Download, Eye, Share, Trash } from "@gouvfr-lasuite/ui-components/icons";
+import {
+  Alert,
+  Button,
+  Input,
+  TextArea,
+  VariantType,
+} from "@gouvfr-lasuite/ui-components";
+import {
+  Download,
+  Eye,
+  Share,
+  Trash,
+} from "@gouvfr-lasuite/ui-components/icons";
 import {
   deleteTemplate,
   fetchFixtures,
@@ -55,7 +66,7 @@ export function TemplateEditorPage() {
 
   async function handleDelete() {
     if (!id) return;
-    if (!window.confirm(`Supprimer le gabarit « ${name} » ?`)) return;
+    if (!window.confirm(`Supprimer la template « ${name} » ?`)) return;
     await deleteTemplate(id);
     navigate("/");
   }
@@ -80,7 +91,10 @@ export function TemplateEditorPage() {
     setPreviewLoading(true);
     setError(null);
     try {
-      const result = await renderPdf({ fixtureId: previewFixtureId, templateSource: source });
+      const result = await renderPdf({
+        fixtureId: previewFixtureId,
+        templateSource: source,
+      });
       if (result.ok) {
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         setPdfUrl(URL.createObjectURL(result.blob));
@@ -92,22 +106,43 @@ export function TemplateEditorPage() {
     }
   }
 
-  if (loading) return <div className="page-loading" role="status">Chargement…</div>;
+  if (loading)
+    return (
+      <div className="page-loading" role="status">
+        Chargement…
+      </div>
+    );
 
-  const dirty = name !== saved.name || description !== saved.description || source !== saved.source;
+  const dirty =
+    name !== saved.name ||
+    description !== saved.description ||
+    source !== saved.source;
 
   /** Navigation interne sans rechargement (même motif que l'éditeur de mise en page). */
   function follow(e: MouseEvent<HTMLElement>, to: string, guard = true) {
-    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey
+    )
+      return;
     e.preventDefault();
-    if (guard && dirty && !window.confirm("Modifications non enregistrées : continuer ?")) return;
+    if (
+      guard &&
+      dirty &&
+      !window.confirm("Modifications non enregistrées : continuer ?")
+    )
+      return;
     navigate(to);
   }
 
   return (
     <div className="dots-page">
       <div className="dots-page-header">
-        <h1>Modifier le gabarit</h1>
+        <h1>Modifier la template</h1>
         <nav className="editor-modes" aria-label="Mode d'édition">
           <Button
             href={`/t/${id}/layout`}
@@ -130,10 +165,20 @@ export function TemplateEditorPage() {
           </Button>
         </nav>
         <div className="dots-actions">
-          <Button type="button" variant="secondary" icon={<Download aria-hidden="true" />} onClick={handleDownload}>
+          <Button
+            type="button"
+            variant="secondary"
+            icon={<Download aria-hidden="true" />}
+            onClick={handleDownload}
+          >
             Télécharger .typ
           </Button>
-          <Button type="button" variant="secondary" icon={<Share aria-hidden="true" />} onClick={handleShare}>
+          <Button
+            type="button"
+            variant="secondary"
+            icon={<Share aria-hidden="true" />}
+            onClick={handleShare}
+          >
             Partager
           </Button>
           <Button
@@ -149,8 +194,18 @@ export function TemplateEditorPage() {
       </div>
 
       <div className="editor-fields">
-        <Input label="Nom" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
-        <Input label="Description" fullWidth value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Input
+          label="Nom"
+          fullWidth
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Input
+          label="Description"
+          fullWidth
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
       </div>
 
       <div className="editor-body">
@@ -189,7 +244,7 @@ export function TemplateEditorPage() {
           )}
         </div>
         <div className="editor-column">
-          <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "gabarit"}.pdf`} />
+          <PdfPreview pdfUrl={pdfUrl} fileName={`${name || "template"}.pdf`} />
         </div>
       </div>
     </div>

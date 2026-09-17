@@ -64,7 +64,10 @@ function listItemToTypst(
 function blockToTypst(block: Block, images: ImageAsset[], depth = 0): string {
   switch (block.type) {
     case "heading": {
-      const level = block.props.level === 2 || block.props.level === 3 ? block.props.level : 1;
+      const level =
+        block.props.level === 2 || block.props.level === 3
+          ? block.props.level
+          : 1;
       return `#heading(level: ${level})[${inlinesToTypst(block.content)}]`;
     }
     case "paragraph":
@@ -74,7 +77,7 @@ function blockToTypst(block: Block, images: ImageAsset[], depth = 0): string {
     case "numberedListItem":
       return listItemToTypst("+", block.content, block.children, images, depth);
     case "table":
-      // Fusions, en-tête, couleurs et alignements de Docs ; le style vient du gabarit (#set table).
+      // Fusions, en-tête, couleurs et alignements de Docs ; le style vient du template (#set table).
       return tableToTypst(block, inlinesToTypst);
     case "image": {
       const dest = `assets/img-${images.length}${extensionOf(block.props.url)}`;

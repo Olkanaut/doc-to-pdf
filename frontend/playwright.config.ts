@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 // Les tests tournent contre les serveurs de dev déjà lancés (backend :4000, Vite :5173).
-// Un seul worker : les scénarios modifient des données partagées (gabarit par défaut, source).
+// Un seul worker : les scénarios modifient des données partagées (template par défaut, source).
 export default defineConfig({
   testDir: "./e2e",
   workers: 1,

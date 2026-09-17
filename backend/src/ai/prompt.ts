@@ -2,7 +2,13 @@ import { FONTS } from "../layout/layoutConfig.js";
 import { BODY_INCLUDE } from "./parse.js";
 
 /** Polices que typst trouve ici (Marianne n'est pas installée partout : jamais seule). */
-const TYPST_FONTS = ["Arial", "Helvetica", "Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"];
+const TYPST_FONTS = [
+  "Arial",
+  "Helvetica",
+  "Libertinus Serif",
+  "New Computer Modern",
+  "DejaVu Sans Mono",
+];
 
 /**
  * Copie textuelle de LayoutConfig (backend/src/layout/layoutConfig.ts). Un type
@@ -84,10 +90,10 @@ interface LayoutConfig {
 /** @param assets chemins relatifs des images disponibles (ex. "assets/logo-ministere.png"). */
 export function systemPrompt(assets: string[]): string {
   const assetList = assets.length ? assets.join(", ") : "aucune";
-  return `Tu es l'assistant d'un éditeur de gabarits Typst 0.15 servant à produire des PDF administratifs français (notes, courriers, rapports).
+  return `Tu es l'assistant d'un éditeur de templates Typst 0.15 servant à produire des PDF administratifs français (notes, courriers, rapports).
 
 Contexte technique :
-- Le gabarit est un fichier template.typ. Le corps du document est généré à part et injecté par la ligne \`${BODY_INCLUDE}\`, que le gabarit DOIT conserver (une seule fois, normalement en dernière ligne).
+- La template est un fichier template.typ. Le corps du document est généré à part et injecté par la ligne \`${BODY_INCLUDE}\`, que la template DOIT conserver (une seule fois, normalement en dernière ligne).
 - Images disponibles, à référencer par leur chemin relatif : ${assetList}. N'invente aucun autre fichier.
 - Polices utilisables dans \`#set text(font: ...)\` : ${TYPST_FONTS.join(", ")}. Donne toujours une liste de repli, par exemple \`font: ("Marianne", "Arial", "Helvetica")\`.
 - Typst 0.15 : pagination avec \`#context counter(page).display("1 / 1", both: true)\` ; couleurs avec \`rgb("#0659c5")\` ; page avec \`#set page(paper: "a4", margin: (top: 25mm, bottom: 20mm, x: 20mm), header: [...], footer: [...])\`.
@@ -95,7 +101,7 @@ Contexte technique :
 - L'en-tête et le pied de page vivent DANS la marge : Typst réserve par défaut 30 % de la marge en ascent/descent, la bande utile vaut donc environ 0,7 × la marge. Avant de réduire \`margin.top\` ou \`margin.bottom\`, vérifie que la bande correspondante tient encore ; si la valeur demandée ne le permet pas, applique-la mais écris-le dans le <summary> — la bande ne chevauche pas le corps, elle sort de la page et disparaît du PDF.
 
 Bloc de mise en page géré (« dots:layout ») :
-Un gabarit peut contenir, juste avant \`${BODY_INCLUDE}\`, un bloc de la forme :
+Une template peut contenir, juste avant \`${BODY_INCLUDE}\`, un bloc de la forme :
 // dots:layout begin
 // dots:layout {"paper":"a4",...}
 #set page(...)
@@ -122,11 +128,11 @@ Si un réglage que tu modifies en pilote un autre, dis-le aussi. Le piège le pl
 Format de réponse — réponds UNIQUEMENT avec ces trois balises, sans texte autour ni bloc de code Markdown :
 <summary>une phrase en français résumant la modification, qui ne décrit que ce que tu as réellement écrit — aucun effet annoncé qui ne soit pas dans la source rendue</summary>
 <changes><item>un changement</item><item>un autre changement</item></changes>
-<typst>la source complète du gabarit, prête à compiler</typst>`;
+<typst>la source complète de la template, prête à compiler</typst>`;
 }
 
 export function editUserText(source: string, instruction: string): string {
-  return `Gabarit actuel :
+  return `Template actuelle :
 <template>
 ${source}
 </template>

@@ -1,4 +1,4 @@
-// Gabarit État : bloc Marianne officiel en haut à gauche, nom du ministère à côté.
+// template État : bloc Marianne officiel en haut à gauche, nom du ministère à côté.
 #set page(
   paper: "a4",
   margin: (top: 4.2cm, bottom: 2.5cm, x: 2.5cm),

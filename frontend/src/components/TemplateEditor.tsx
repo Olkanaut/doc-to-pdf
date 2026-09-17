@@ -14,7 +14,7 @@ export function TemplateEditor({ source, enabled, onToggle, onChange }: Props) {
           checked={enabled}
           onChange={(e) => onToggle(e.target.checked)}
         />
-        <span>Éditer le gabarit (.typ) avant de générer</span>
+        <span>Éditer la template (.typ) avant de générer</span>
       </label>
       {enabled && (
         <textarea

@@ -1,6 +1,6 @@
 # Project context / handoff — "Un doc, un PDF"
 
-This file exists so anyone (human or AI assistant) picking up this repo cold can get oriented without re-reading the whole planning conversation. It captures the *why* behind decisions, not just the *what* — the code and `README.md` already cover the what.
+This file exists so anyone (human or AI assistant) picking up this repo cold can get oriented without re-reading the whole planning conversation. It captures the _why_ behind decisions, not just the _what_ — the code and `README.md` already cover the what.
 
 ## The pitch (hackathon brief)
 
@@ -8,13 +8,13 @@ La Suite numérique hackathon, **Track 3: Mini-apps & surcouches** — build a s
 
 A public servant finishes a note in **Docs** (La Suite's collaborative editor). They need a polished PDF with their administration's letterhead — logo, margins, proper pagination — not a raw browser export. Today they copy-paste into Word. The pitch: a companion mini-app where each admin/agency has its own Typst templates (margins, header, logo, pagination), and applying one to a Docs document is as easy as changing one letter in the URL (`docs.` → `dots.`).
 
-**Explicit MVP bar** (from the brief): *"Un gabarit + une route qui appelle l'API et Typst suffisent dès le premier jour. Le reste, c'est du polish."* Everything past that (AI-assisted template editing, AI-generated templates from a branded PDF exemplar, template galleries, default templates) is Day 2 polish, not core scope.
+**Explicit MVP bar** (from the brief): _"Un template + une route qui appelle l'API et Typst suffisent dès le premier jour. Le reste, c'est du polish."_ Everything past that (AI-assisted template editing, AI-generated templates from a branded PDF exemplar, template galleries, default templates) is Day 2 polish, not core scope.
 
 ## Key architectural decisions (and why)
 
 1. **Node.js/TypeScript throughout**, frontend and backend. Chosen over a Python/FastAPI alternative mainly for single-language simplicity — subprocess-calling the `typst` CLI is equally trivial in either language, so this came down to team fluency, not a technical constraint.
 
-2. **We do NOT depend on BlockNote.js's own Typst exporter — this was a deliberate reversal, worth knowing about.** Early research found that Docs' editor (BlockNote.js) ships `@blocknote/xl-typst-exporter` + `@blocknote/xl-typst-compiler`, which convert BlockNote blocks to Typst and compile to PDF **entirely client-side via WASM**, with a low-level API (`TypstExporter.transformBlocks()` + `TypstCompiler.compilePdf()`) that would even let us wrap the output in our own custom `.typ` template. This was technically elegant (zero backend, nothing ever leaves the browser) and was actually hinted at in the brief itself. **The team explicitly chose not to take this dependency** — instead we treat "BlockNote-shaped block JSON" purely as a *data contract* (because that's what Docs' real export API returns) and wrote our own small, fully-owned JSON→Typst converter, compiling server-side via the plain `typst` CLI. Rationale: no 25MB WASM bundle, no coupling to BlockNote's private/internal APIs, fully auditable escaping logic. **If you see "BlockNote" mentioned in old research notes or this file, it refers to the data shape we mimic, never a package we import.**
+2. **We do NOT depend on BlockNote.js's own Typst exporter — this was a deliberate reversal, worth knowing about.** Early research found that Docs' editor (BlockNote.js) ships `@blocknote/xl-typst-exporter` + `@blocknote/xl-typst-compiler`, which convert BlockNote blocks to Typst and compile to PDF **entirely client-side via WASM**, with a low-level API (`TypstExporter.transformBlocks()` + `TypstCompiler.compilePdf()`) that would even let us wrap the output in our own custom `.typ` template. This was technically elegant (zero backend, nothing ever leaves the browser) and was actually hinted at in the brief itself. **The team explicitly chose not to take this dependency** — instead we treat "BlockNote-shaped block JSON" purely as a _data contract_ (because that's what Docs' real export API returns) and wrote our own small, fully-owned JSON→Typst converter, compiling server-side via the plain `typst` CLI. Rationale: no 25MB WASM bundle, no coupling to BlockNote's private/internal APIs, fully auditable escaping logic. **If you see "BlockNote" mentioned in old research notes or this file, it refers to the data shape we mimic, never a package we import.**
 
 3. **Fixtures still exist, but they are now a local/demo path, not the main integration path.** `backend/fixtures/*.json` keeps BlockNote-shaped examples useful for tests, demos, and template iteration through `POST /api/render`. The real Docs path now goes through `/api/documents/:documentId/content` and `/api/documents/:documentId/render`, which call Docs' external API with the user's Keycloak access token.
 
@@ -29,6 +29,7 @@ A public servant finishes a note in **Docs** (La Suite's collaborative editor). 
 ## Research findings worth knowing (condensed)
 
 **La Suite Docs** (`github.com/suitenumerique/docs`, MIT license, Django+DRF backend / Next.js+React frontend):
+
 - Editor is BlockNote.js + ProseMirror + Yjs (CRDT).
 - **Resource Server API** at `/external_api/v1.0/`, OIDC Bearer-token auth (token introspection), added v4.8.2, documented in `documentation/resource_server.md` in that repo. Flagged by its own maintainers as "subject to future evolution" (beta).
 - Content export: `GET .../external_api/v1.0/documents/{id}/formatted-content/?content_format=json|html|markdown` — `json` gives BlockNote's block JSON, exactly the shape our fixtures mimic.
@@ -42,6 +43,7 @@ Historical note: older planning material may still mention file-only template st
 ## Current state on `main`
 
 Repo layout:
+
 ```
 doc-pdf/
 ├── README.md          # run instructions
@@ -79,6 +81,7 @@ doc-pdf/
 ### Runtime flow
 
 Real Docs render:
+
 1. User logs into Dots through Keycloak (`/api/auth/login` → `/api/auth/callback`).
 2. Browser keeps only the Dots HttpOnly session cookie and calls Dots `/api/*`.
 3. `GET /api/documents/:documentId/content` validates a UUID, calls Docs `documents/:id/formatted-content/?content_format=json`, and returns `{ id, title, blocks, createdAt, updatedAt }`.
@@ -86,6 +89,7 @@ Real Docs render:
 5. Response headers include `X-Dots-Block-Count` and `X-Dots-Unsupported-Blocks` so the UI can explain what was omitted.
 
 PDF/DOCX import (a template deduced from an existing document):
+
 1. `POST /api/ingest` takes the file as base64, writes it to a per-import folder under `backend/data/ingest/<uuid>/`, and runs `backend/ingest/extract.py analyze`.
 2. The extractor renders page 1, measures paper size, margins, dominant font, line height and heading colour, and proposes header/footer bands. Everything it returns has passed an occlusion check: content painted over by a later opaque shape is never reused, so a document "redacted" that way cannot be reconstructed through the import.
 3. `POST /api/ingest/:id/fragment` crops one region (real SVG paths when the source is vector, a 4× PNG otherwise) and files it in `backend/templates/assets`, which `typstCompile` already copies next to every compile — so the fragment is referenced by a bare filename, which is the only form Typst's path sandbox accepts.
@@ -98,17 +102,20 @@ The same modal is the only import entry point: a `.typ` goes straight through th
 A `.docx` takes a shorter route: `backend/ingest/docx.py` reads the zip, so paper size, margins, default font and the embedded images come out exactly, without composing anything, and the original image file is reused rather than a crop of a rendered page. There is then no page image, so the modal skips the crop step and offers the visuals it found. LibreOffice enters only for a letterhead drawn as DrawingML shapes, where no file exists to extract.
 
 Template management:
+
 - Frontend calls Dots `/api/templates`.
 - Dots requires the session cookie, reads the server-side access token, and proxies to Docs `/external_api/v1.0/typst-templates/`.
 - `documentation/EXTERNAL-API.md` documents the Docs-side API contract.
 - Default template preference is a Dots-local preference keyed by the user's OIDC `sub`.
 
 Local/fixture render:
+
 - `POST /api/render` still renders fixture content from `backend/fixtures` with local file-backed templates.
 - This path is useful for tests, local template iteration, and demos without a live Docs document.
 - Do not confuse it with the real Docs path, which is `/api/documents/:documentId/render`.
 
 AI assistant:
+
 - `/api/ai/template` edits a Typst template from an instruction.
 - `/api/ai/template-from-pdf` tries to generate a Typst template from a PDF.
 - These routes require `ANTHROPIC_API_KEY` in `backend/.env`; without it they return `503` and the frontend should hide or disable the assistant.
@@ -132,6 +139,7 @@ AI assistant:
 make install             # install backend + frontend dependencies
 make dev                 # Dots backend on :4000, frontend on :3002
 ```
+
 Open http://localhost:3002. Requires the `typst` CLI on `PATH` (`brew install typst`).
 
 `make install` also sets up `backend/ingest/.venv` for the PDF/DOCX import

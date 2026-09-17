@@ -1,6 +1,6 @@
-/* Écran « un document Docs → PDF » : en-tête, colonne gabarit 320 px, aperçu à droite.
+/* Écran « un document Docs → PDF » : en-tête, colonne template 320 px, aperçu à droite.
    Les champs, boutons, avis et tuiles radio viennent du kit (Input, Button, Select,
-   Alert, Radio, Badge) ; ne restent ici que la structure et la vignette de gabarit. */
+   Alert, Radio, Badge) ; ne restent ici que la structure et la vignette de template. */
 
 .compose {
   flex: 1 1 auto;
@@ -100,7 +100,7 @@
   color: var(--dots-primary-hover);
   text-decoration: underline;
 }
-/* Les Radio du kit, une par gabarit, empilées sur toute la largeur. */
+/* Les Radio du kit, une par template, empilées sur toute la largeur. */
 .compose-templates .c__checkbox__group__list {
   align-items: stretch;
   gap: 8px;
