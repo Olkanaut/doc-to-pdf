@@ -721,6 +721,7 @@ function importObjectToTemplateNodeV2(
     id: `node-from-${object.id || index + 1}`,
     region,
     regionId,
+    pageIndex: object.pageIndex,
     scope: "all" as const,
     bbox: object.bbox,
     layout: {

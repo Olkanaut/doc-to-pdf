@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
 import {
   type FieldCandidate,
@@ -39,10 +39,10 @@ const SCOPES: readonly TemplateScopeV2[] = ["all", "first", "except-first", "odd
 
 interface Props {
   analysis: IngestAnalysis;
-  previewUrl: string;
+  previewUrl: (pageIndex: number) => string;
   value: TemplateModelV2;
   onChange: (model: TemplateModelV2) => void;
-  onRasterize: (rect: { x: number; y: number; width: number; height: number }) => Promise<string>;
+  onRasterize: (rect: { x: number; y: number; width: number; height: number }, pageIndex: number) => Promise<string>;
   onPreview: () => Promise<void>;
   previewPdfUrl: string | null;
   previewLoading: boolean;
@@ -61,16 +61,28 @@ export function ImportVisualEditor({
   previewError,
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const pages = analysis.importModel.pages.length
+    ? analysis.importModel.pages
+    : [{ id: "page-1", pageIndex: 0, widthPt: analysis.page.widthPt, heightPt: analysis.page.heightPt, rotation: 0 as const }];
+  const [activePageIndex, setActivePageIndex] = useState(pages[0]?.pageIndex ?? 0);
   const [customFieldId, setCustomFieldId] = useState("custom.field");
   const [rasterizing, setRasterizing] = useState(false);
-  const page = analysis.importModel.pages[0] ?? {
-    widthPt: analysis.page.widthPt,
-    heightPt: analysis.page.heightPt,
-  };
-  const selected = value.nodes.filter((node) => selectedIds.includes(node.id));
+  const page = pages.find((candidate) => candidate.pageIndex === activePageIndex) ?? pages[0]!;
+  const pageNodes = useMemo(
+    () => value.nodes.filter((node) => nodePageIndex(node) === page.pageIndex),
+    [page.pageIndex, value.nodes],
+  );
+  const selected = pageNodes.filter((node) => selectedIds.includes(node.id));
   const primary = selected[0] ?? null;
-  const shownNodes = value.nodes.filter((node) => !isHidden(node));
+  const shownNodes = pageNodes.filter((node) => !isHidden(node));
   const selectedCandidate = value.fieldCandidates[0] ?? null;
+
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const next = current.filter((id) => pageNodes.some((node) => node.id === id));
+      return next.length === current.length ? current : next;
+    });
+  }, [activePageIndex, pageNodes]);
 
   const pageStyle = useMemo(
     () => ({
@@ -132,6 +144,7 @@ export function ImportVisualEditor({
       region: selected[0].region,
       regionId: selected[0].regionId,
       scope: selected[0].scope,
+      pageIndex: activePageIndex,
       bbox: box ?? undefined,
       layout: box ? { mode: "absolute", x: box.x, y: box.y, width: box.width, height: box.height } : undefined,
       source: { kind: "user", objectIds: [], assetIds: [] },
@@ -235,12 +248,13 @@ export function ImportVisualEditor({
     if (!box) return;
     setRasterizing(true);
     try {
-      const file = await onRasterize(box);
+      const file = await onRasterize(box, activePageIndex);
       const imageNode: TemplateNodeV2 = {
         id: `raster-${Date.now()}`,
         type: "image",
         region: primary?.region ?? "body",
         regionId: primary?.regionId ?? "region-body",
+        pageIndex: activePageIndex,
         scope: primary?.scope ?? "all",
         bbox: box,
         layout: { mode: "absolute", x: box.x, y: box.y, width: box.width, height: box.height },
@@ -279,6 +293,21 @@ export function ImportVisualEditor({
   return (
     <div className="import-editor">
       <div className="import-editor__toolbar" aria-label="Actions d'édition">
+        {pages.length > 1 && (
+          <div className="import-page-tabs" aria-label="Pages du document">
+            {pages.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`import-page-tab${item.pageIndex === activePageIndex ? " import-page-tab--on" : ""}`}
+                aria-pressed={item.pageIndex === activePageIndex}
+                onClick={() => setActivePageIndex(item.pageIndex)}
+              >
+                Page {item.pageIndex + 1}
+              </button>
+            ))}
+          </div>
+        )}
         <Button type="button" size="small" color="neutral" variant="secondary" disabled={selected.length < 2} onClick={groupSelection}>
           Grouper
         </Button>
@@ -303,7 +332,7 @@ export function ImportVisualEditor({
         <aside className="import-editor__layers" aria-label="Calques extraits">
           <div className="import-editor__panel-title">Calques</div>
           <div className="import-editor__layers-list">
-            {value.nodes.map((node) => (
+            {pageNodes.map((node) => (
               <button
                 key={node.id}
                 type="button"
@@ -319,7 +348,7 @@ export function ImportVisualEditor({
 
         <div className="import-editor__page-wrap">
           <div className="import-editor__page" style={pageStyle} onClick={() => setSelectedIds([])}>
-            <img className="import-editor__page-img" src={previewUrl} alt="" />
+            <img className="import-editor__page-img" src={previewUrl(activePageIndex)} alt="" />
             <svg
               className="import-editor__overlay"
               viewBox={`0 0 ${page.widthPt} ${page.heightPt}`}
@@ -477,6 +506,10 @@ function nodeLabel(node: TemplateNodeV2): string {
 
 function isHidden(node: TemplateNodeV2): boolean {
   return node.style?.hidden === true;
+}
+
+function nodePageIndex(node: TemplateNodeV2): number {
+  return typeof node.pageIndex === "number" ? node.pageIndex : 0;
 }
 
 function layoutBBox(node: TemplateNodeV2) {

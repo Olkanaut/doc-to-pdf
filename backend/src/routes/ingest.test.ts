@@ -201,6 +201,27 @@ describe.skipIf(!enabled)("routes d'import", () => {
     expect(preview.headers["content-type"]).toBe("image/png");
     expect(preview.rawPayload.subarray(1, 4).toString()).toBe("PNG");
 
+    const indexedPreview = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}/preview/0`,
+    });
+    expect(indexedPreview.statusCode).toBe(200);
+    expect(indexedPreview.headers["content-type"]).toBe("image/png");
+    expect(indexedPreview.rawPayload.subarray(1, 4).toString()).toBe("PNG");
+
+    await app.close();
+  });
+
+  it("répond 404 quand une page d'aperçu n'a pas été rendue", async () => {
+    const app = await buildApp();
+    const body = await ingest(app);
+
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/ingest/${body.jobId}/preview/999`,
+    });
+    expect(res.statusCode).toBe(404);
+
     await app.close();
   });
 
@@ -239,7 +260,7 @@ describe.skipIf(!enabled)("routes d'import", () => {
     const res = await app.inject({
       method: "POST",
       url: `/api/ingest/${body.jobId}/fragment`,
-      payload: { rect: header, vector: false, kind: "en-tete" },
+      payload: { rect: header, pageIndex: 0, vector: false, kind: "en-tete" },
     });
     expect(res.statusCode).toBe(200);
     const fragment = res.json();

@@ -166,6 +166,7 @@ export interface TemplateBaseNodeV2 {
   type: TemplateNodeTypeV2;
   region: TemplateRegionKindV2;
   regionId: string;
+  pageIndex?: number;
   scope: TemplateScopeV2;
   bbox?: ImportBBox;
   layout?: TemplateNodeLayoutV2;
@@ -620,6 +621,7 @@ function sanitizeNodeV2(entry: unknown, index: number, regions: readonly Templat
     id: id(node.id, `node-${index + 1}`),
     region: region.region,
     regionId: region.regionId,
+    pageIndex: node.pageIndex === undefined ? undefined : Math.trunc(num(node.pageIndex, 0, 0, 10_000)),
     scope: oneOf(node.scope, SCOPES_V2, "all"),
     bbox: nodeBBox,
     layout: layoutV2(node.layout, nodeBBox),

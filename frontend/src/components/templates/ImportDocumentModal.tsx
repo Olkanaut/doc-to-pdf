@@ -57,6 +57,47 @@ function toRect(region: IngestRegion): IngestRect {
   };
 }
 
+function pageFor(analysis: IngestAnalysis, pageIndex: number) {
+  return analysis.importModel.pages.find((page) => page.pageIndex === pageIndex)
+    ?? (pageIndex === 0
+      ? {
+          id: "page-1",
+          pageIndex: 0,
+          widthPt: analysis.page.widthPt,
+          heightPt: analysis.page.heightPt,
+          rotation: 0 as const,
+        }
+      : null);
+}
+
+function cropRegionsForPage(analysis: IngestAnalysis, pageIndex: number): IngestRegion[] {
+  if (pageIndex === 0 && analysis.regions.length) return analysis.regions;
+  const page = pageFor(analysis, pageIndex);
+  if (!page) return [];
+  const zoneRegions: IngestRegion[] = analysis.importModel.zones
+    .filter((zone) => zone.pageIndex === pageIndex && (zone.kind === "header" || zone.kind === "footer"))
+    .map((zone) => ({
+      kind: zone.kind === "footer" ? "footer" : "header",
+      x: zone.bbox.x,
+      y: zone.bbox.y,
+      width: zone.bbox.width,
+      height: zone.bbox.height,
+      vector: false,
+    }));
+  return [
+    ...zoneRegions,
+    { kind: "page", x: 0, y: 0, width: page.widthPt, height: page.heightPt, vector: false },
+  ];
+}
+
+function preferredCropRegion(analysis: IngestAnalysis, pageIndex: number, target: ImportTarget): IngestRegion | null {
+  const regions = cropRegionsForPage(analysis, pageIndex);
+  const wanted = target === "footer" ? "footer" : target === "header" ? "header" : "page";
+  return regions.find((region) => region.kind === wanted)
+    ?? regions.find((region) => region.kind === "page")
+    ?? null;
+}
+
 interface Props {
   /** « template » crée une template ; « header »/« footer » ne rend qu'un visuel. */
   target?: ImportTarget;
@@ -89,6 +130,7 @@ export function ImportDocumentModal({
   const [analysis, setAnalysis] = useState<IngestAnalysis | null>(null);
   const [templateModel, setTemplateModel] = useState<TemplateModelV2 | null>(null);
   const [rect, setRect] = useState<IngestRect | null>(null);
+  const [cropPageIndex, setCropPageIndex] = useState(0);
   /** Mode « assets » : visuel retenu parmi ceux sortis du .docx. */
   const [asset, setAsset] = useState<IngestAsset | null>(null);
   const [picked, setPicked] = useState<IngestRegion["kind"] | "custom">("page");
@@ -171,6 +213,7 @@ export function ImportDocumentModal({
       if (id !== run.current) return;
       setAnalysis(result);
       setTemplateModel(result.templateModel);
+      setCropPageIndex(0);
 
       // Un .docx qui porte ses visuels en clair n'a pas de page rendue : il n'y
       // a rien à recadrer, seulement un visuel à choisir.
@@ -244,6 +287,16 @@ export function ImportDocumentModal({
     setVector(region.vector);
   }
 
+  function selectCropPage(pageIndex: number) {
+    if (!analysis) return;
+    const region = preferredCropRegion(analysis, pageIndex, target);
+    if (!region) return;
+    setCropPageIndex(pageIndex);
+    setPicked(region.kind);
+    setRect(toRect(region));
+    setVector(region.vector);
+  }
+
   async function confirm() {
     if (!analysis || (stage === "crop" ? !rect : stage === "assets" ? !asset : stage === "edit" ? !templateModel : true)) return;
     setBusy(true);
@@ -295,6 +348,7 @@ export function ImportDocumentModal({
       } else {
         const fragment = await extractFragment(analysis.jobId, {
           rect: rect!,
+          pageIndex: cropPageIndex,
           vector,
           kind: target === "header" ? "en-tete" : "pied-de-page",
         });
@@ -326,10 +380,11 @@ export function ImportDocumentModal({
     }
   }
 
-  async function rasterizeEditedZone(rect: IngestRect): Promise<string> {
+  async function rasterizeEditedZone(rect: IngestRect, pageIndex: number): Promise<string> {
     if (!analysis) throw new Error("Import absent");
     const fragment = await extractFragment(analysis.jobId, {
       rect,
+      pageIndex,
       vector: false,
       kind: "fragment",
     });
@@ -388,7 +443,7 @@ export function ImportDocumentModal({
         ) : undefined
       }
     >
-      <div className="import-modal__body">
+      <div className={`import-modal__body${stage === "edit" ? " import-modal__body--editor" : ""}`}>
         {stage === "drop" && (
           <FileUploader
             name="document"
@@ -486,21 +541,38 @@ export function ImportDocumentModal({
 
         {stage === "crop" && analysis && rect && (
           <div className="crop-stage">
-            <CropCanvas
-              previewUrl={ingestPreviewUrl(analysis.jobId)}
-              pageWidthPt={analysis.page.widthPt}
-              pageHeightPt={analysis.page.heightPt}
-              value={rect}
-              onChange={setRect}
-              onCustom={() => setPicked("custom")}
-            />
+            <div className="crop-stage__canvas">
+              {analysis.importModel.pages.length > 1 && (
+                <div className="import-page-tabs" aria-label="Pages du document">
+                  {analysis.importModel.pages.map((page) => (
+                    <button
+                      key={page.id}
+                      type="button"
+                      className={`import-page-tab${cropPageIndex === page.pageIndex ? " import-page-tab--on" : ""}`}
+                      aria-pressed={cropPageIndex === page.pageIndex}
+                      onClick={() => selectCropPage(page.pageIndex)}
+                    >
+                      Page {page.pageIndex + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <CropCanvas
+                previewUrl={ingestPreviewUrl(analysis.jobId, cropPageIndex)}
+                pageWidthPt={pageFor(analysis, cropPageIndex)?.widthPt ?? analysis.page.widthPt}
+                pageHeightPt={pageFor(analysis, cropPageIndex)?.heightPt ?? analysis.page.heightPt}
+                value={rect}
+                onChange={setRect}
+                onCustom={() => setPicked("custom")}
+              />
+            </div>
 
             <div className="crop-stage__side">
               <p className="crop-stage__label">Zone à reprendre</p>
 
-              {analysis.regions.map((region) => (
+              {cropRegionsForPage(analysis, cropPageIndex).map((region) => (
                 <button
-                  key={region.kind}
+                  key={`${cropPageIndex}-${region.kind}`}
                   type="button"
                   className={`crop-opt${picked === region.kind ? " crop-opt--on" : ""}`}
                   aria-pressed={picked === region.kind}
@@ -530,9 +602,9 @@ export function ImportDocumentModal({
               />
 
               {analysis.page.count > 1 && (
-                <Alert type={VariantType.WARNING}>
-                  Document de {analysis.page.count} pages : seule la première
-                  est analysée.
+                <Alert type={VariantType.INFO}>
+                  Document de {analysis.page.count} pages : choisissez la page
+                  avant de tracer la zone.
                 </Alert>
               )}
               {analysis.fontSubstitution && (
@@ -553,7 +625,7 @@ export function ImportDocumentModal({
         {stage === "edit" && analysis && templateModel && (
           <ImportVisualEditor
             analysis={analysis}
-            previewUrl={ingestPreviewUrl(analysis.jobId)}
+            previewUrl={(pageIndex) => ingestPreviewUrl(analysis.jobId, pageIndex)}
             value={templateModel}
             onChange={setTemplateModel}
             onRasterize={rasterizeEditedZone}

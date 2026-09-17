@@ -3,7 +3,8 @@
  *
  * Trois temps, un dossier de travail par import (ingest/jobs.ts) :
  *   POST /api/ingest                → dépôt, analyse, zones proposées
- *   GET  /api/ingest/:id/preview    → rendu de la première page (pour le recadrage)
+ *   GET  /api/ingest/:id/preview    → rendu de la première page (compatibilité)
+ *   GET  /api/ingest/:id/preview/:pageIndex → rendu d'une page analysée
  *   POST /api/ingest/:id/fragment   → découpe une zone, la range dans les assets
  *   POST /api/ingest/:id/template   → découpe puis crée le template dans Docs
  *
@@ -67,6 +68,7 @@ interface FragmentBody {
   rect?: Rect;
   /** Mode « assets » : chemin du visuel dans le zip, au lieu d'une zone. */
   asset?: string;
+  pageIndex?: number;
   vector?: boolean;
   kind?: string;
 }
@@ -111,9 +113,27 @@ function assetName(kind: string, ext: string): string {
   return `${slug}-${randomBytes(4).toString("hex")}.${ext}`;
 }
 
-/** Zone reçue du client, bornée à la page : hors page, la découpe serait vide. */
-function sanitizeRect(raw: unknown, analysis: Analysis): Rect | null {
+function pageForIndex(analysis: Analysis, pageIndex: number): { widthPt: number; heightPt: number } | null {
+  const pages = analysis.importModel?.pages ?? [];
+  const page = pages.find((candidate) => candidate.pageIndex === pageIndex);
+  if (page) return page;
+  if (pageIndex === 0) return analysis.page;
+  return null;
+}
+
+function sanitizePageIndex(raw: unknown, analysis: Analysis): number | null {
+  const pageIndex = raw === undefined ? 0 : Number(raw);
+  if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex > 10_000) {
+    return null;
+  }
+  return pageForIndex(analysis, pageIndex) ? pageIndex : null;
+}
+
+/** Zone reçue du client, bornée à sa page : hors page, la découpe serait vide. */
+function sanitizeRect(raw: unknown, analysis: Analysis, pageIndex = 0): Rect | null {
   if (!raw || typeof raw !== "object") return null;
+  const page = pageForIndex(analysis, pageIndex);
+  if (!page) return null;
   const r = raw as Record<string, unknown>;
   const num = (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) ? v : NaN;
@@ -122,8 +142,8 @@ function sanitizeRect(raw: unknown, analysis: Analysis): Rect | null {
   const width = num(r.width);
   const height = num(r.height);
   if ([x, y, width, height].some(Number.isNaN)) return null;
-  const clampedW = Math.min(width, analysis.page.widthPt - x);
-  const clampedH = Math.min(height, analysis.page.heightPt - y);
+  const clampedW = Math.min(width, page.widthPt - x);
+  const clampedH = Math.min(height, page.heightPt - y);
   if (clampedW < 1 || clampedH < 1) return null;
   return { x, y, width: clampedW, height: clampedH };
 }
@@ -225,17 +245,27 @@ export async function ingestRoutes(
         return reply
           .code(404)
           .send({ ok: false, error: "Import inconnu ou expiré" });
-      const bytes = await readFile(path.join(job.dir, "page-1.png")).catch(
-        () => null,
-      );
-      if (!bytes)
+      return sendPreview(reply, job, 0);
+    },
+  );
+
+  /** Rendu d'une page analysée, pour l'éditeur visuel multi-page. */
+  app.get<{ Params: { id: string; pageIndex: string } }>(
+    "/api/ingest/:id/preview/:pageIndex",
+    async (req, reply) => {
+      const session = await requireSession(req, reply);
+      if (!session) return;
+
+      const job = await findJob(req.params.id);
+      if (!job)
         return reply
           .code(404)
-          .send({ ok: false, error: "Aperçu indisponible" });
-      return reply
-        .type("image/png")
-        .header("Cache-Control", "private, max-age=600")
-        .send(bytes);
+          .send({ ok: false, error: "Import inconnu ou expiré" });
+      const pageIndex = Number(req.params.pageIndex);
+      if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex > 10_000) {
+        return reply.code(400).send({ ok: false, error: "Page invalide" });
+      }
+      return sendPreview(reply, job, pageIndex);
     },
   );
 
@@ -312,7 +342,11 @@ export async function ingestRoutes(
           return { ok: true, ...placement };
         }
 
-        const rect = sanitizeRect(req.body?.rect, analysis);
+        const pageIndex = sanitizePageIndex(req.body?.pageIndex, analysis);
+        if (pageIndex === null)
+          return reply.code(400).send({ ok: false, error: "Page invalide" });
+
+        const rect = sanitizeRect(req.body?.rect, analysis, pageIndex);
         if (!rect)
           return reply.code(400).send({ ok: false, error: "Zone invalide" });
 
@@ -320,9 +354,10 @@ export async function ingestRoutes(
           job.input,
           job.dir,
           rect,
+          pageIndex,
           req.body?.vector === true,
           kind,
-          analysis.page.widthPt,
+          pageForIndex(analysis, pageIndex)?.widthPt ?? analysis.page.widthPt,
         );
         return { ok: true, ...placement };
       } catch (error) {
@@ -426,6 +461,7 @@ export async function ingestRoutes(
                 job.input,
                 job.dir,
                 headerRect,
+                0,
                 vector,
                 "en-tete",
                 analysis.page.widthPt,
@@ -436,6 +472,7 @@ export async function ingestRoutes(
               job.input,
               job.dir,
               footerRect,
+              0,
               vector,
               "pied-de-page",
               analysis.page.widthPt,
@@ -474,6 +511,24 @@ async function loadAnalysis(job: Job): Promise<Analysis> {
   return analysis;
 }
 
+async function sendPreview(
+  reply: FastifyReply,
+  job: Job,
+  pageIndex: number,
+): Promise<FastifyReply> {
+  const bytes = await readFile(path.join(job.dir, `page-${pageIndex + 1}.png`)).catch(
+    () => null,
+  );
+  if (!bytes)
+    return reply
+      .code(404)
+      .send({ ok: false, error: "Aperçu indisponible" });
+  return reply
+    .type("image/png")
+    .header("Cache-Control", "private, max-age=600")
+    .send(bytes);
+}
+
 /**
  * Mode « assets » : le visuel demandé doit être l'un de ceux que l'analyse a
  * listés — c'est ce qui empêche un chemin quelconque d'atteindre le zip.
@@ -508,6 +563,7 @@ async function extract(
   input: string,
   dir: string,
   rect: Rect,
+  pageIndex: number,
   vector: boolean,
   kind: string | undefined,
   pageWidthPt: number,
@@ -517,6 +573,7 @@ async function extract(
     input,
     outDir: dir,
     rect,
+    pageIndex,
     vector,
     name: base,
   });

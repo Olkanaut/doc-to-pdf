@@ -42,6 +42,9 @@ KNOWN_FONTS = {
 }
 PREVIEW_SCALE = 2.0
 CROP_SCALE = 4.0
+# Garde-fou : l'éditeur peut naviguer entre plusieurs pages, sans transformer
+# un gros PDF en travail d'extraction interminable.
+MAX_PREVIEW_PAGES = 20
 # A shape covering this much of the page is background, not content.
 BACKGROUND_AREA_RATIO = 0.9
 # Vertical gap (pt) that separates one band of content from the next.
@@ -275,14 +278,16 @@ def import_zones(
     page_rect: pymupdf.Rect,
     header_band: pymupdf.Rect | None,
     footer_band: pymupdf.Rect | None,
+    page_index: int,
 ) -> list[dict]:
     zones = []
+    suffix = "" if page_index == 0 else f"-page-{page_index + 1}"
     if header_band is not None:
         zones.append(
             {
-                "id": "region-header",
+                "id": f"region-header{suffix}",
                 "kind": "header",
-                "pageIndex": 0,
+                "pageIndex": page_index,
                 "bbox": bbox(header_band),
                 "confidence": 0.75,
                 "provenance": "rendered-page",
@@ -296,9 +301,9 @@ def import_zones(
     body = pymupdf.Rect(page_rect.x0, body_top, page_rect.x1, body_bottom) & page_rect
     zones.append(
         {
-            "id": "region-body",
+            "id": f"region-body{suffix}",
             "kind": "body",
-            "pageIndex": 0,
+            "pageIndex": page_index,
             "bbox": bbox(body),
             "confidence": 1.0,
             "provenance": "rendered-page",
@@ -308,9 +313,9 @@ def import_zones(
     if footer_band is not None:
         zones.append(
             {
-                "id": "region-footer",
+                "id": f"region-footer{suffix}",
                 "kind": "footer",
-                "pageIndex": 0,
+                "pageIndex": page_index,
                 "bbox": bbox(footer_band),
                 "confidence": 0.75,
                 "provenance": "rendered-page",
@@ -350,24 +355,26 @@ def shape_kind(drawing: dict) -> str:
     return "shape"
 
 
-def pdf_import_model(
+def pdf_page_objects(
     *,
-    page_rect: pymupdf.Rect,
-    page_count: int,
+    page_index: int,
     spans: list[dict],
     shapes: list[dict],
     images: list[dict],
     zones: list[dict],
-    font_substitution: str | None,
-) -> dict:
+    text_offset: int,
+    image_offset: int,
+    shape_offset: int,
+) -> tuple[list[dict], dict[str, dict]]:
     objects = []
+    assets: dict[str, dict] = {}
 
     for index, span in enumerate(spans):
         objects.append(
             {
-                "id": f"pdf-text-{index + 1}",
+                "id": f"pdf-text-{text_offset + index + 1}",
                 "type": "text",
-                "pageIndex": 0,
+                "pageIndex": page_index,
                 "bbox": bbox(span["rect"]),
                 "provenance": "pdf-text",
                 "confidence": 1.0,
@@ -381,24 +388,18 @@ def pdf_import_model(
             }
         )
 
-    assets = []
-    seen_images: set[int] = set()
     for index, image in enumerate(images):
         asset_id = f"pdf-image-{image['xref']}"
-        if image["xref"] not in seen_images:
-            seen_images.add(image["xref"])
-            assets.append(
-                {
-                    "id": asset_id,
-                    "name": asset_id,
-                    "provenance": "pdf-image",
-                }
-            )
+        assets[asset_id] = {
+            "id": asset_id,
+            "name": asset_id,
+            "provenance": "pdf-image",
+        }
         objects.append(
             {
-                "id": f"pdf-image-object-{index + 1}",
+                "id": f"pdf-image-object-{image_offset + index + 1}",
                 "type": "image",
-                "pageIndex": 0,
+                "pageIndex": page_index,
                 "bbox": bbox(image["rect"]),
                 "provenance": "pdf-image",
                 "confidence": 1.0,
@@ -412,9 +413,9 @@ def pdf_import_model(
         kind = shape_kind(drawing)
         objects.append(
             {
-                "id": f"pdf-{kind}-{index + 1}",
+                "id": f"pdf-{kind}-{shape_offset + index + 1}",
                 "type": kind,
-                "pageIndex": 0,
+                "pageIndex": page_index,
                 "bbox": bbox(drawing["rect"]),
                 "provenance": "pdf-vector",
                 "confidence": 0.9,
@@ -427,6 +428,19 @@ def pdf_import_model(
             }
         )
 
+    return objects, assets
+
+
+def pdf_import_model(
+    *,
+    pages: list[dict],
+    page_count: int,
+    zones: list[dict],
+    objects: list[dict],
+    assets: list[dict],
+    font_substitution: str | None,
+    rendered_pages: int,
+) -> dict:
     warnings = []
     if font_substitution:
         warnings.append(
@@ -435,25 +449,24 @@ def pdf_import_model(
                 "message": f"{font_substitution} was replaced by the fallback font.",
             }
         )
+    if rendered_pages < page_count:
+        warnings.append(
+            {
+                "code": "preview-pages-limited",
+                "message": f"Only the first {rendered_pages} pages were extracted for editing.",
+            }
+        )
 
     return {
         "model": "import",
         "version": 1,
         "source": {"kind": "pdf"},
-        "pages": [
-            {
-                "id": "page-1",
-                "pageIndex": 0,
-                "widthPt": round(page_rect.width, 2),
-                "heightPt": round(page_rect.height, 2),
-                "rotation": 0,
-            }
-        ],
+        "pages": pages,
         "zones": zones,
         "objects": objects,
         "assets": assets,
         "warnings": warnings,
-        "raw": {"pageCount": page_count},
+        "raw": {"pageCount": page_count, "renderedPages": rendered_pages},
     }
 
 
@@ -480,32 +493,93 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
     doc = open_document(input_path, out_dir)
     if doc.page_count == 0:
         fail("Document vide", "empty_document")
-    page = doc[0]
-    page_rect = page.rect
-    spans, shapes = visible_items(page)
+    rendered_pages = min(doc.page_count, MAX_PREVIEW_PAGES)
+    pages: list[dict] = []
+    zones: list[dict] = []
+    objects: list[dict] = []
+    assets_by_id: dict[str, dict] = {}
+    text_offset = 0
+    image_offset = 0
+    shape_offset = 0
+    total_text = 0
+    total_shapes = 0
+    total_images = 0
 
-    images: list[dict] = []
-    for info in page.get_images(full=True):
-        xref = int(info[0])
-        images.extend({"xref": xref, "rect": r} for r in page.get_image_rects(xref) if not r.is_empty)
-    image_rects = [image["rect"] for image in images]
+    first_page_rect: pymupdf.Rect | None = None
+    first_spans: list[dict] = []
+    first_shapes: list[dict] = []
+    first_image_rects: list[pymupdf.Rect] = []
+    first_header_band: pymupdf.Rect | None = None
+    first_footer_band: pymupdf.Rect | None = None
 
-    preview = page.get_pixmap(matrix=pymupdf.Matrix(PREVIEW_SCALE, PREVIEW_SCALE))
-    preview.save(out_dir / "page-1.png")
+    for page_index in range(rendered_pages):
+        page = doc[page_index]
+        page_rect = page.rect
+        spans, shapes = visible_items(page)
 
-    raw_items = [s["rect"] for s in spans] + [d["rect"] for d in shapes] + image_rects
-    items = [clipped for r in raw_items if (clipped := clip(r, page_rect)) is not None]
-    if not items:
-        fail("Aucun contenu exploitable sur la première page", "empty_page")
+        images: list[dict] = []
+        for info in page.get_images(full=True):
+            xref = int(info[0])
+            images.extend({"xref": xref, "rect": r} for r in page.get_image_rects(xref) if not r.is_empty)
+        image_rects = [image["rect"] for image in images]
 
-    content = pymupdf.Rect(items[0])
-    for rect in items[1:]:
-        content |= rect
+        preview = page.get_pixmap(matrix=pymupdf.Matrix(PREVIEW_SCALE, PREVIEW_SCALE))
+        preview.save(out_dir / f"page-{page_index + 1}.png")
 
-    figures = [d["rect"] for d in shapes if d.get("fill") and saturation(d["fill"]) > 0.05]
-    figures += image_rects
-    header_band = find_band(items, figures, page_rect, "header")
-    footer_band = find_band(items, figures, page_rect, "footer")
+        raw_items = [s["rect"] for s in spans] + [d["rect"] for d in shapes] + image_rects
+        items = [clipped for r in raw_items if (clipped := clip(r, page_rect)) is not None]
+        if page_index == 0 and not items:
+            fail("Aucun contenu exploitable sur la première page", "empty_page")
+
+        figures = [d["rect"] for d in shapes if d.get("fill") and saturation(d["fill"]) > 0.05]
+        figures += image_rects
+        header_band = find_band(items, figures, page_rect, "header") if items else None
+        footer_band = find_band(items, figures, page_rect, "footer") if items else None
+        page_zones = import_zones(page_rect, header_band, footer_band, page_index)
+        page_objects, page_assets = pdf_page_objects(
+            page_index=page_index,
+            spans=spans,
+            shapes=shapes,
+            images=images,
+            zones=page_zones,
+            text_offset=text_offset,
+            image_offset=image_offset,
+            shape_offset=shape_offset,
+        )
+
+        pages.append(
+            {
+                "id": f"page-{page_index + 1}",
+                "pageIndex": page_index,
+                "widthPt": round(page_rect.width, 2),
+                "heightPt": round(page_rect.height, 2),
+                "rotation": 0,
+            }
+        )
+        zones.extend(page_zones)
+        objects.extend(page_objects)
+        assets_by_id.update(page_assets)
+        text_offset += len(spans)
+        image_offset += len(images)
+        shape_offset += len(shapes)
+        total_text += len(spans)
+        total_shapes += len(shapes)
+        total_images += len(image_rects)
+
+        if page_index == 0:
+            first_page_rect = page_rect
+            first_spans = spans
+            first_shapes = shapes
+            first_image_rects = image_rects
+            first_header_band = header_band
+            first_footer_band = footer_band
+
+    page_rect = first_page_rect if first_page_rect is not None else doc[0].rect
+    spans = first_spans
+    shapes = first_shapes
+    image_rects = first_image_rects
+    header_band = first_header_band
+    footer_band = first_footer_band
 
     body_spans = [
         s
@@ -574,15 +648,14 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
         full = pymupdf.Rect(0, footer_band.y0 - 2, page_rect.width, page_rect.height)
         regions.append(region("footer", full))
     regions.append(region("page", page_rect))
-    zones = import_zones(page_rect, header_band, footer_band)
     import_model = pdf_import_model(
-        page_rect=page_rect,
+        pages=pages,
         page_count=doc.page_count,
-        spans=spans,
-        shapes=shapes,
-        images=images,
         zones=zones,
+        objects=objects,
+        assets=list(assets_by_id.values()),
         font_substitution=substituted,
+        rendered_pages=rendered_pages,
     )
 
     return {
@@ -598,7 +671,7 @@ def analyze(input_path: Path, out_dir: Path) -> dict:
         "regions": regions,
         "layout": layout,
         "fontSubstitution": substituted,
-        "counts": {"text": len(spans), "shapes": len(shapes), "images": len(image_rects)},
+        "counts": {"text": total_text, "shapes": total_shapes, "images": total_images},
         "importModel": import_model,
     }
 
@@ -673,9 +746,11 @@ def has_vector(rect: pymupdf.Rect, shapes: list[dict], image_rects: list[pymupdf
 # ---------------------------------------------------------------- crop
 
 
-def crop(input_path: Path, out_dir: Path, rect: pymupdf.Rect, vector: bool, name: str) -> dict:
+def crop(input_path: Path, out_dir: Path, rect: pymupdf.Rect, vector: bool, name: str, page_index: int) -> dict:
     doc = open_document(input_path, out_dir)
-    page = doc[0]
+    if page_index < 0 or page_index >= doc.page_count:
+        fail("Page introuvable", "unknown_page")
+    page = doc[page_index]
     rect = rect & page.rect
     if rect.is_empty:
         fail("Zone vide", "empty_rect")
@@ -792,6 +867,7 @@ def main() -> None:
     crop_cmd.add_argument("--out", required=True)
     crop_cmd.add_argument("--rect", required=True)
     crop_cmd.add_argument("--name", required=True)
+    crop_cmd.add_argument("--page-index", type=int, default=0)
     crop_cmd.add_argument("--vector", action="store_true")
 
     args = parser.parse_args()
@@ -808,7 +884,7 @@ def main() -> None:
     else:
         if not args.name.isidentifier() and not args.name.replace("-", "_").isidentifier():
             fail("--name invalide", "bad_name")
-        result = crop(input_path, out_dir, parse_rect(args.rect), args.vector, args.name)
+        result = crop(input_path, out_dir, parse_rect(args.rect), args.vector, args.name, args.page_index)
 
     json.dump(result, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")

@@ -162,6 +162,7 @@ export interface CropRequest {
   input: string;
   outDir: string;
   rect: { x: number; y: number; width: number; height: number };
+  pageIndex?: number;
   vector: boolean;
   name: string;
 }
@@ -169,7 +170,20 @@ export interface CropRequest {
 export async function cropRegion(request: CropRequest): Promise<Fragment> {
   const { x, y, width, height } = request.rect;
   const rect = [x, y, x + width, y + height].map((v) => v.toFixed(2)).join(",");
-  const args = ["crop", "--input", request.input, "--out", request.outDir, "--rect", rect, "--name", request.name];
+  const pageIndex = Number.isInteger(request.pageIndex) ? request.pageIndex : 0;
+  const args = [
+    "crop",
+    "--input",
+    request.input,
+    "--out",
+    request.outDir,
+    "--rect",
+    rect,
+    "--name",
+    request.name,
+    "--page-index",
+    String(pageIndex),
+  ];
   if (request.vector) args.push("--vector");
   return run<Fragment>(args);
 }

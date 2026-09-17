@@ -555,6 +555,15 @@
 
 /* ── Recadrage (ImportDocumentModal + CropCanvas) ─────────────────────────── */
 
+.c__modal:has(.import-modal__body--editor) {
+  width: min(1480px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+}
+
+.c__modal .import-modal__body--editor {
+  min-height: min(820px, calc(100vh - 180px));
+}
+
 /* Attente : le Loader du kit et une ligne, rien d'autre — l'analyse ne se
    raconte pas étape par étape. */
 .c__modal .import-modal__wait {
@@ -572,6 +581,12 @@
   display: flex;
   gap: 24px;
   align-items: flex-start;
+}
+.c__modal .crop-stage__canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 .c__modal .crop-stage__side {
   display: flex;
@@ -774,12 +789,47 @@
   color: var(--c--globals--colors--gray-550);
 }
 
+.c__modal .import-page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.c__modal .import-page-tab {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--c--globals--colors--gray-150);
+  border-radius: var(--c--components--button--border-radius);
+  background: #fff;
+  color: var(--c--globals--colors--gray-700);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: var(--c--globals--font--weights--medium);
+  cursor: pointer;
+}
+.c__modal .import-page-tab:hover {
+  border-color: var(--c--contextuals--border--semantic--neutral--secondary);
+}
+.c__modal .import-page-tab--on {
+  border-color: var(--dots-primary);
+  background: var(--dots-primary-soft);
+  color: var(--c--globals--colors--gray-850);
+  box-shadow: 0 0 0 1px var(--dots-primary);
+}
+.c__modal .import-page-tab:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 0 4px var(--dots-primary);
+}
+
 /* Éditeur visuel d'import : page au centre, calques à gauche, propriétés à droite. */
 .c__modal .import-editor {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: min(720px, 74vh);
+  height: min(820px, calc(100vh - 180px));
+  min-height: 0;
 }
 .c__modal .import-editor__toolbar {
   display: flex;
@@ -791,6 +841,7 @@
   display: grid;
   grid-template-columns: minmax(160px, 220px) minmax(320px, 1fr) minmax(220px, 280px);
   gap: 14px;
+  flex: 1 1 auto;
   min-height: 0;
 }
 .c__modal .import-editor__layers,
@@ -848,7 +899,7 @@
 }
 .c__modal .import-editor__page {
   position: relative;
-  width: min(100%, 680px);
+  width: min(100%, 760px);
   margin: 0 auto;
   background: #fff;
   box-shadow: 0 2px 10px rgb(0 0 0 / 14%);

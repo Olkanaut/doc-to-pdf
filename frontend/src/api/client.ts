@@ -565,6 +565,7 @@ export interface TemplateBaseNodeV2 {
   type: TemplateNodeTypeV2;
   region: TemplateRegionKindV2;
   regionId: string;
+  pageIndex?: number;
   scope: TemplateScopeV2;
   bbox?: ImportBBox;
   layout?: TemplateNodeLayoutV2;
@@ -697,8 +698,10 @@ export async function analyzeDocument(file: File): Promise<IngestAnalysis> {
   );
 }
 
-export function ingestPreviewUrl(jobId: string): string {
-  return `/api/ingest/${jobId}/preview`;
+export function ingestPreviewUrl(jobId: string, pageIndex = 0): string {
+  return pageIndex === 0
+    ? `/api/ingest/${jobId}/preview`
+    : `/api/ingest/${jobId}/preview/${pageIndex}`;
 }
 
 /** Vignette d'un visuel sorti d'un .docx, désigné par son rang dans `assets`. */
@@ -713,6 +716,7 @@ export async function extractFragment(
     /** Mode « page » : la zone découpée. Mode « assets » : `asset` à la place. */
     rect?: IngestRect;
     asset?: string;
+    pageIndex?: number;
     vector?: boolean;
     kind: "en-tete" | "pied-de-page" | "fragment";
   },
