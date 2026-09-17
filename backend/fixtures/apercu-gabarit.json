@@ -1,0 +1,257 @@
+{
+  "id": "apercu-gabarit",
+  "name": "Aperçu de gabarit",
+  "blocks": [
+    {
+      "type": "heading",
+      "props": {
+        "level": 1
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Head"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Head2"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "props": {
+        "level": 3
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "head3"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "content": {
+        "rows": [
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Poste",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2024",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2025",
+                    "styles": {
+                      "bold": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Recettes"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "128 400 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "141 250 €"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Dépenses"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "97 310 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "105 880 €"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cells": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Solde"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "31 090 €"
+                  }
+                ]
+              },
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "35 370 €"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "columnWidths": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem.",
+          "styles": {
+            "italic": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Nemo enim ipsam voluptatem quia voluptas sit aspernatur.",
+          "styles": {
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Texte normal, "
+        },
+        {
+          "type": "text",
+          "text": "en gras",
+          "styles": {
+            "bold": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ", "
+        },
+        {
+          "type": "text",
+          "text": "en italique",
+          "styles": {
+            "italic": true
+          }
+        },
+        {
+          "type": "text",
+          "text": ", puis normal à nouveau."
+        }
+      ]
+    }
+  ]
+}

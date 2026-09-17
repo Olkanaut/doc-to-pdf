@@ -30,6 +30,9 @@ function message(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+/** Fixture d'aperçu de l'éditeur : backend/fixtures/apercu-gabarit.json. */
+const PREVIEW_FIXTURE_ID = "apercu-gabarit";
+
 /**
  * Une seule vérité : `source`, le .typ complet. Le panneau modifie `layout`, le
  * backend recompose le bloc « dots:layout » → nouvelle `source` → aperçu.
@@ -128,9 +131,11 @@ export function LayoutEditorPage() {
     fetchFixtures()
       .then((f) => {
         if (cancelled) return;
-        // L'aperçu juge la mise en page, pas le contenu : on prend le premier
-        // document d'exemple sans le proposer au choix.
-        setFixtureId((cur) => cur || f[0]?.id || "");
+        // L'aperçu juge la mise en page, pas le contenu : on prend un document
+        // d'exemple sans le proposer au choix. « apercu-gabarit » est écrit pour ça
+        // — trois niveaux de titre, un tableau, de l'italique et du gras, et rien
+        // d'autre. À défaut, le premier de la liste.
+        setFixtureId((cur) => cur || f.find((x) => x.id === PREVIEW_FIXTURE_ID)?.id || f[0]?.id || "");
       })
       .catch(() => {});
     fetchTemplateAssets()
