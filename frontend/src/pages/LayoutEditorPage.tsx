@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import {
-  Alert,
-  Badge,
-  Button,
-  Loader,
-  VariantType,
-} from "@gouvfr-lasuite/ui-components";
+import { Alert, Button, Loader, VariantType } from "@gouvfr-lasuite/ui-components";
 import { Sparkle } from "@gouvfr-lasuite/ui-components/icons";
 import {
   composeLayout,
@@ -386,14 +380,29 @@ export function LayoutEditorPage() {
 
   const layoutHref = `/t/${encodeURIComponent(id)}/layout`;
   const codeHref = `/t/${encodeURIComponent(id)}/code`;
+  // L'assistant vit dans l'en-tête du panneau, avec le sélecteur de mode : au-dessus
+  // de l'aperçu il ne reste que « Enregistrer ».
   const modeMenu = (
-    <EditorModeMenu
-      mode={mode}
-      layoutHref={layoutHref}
-      codeHref={codeHref}
-      onNavigateLayout={(e) => void follow(e, layoutHref, false, "read")}
-      onNavigateCode={(e) => void follow(e, codeHref, false, "compose")}
-    />
+    <>
+      <EditorModeMenu
+        mode={mode}
+        layoutHref={layoutHref}
+        codeHref={codeHref}
+        onNavigateLayout={(e) => void follow(e, layoutHref, false, "read")}
+        onNavigateCode={(e) => void follow(e, codeHref, false, "compose")}
+      />
+      {/* Icône seule : l'en-tête du panneau loge déjà le nom du gabarit et le
+          sélecteur de mode, le libellé n'y tiendrait pas. */}
+      <Button
+        variant={aiOpen ? "primary" : "tertiary"}
+        size="small"
+        icon={<Sparkle aria-hidden="true" />}
+        aria-label="Assistant IA"
+        title="Assistant IA"
+        aria-pressed={aiOpen}
+        onClick={() => setAiOpen(!aiOpen)}
+      />
+    </>
   );
   const status = saving
     ? "Enregistrement…"
@@ -456,34 +465,24 @@ export function LayoutEditorPage() {
         center={
           <section className="le-preview" aria-label="Aperçu">
             <div className="le-preview__bar">
-              {proposal && (
-                <Badge type="accent">Proposition — non enregistrée</Badge>
-              )}
-              {saveError ? (
+              {/* L'état vit sur le bouton : actif = il y a quelque chose à enregistrer.
+                  Seule l'erreur mérite une ligne, parce qu'elle appelle une décision. */}
+              {saveError && (
                 <span
                   className="le-header__status le-header__status--error"
                   role="alert"
                 >
                   {saveError}
                 </span>
-              ) : (
-                <span className="le-header__status">{status}</span>
               )}
-              <Button
-                variant={aiOpen ? "primary" : "secondary"}
-                icon={<Sparkle aria-hidden="true" />}
-                aria-pressed={aiOpen}
-                onClick={() => setAiOpen(!aiOpen)}
-              >
-                Assistant IA
-              </Button>
               {/* Pendant une proposition, l'aperçu ne montre pas `source` : enregistrer serait trompeur. */}
               <Button
                 variant="primary"
                 disabled={!dirty || saving || proposal !== null}
+                title={status}
                 onClick={handleSave}
               >
-                Enregistrer
+                {saving ? "Enregistrement…" : "Enregistrer"}
               </Button>
             </div>
             <div className="le-preview__doc">

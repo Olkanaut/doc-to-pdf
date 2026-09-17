@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { readdir } from "node:fs/promises";
 import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
-import { checkTemplateSource } from "../layout/check.js";
+import { checkTemplateSource, type CheckFailure, type CheckResult } from "../layout/check.js";
 import { AiApiError, callMessages, type ContentBlock } from "../ai/client.js";
 import { parseAiReply } from "../ai/parse.js";
 import { editUserText, fromPdfUserText, systemPrompt } from "../ai/prompt.js";
@@ -25,11 +25,50 @@ async function listAssets(): Promise<string[]> {
     .map((f) => `assets/${f}`);
 }
 
+/**
+ * Compare le rendu proposé au rendu de départ et nomme ce qui a disparu.
+ *
+ * Trois dégâts compilent proprement et passent tous les autres contrôles : le
+ * texte passé en blanc, la police descendue trop bas, et une bande poussée hors
+ * de la page par un décalage négatif. Les deux mesures sont complémentaires —
+ * l'encre voit la page qui se vide, les mots voient la bande qui s'en va sans
+ * que l'encre bouge (mesuré : 5,45 % → 5,07 % d'encre, mais 166 → 163 mots).
+ */
+async function regressions(avant: CheckResult | CheckFailure, apres: CheckResult): Promise<string[]> {
+  if (!avant.ok) return [];
+  const out: string[] = [];
+  if (avant.ink && apres.ink) {
+    // Une bande est jugée à part : vidée, elle ne coûte que quelques pour cent de
+    // l'encre totale, ce qu'un seuil sur la page entière ne verra jamais.
+    const bandes = [
+      ["l'en-tête", avant.ink.top, apres.ink.top],
+      ["le pied de page", avant.ink.bottom, apres.ink.bottom],
+      ["la page", avant.ink.page, apres.ink.page],
+    ] as const;
+    for (const [quoi, av, ap] of bandes) {
+      if (av > 0.005 && ap < av * 0.5) {
+        out.push(
+          `${quoi} est passé de ${(av * 100).toFixed(1)} % à ${(ap * 100).toFixed(1)} % de pixels encrés : ` +
+            `ce qui s'y trouvait n'est plus visible`,
+        );
+      }
+    }
+  }
+  if (avant.words !== null && apres.words !== null && apres.words < avant.words) {
+    out.push(
+      `${avant.words - apres.words} mot(s) ont disparu du PDF (${avant.words} → ${apres.words}) : ` +
+        `une mention du gabarit n'est plus rendue, probablement hors de la page`,
+    );
+  }
+  return out;
+}
+
 /** Appel, lecture de la réponse, compilation de test : commun aux deux routes. */
 async function runAssistant(
   reply: FastifyReply,
   content: ContentBlock[],
   fixtureId?: string,
+  sourceAvant?: string,
 ) {
   let text: string;
   try {
@@ -46,6 +85,12 @@ async function runAssistant(
   if (!parsed)
     return reply.code(502).send({ ok: false, error: "réponse inexploitable" });
   const check = await checkTemplateSource({ source: parsed.source, fixtureId });
+  // Le rendu de départ sert de témoin : on ne signale que ce que la proposition
+  // FAIT PERDRE, pas ce qui manquait déjà.
+  if (check.ok && sourceAvant) {
+    const avant = await checkTemplateSource({ source: sourceAvant, fixtureId });
+    check.warnings = [...check.warnings, ...(await regressions(avant, check))];
+  }
   return { ok: true, ...parsed, check };
 }
 
@@ -70,6 +115,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       reply,
       [{ type: "text", text: editUserText(source, instruction) }],
       typeof fixtureId === "string" ? fixtureId : undefined,
+      source,
     );
   });
 
