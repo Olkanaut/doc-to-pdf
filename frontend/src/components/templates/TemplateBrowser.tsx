@@ -42,10 +42,21 @@ export function TemplateBrowser({
             className={isGrid ? "template-tile-new-btn" : "template-row-new"}
             onClick={onCreateNew}
           >
-            <span className="template-tile-plus" aria-hidden="true">
-              +
-            </span>
-            <span>{createNewLabel}</span>
+            {isGrid ? (
+              <>
+                <span className="template-tile-new-sheet" aria-hidden="true">
+                  <span className="template-tile-plus">+</span>
+                </span>
+                <span className="template-tile-title">{createNewLabel}</span>
+              </>
+            ) : (
+              <>
+                <span className="template-tile-plus" aria-hidden="true">
+                  +
+                </span>
+                <span>{createNewLabel}</span>
+              </>
+            )}
           </button>
         </li>
       )}
@@ -66,7 +77,7 @@ export function TemplateBrowser({
               <span className="template-row-description">{t.description || "Sans description"}</span>
             )}
           </OpenTarget>
-          {renderBadge?.(t)}
+          {!isGrid && renderBadge?.(t)}
           {renderActions && (
             <div className={isGrid ? "template-tile-actions" : "template-row-actions"}>
               {renderActions(t)}

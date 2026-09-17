@@ -233,7 +233,7 @@ function DocumentView({ documentId }: { documentId: string }) {
             <Button size="small" variant="tertiary" color="neutral" href={documentUrl}>
               Ouvrir dans Docs
             </Button>
-            <LinkButton to="/docs" size="small" variant="tertiary" color="neutral">
+            <LinkButton to="/" size="small" variant="tertiary" color="neutral">
               Changer
             </LinkButton>
           </div>

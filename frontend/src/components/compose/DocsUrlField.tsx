@@ -29,8 +29,11 @@ export function DocsUrlField({ onOpen, loading, error }: Props) {
       >
         <Input
           label="Coller l'URL d'un document Docs"
+          hideLabel
+          variant="classic"
           fullWidth
           inputMode="url"
+          placeholder="Coller une URL Docs ou rechercher par nom"
           value={url}
           disabled={loading}
           onChange={(e) => setUrl(e.target.value)}

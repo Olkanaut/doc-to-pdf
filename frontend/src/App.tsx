@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useParams, useSearchParams } from "react-route
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AppShell } from "./components/shell/AppShell";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
-import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { TemplatesListPage } from "./pages/TemplatesListPage";
 import { LayoutEditorPage } from "./pages/LayoutEditorPage";
@@ -30,7 +29,7 @@ function DocumentsNewRedirect() {
   const doc = params.get("doc");
   const template = params.get("template");
   const search = template ? `?template=${encodeURIComponent(template)}` : "";
-  return <Navigate to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/docs"}${search}`} replace />;
+  return <Navigate to={`${doc ? `/docs/${encodeURIComponent(doc)}` : "/"}${search}`} replace />;
 }
 
 /** Raccourci `/d/:id`, même cible que le chemin de Docs. */
@@ -58,7 +57,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           {/* Même chemin que Docs : `docs…/docs/<id>/` devient `dots…/docs/<id>/`. */}
-          <Route path="/docs" element={guarded(<HomePage />)} />
+          <Route path="/docs" element={<Navigate to="/" replace />} />
           <Route path="/docs/:id" element={guarded(<DocumentPage />)} />
           <Route path="/d/:id" element={<ShortDocRedirect />} />
           <Route path="/t/:id" element={guarded(<TemplateEditorRedirect />)} />

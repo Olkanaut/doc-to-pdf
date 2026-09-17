@@ -9,36 +9,207 @@
 
 /* ── Liste des gabarits ──────────────────────────────────────────────────── */
 
-/* Header of the templates gallery: title/subtitle on their own line, the
-   create button and the view switcher on the line below — scoped to this
-   page's header only, .dots-page-header itself stays a single row elsewhere
-   (e.g. the template editor's title + mode switch + actions). */
-.dots-page .templates-header {
+.templates-home {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 16px;
-}
-.dots-page .templates-header .dots-actions {
-  flex: 1 1 auto;
-  justify-content: space-between;
+  gap: 36px;
 }
 
-/* Grid/list switcher: same pill as .editor-modes, to stay in the same colors
-   as the kit buttons to its left. */
-.dots-page .view-switcher {
-  display: inline-flex;
-  gap: 4px;
-  flex: 0 0 auto;
-  padding: 2px;
-  border-radius: var(--c--components--button--border-radius);
-  background: var(--c--contextuals--background--semantic--neutral--tertiary);
+.templates-home__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0 8px;
+  text-align: center;
 }
 
-.dots-page .templates-note {
+.templates-home__logo {
+  width: min(280px, 68vw);
+  height: auto;
+}
+
+.templates-home__url {
+  width: min(100%, 560px);
+  outline: none;
+}
+
+.templates-home__url .compose-url {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.templates-home__url .compose-url .c__field {
+  flex: 1 1 auto;
+}
+
+.templates-home__url .compose-url .c__field,
+.templates-home__url .compose-url .c__input {
+  min-height: 36px;
+  height: 36px;
+}
+
+.templates-home__url .compose-url input {
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.templates-home__url .compose-url .c__button {
+  height: 36px;
+}
+
+.dots-page .templates-header {
+  align-items: center;
+  gap: 12px;
+}
+.dots-page .templates-header .dots-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+.dots-page .template-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 22px 30px;
+  align-items: start;
+}
+
+.dots-page .template-grid .template-tile {
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.dots-page .template-grid .template-tile-new {
+  align-items: stretch;
+  justify-content: flex-start;
+  aspect-ratio: auto;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.dots-page .template-grid .template-tile-open,
+.dots-page .template-grid .template-tile-new-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dots-page .template-grid .template-tile-thumb,
+.dots-page .template-grid .template-tile-new-sheet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  border: 1px solid var(--dots-grey-200);
+  border-radius: 4px;
+  background: var(--dots-grey-000);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+  overflow: hidden;
+}
+
+.dots-page .template-grid .template-tile-thumb {
+  object-fit: cover;
+  object-position: top;
+}
+
+.dots-page .template-grid .template-tile-open:hover .template-tile-thumb,
+.dots-page .template-grid .template-tile-new-btn:hover .template-tile-new-sheet {
+  border-color: var(--dots-grey-400);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 14%);
+}
+
+.dots-page .template-grid .template-tile-open:focus-visible,
+.dots-page .template-grid .template-tile-new-btn:focus-visible {
+  outline: none;
+}
+
+.dots-page .template-grid .template-tile-open:focus-visible .template-tile-thumb,
+.dots-page .template-grid .template-tile-new-btn:focus-visible .template-tile-new-sheet {
+  border-color: var(--dots-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dots-primary), transparent 68%);
+}
+
+.dots-page .template-grid .template-tile-title {
+  display: block;
+  padding: 0 6px;
+  color: var(--dots-grey-900);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dots-page .template-grid .template-tile-plus {
+  color: var(--dots-primary);
+  font-size: 4rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.dots-page .template-rows .template-row:has(.template-row-new) {
+  padding: 0;
+  border: 1px solid var(--dots-grey-150);
+  border-radius: 4px;
+  background: var(--dots-grey-000);
+}
+
+.dots-page .template-rows .template-row:has(.template-row-new):hover {
+  border-color: var(--dots-grey-400);
+}
+
+.dots-page .template-rows .template-row-new {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--dots-grey-900);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dots-page .template-rows .template-row-new:hover {
+  color: var(--dots-grey-900);
+}
+
+.dots-page .template-rows .template-row-new:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--dots-primary);
+}
+
+.dots-page .template-rows .template-row-new .template-tile-plus {
+  color: var(--dots-primary);
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
 }
 
 /* Badge « Par défaut » (Badge du kit) : posé sur la vignette en grille, entre le
@@ -61,18 +232,6 @@
 }
 .dots-page .template-row > .template-badge {
   flex: 0 0 auto;
-}
-
-/* Actions d'un gabarit : boutons tertiaires « small » du kit, avec retour à la
-   ligne dans les vignettes étroites. */
-.dots-page .template-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 2px;
-}
-.dots-page .template-actions .c__button {
-  padding-inline: 6px;
 }
 
 /* ── Modale d'import (Modal + FileUploader du kit) ───────────────────────── */

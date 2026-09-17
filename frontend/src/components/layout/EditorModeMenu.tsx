@@ -1,4 +1,5 @@
 import { type MouseEvent } from "react";
+import { SegmentedIconSwitch } from "../SegmentedIconSwitch";
 import { CodeModeIcon, EditModeIcon } from "./EditorModeIcons";
 
 export type EditorMode = "layout" | "code";
@@ -19,27 +20,25 @@ export function EditorModeMenu({
   onNavigateCode,
 }: EditorModeMenuProps) {
   return (
-    <nav className="le-mode-switcher" aria-label="Mode d'édition">
-      <a
-        href={layoutHref}
-        className={`le-mode-switcher__item${mode === "layout" ? " le-mode-switcher__item--active" : ""}`}
-        aria-current={mode === "layout" ? "page" : undefined}
-        aria-label="Mode mise en page"
-        title="Mise en page"
-        onClick={onNavigateLayout}
-      >
-        <EditModeIcon aria-hidden="true" />
-      </a>
-      <a
-        href={codeHref}
-        className={`le-mode-switcher__item${mode === "code" ? " le-mode-switcher__item--active" : ""}`}
-        aria-current={mode === "code" ? "page" : undefined}
-        aria-label="Mode code Typst"
-        title="Code Typst"
-        onClick={onNavigateCode}
-      >
-        <CodeModeIcon aria-hidden="true" />
-      </a>
-    </nav>
+    <SegmentedIconSwitch
+      ariaLabel="Mode d'édition"
+      value={mode}
+      items={[
+        {
+          value: "layout",
+          href: layoutHref,
+          label: "Mode mise en page",
+          icon: <EditModeIcon aria-hidden="true" />,
+          onClick: onNavigateLayout,
+        },
+        {
+          value: "code",
+          href: codeHref,
+          label: "Mode code Typst",
+          icon: <CodeModeIcon aria-hidden="true" />,
+          onClick: onNavigateCode,
+        },
+      ]}
+    />
   );
 }

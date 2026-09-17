@@ -1,14 +1,13 @@
-import { useEffect, useState, type MouseEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, VariantType, type ButtonProps } from "@gouvfr-lasuite/ui-components";
-import { Code, Play, Plus, Star, StarFilled, Trash } from "@gouvfr-lasuite/ui-components/icons";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Alert, Badge, VariantType } from "@gouvfr-lasuite/ui-components";
+import { StarFilled } from "@gouvfr-lasuite/ui-components/icons";
 import {
-  deleteTemplate,
   fetchDefaultTemplate,
   fetchTemplates,
-  setDefaultTemplate,
   type TemplateSummary,
 } from "../api/client";
+import { DocsUrlField } from "../components/compose/DocsUrlField";
 import { ImportDocumentModal } from "../components/templates/ImportDocumentModal";
 import { TemplateBrowser } from "../components/templates/TemplateBrowser";
 import { ViewSwitcher, type TemplateView } from "../components/templates/ViewSwitcher";
@@ -25,22 +24,6 @@ function loadStoredView(): TemplateView {
 }
 
 /** Kit `Button` rendered as a link (`href`), internal navigation without a reload. */
-function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
-  const navigate = useNavigate();
-  return (
-    <Button
-      {...props}
-      href={to}
-      onClick={(e: MouseEvent<HTMLAnchorElement & HTMLButtonElement>) => {
-        onClick?.(e);
-        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        navigate(to);
-      }}
-    />
-  );
-}
-
 /**
  * Templates gallery, the app's home page. A single entry point at the top,
  * « Nouveau gabarit », opens the import window: it offers the choice between
@@ -49,11 +32,13 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
  */
 export function TemplatesListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TemplateView>(loadStoredView);
   const [error, setError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const selectedTemplateId = searchParams.get("template");
 
   function reload() {
     setLoading(true);
@@ -79,35 +64,26 @@ export function TemplatesListPage() {
     }
   }
 
-  async function handleSetDefault(id: string) {
-    setError(null);
-    try {
-      await setDefaultTemplate(id);
-      reload();
-    } catch (e) {
-      setError(`Impossible de définir le gabarit par défaut : ${(e as Error).message}`);
-    }
-  }
-
-  async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Supprimer le gabarit « ${name} » ?`)) return;
-    await deleteTemplate(id);
-    reload();
+  function openDocument(documentId: string) {
+    navigate(
+      `/docs/${encodeURIComponent(documentId)}${
+        selectedTemplateId ? `?template=${encodeURIComponent(selectedTemplateId)}` : ""
+      }`,
+    );
   }
 
   return (
-    <div className="dots-page">
-      <div className="dots-page-header templates-header">
-        <div>
-          <h1>Gabarits</h1>
-          <p>Un gabarit Typst fixe l'apparence du PDF : marges, en-tête, police, pagination</p>
+    <div className="dots-page templates-home">
+      <section className="templates-home__hero" aria-label="Ouvrir un document Docs">
+        <HomeLogo />
+        <div className="templates-home__url">
+          <DocsUrlField onOpen={(id) => openDocument(id)} loading={false} error={null} />
         </div>
+      </section>
+
+      <div className="dots-page-header templates-header">
+        <h1>Mes templates</h1>
         <div className="dots-actions">
-          {/* Single entry point: the window that opens offers the choice between
-              dropping a file and continuing without an import. */}
-          <Button color="brand" icon={<Plus aria-hidden="true" />} onClick={() => setImportOpen(true)}>
-            Nouveau gabarit
-          </Button>
           <ViewSwitcher view={view} onChange={handleViewChange} />
         </div>
       </div>
@@ -137,8 +113,8 @@ export function TemplatesListPage() {
         <TemplateBrowser
           templates={templates}
           view={view}
-          // The tile opens the layout editor (the product's main target); the Typst
-          // code stays reachable through the secondary action.
+          onCreateNew={() => setImportOpen(true)}
+          createNewLabel="Nouvelle template"
           getOpenHref={(id) => `/t/${id}/layout`}
           renderBadge={(t) =>
             t.isDefault ? (
@@ -148,63 +124,42 @@ export function TemplatesListPage() {
               </Badge>
             ) : null
           }
-          // Each accessible name carries the template's name: four actions per tile,
-          // a screen reader must not hear four identical « Supprimer ».
-          // In grid view (~176 px tile), the four actions are icon-only
-          // (accessible name + title) to fit on one line; in list view, the text stays.
-          renderActions={(t) => (
-            <span className="template-actions">
-              <LinkButton
-                to={`/t/${t.id}`}
-                size="small"
-                variant="tertiary"
-                icon={<Code aria-hidden="true" />}
-                aria-label={`Code Typst du gabarit ${t.name}`}
-                title={view === "grid" ? "Code Typst" : undefined}
-              >
-                {view === "grid" ? undefined : "Code Typst"}
-              </LinkButton>
-              <LinkButton
-                to={`/documents/new?template=${t.id}`}
-                size="small"
-                variant="tertiary"
-                icon={<Play aria-hidden="true" />}
-                aria-label={`Utiliser le gabarit ${t.name}`}
-                title={view === "grid" ? "Utiliser" : undefined}
-              >
-                {view === "grid" ? undefined : "Utiliser"}
-              </LinkButton>
-              {!t.isDefault && (
-                <Button
-                  type="button"
-                  size="small"
-                  variant="tertiary"
-                  color="neutral"
-                  icon={<Star aria-hidden="true" />}
-                  aria-label={`Définir par défaut le gabarit ${t.name}`}
-                  title="Définir par défaut"
-                  onClick={() => handleSetDefault(t.id)}
-                />
-              )}
-              <Button
-                type="button"
-                size="small"
-                variant="tertiary"
-                color="error"
-                icon={<Trash aria-hidden="true" />}
-                aria-label={`Supprimer le gabarit ${t.name}`}
-                title="Supprimer"
-                onClick={() => handleDelete(t.id, t.name)}
-              />
-            </span>
-          )}
         />
       )}
-
-      <p className="dots-muted templates-note">
-        <Star size={14} aria-hidden="true" />
-        Le gabarit par défaut s'applique à tout document ouvert tant qu'un autre n'est pas choisi.
-      </p>
     </div>
+  );
+}
+
+function HomeLogo() {
+  return (
+    <svg
+      className="templates-home__logo"
+      viewBox="0 0 2156 698"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Dots"
+    >
+      <circle cx="197.978" cy="500.022" r="197.978" fill="#2945C1" />
+      <circle cx="534.287" cy="95.1818" r="95.1818" fill="#2945C1" />
+      <circle cx="534.287" cy="349" r="95.1818" fill="#BA2F4D" />
+      <circle cx="534.287" cy="602.818" r="95.1818" fill="#BA2F4D" />
+      <path
+        d="M856 553.494H1021.2C1154.57 553.494 1244.68 456.78 1244.68 343.247C1244.68 229.714 1154.57 133 1021.2 133H856V553.494ZM1022.4 210.491C1100.5 210.491 1156.97 268.159 1156.97 343.247C1156.97 417.734 1100.5 476.003 1022.4 476.003H941.305V210.491H1022.4Z"
+        fill="#2945C1"
+      />
+      <path
+        d="M1462.75 238.724C1364.23 238.724 1296.94 311.41 1296.94 402.116C1296.94 492.823 1364.23 565.508 1462.75 565.508C1561.27 565.508 1628.55 492.823 1628.55 402.116C1628.55 311.41 1561.27 238.724 1462.75 238.724ZM1463.95 493.423C1413.49 493.423 1376.24 454.978 1376.24 402.116C1376.24 349.254 1413.49 310.809 1463.95 310.809C1512.61 310.809 1549.25 349.254 1549.25 402.116C1549.25 454.377 1512.61 493.423 1463.95 493.423Z"
+        fill="#2945C1"
+      />
+      <path
+        d="M1713.86 442.964C1713.86 516.851 1749.9 559.501 1825.59 559.501C1850.82 559.501 1868.85 556.497 1883.87 549.89V483.211C1873.65 487.416 1859.84 489.819 1838.81 489.819C1808.77 489.819 1790.75 476.604 1790.75 442.964V319.219H1883.26V250.738H1790.75V175.049H1713.86V250.738H1657.39V319.219H1713.86V442.964Z"
+        fill="#2945C1"
+      />
+      <path
+        d="M1925.32 509.642C1954.15 543.883 1992.6 565.508 2046.67 565.508C2103.74 565.508 2154.8 530.667 2156 466.992C2156 362.469 2011.22 380.491 2011.22 328.83C2011.22 313.212 2022.64 299.996 2046.67 299.996C2070.09 299.996 2089.92 315.614 2105.54 334.837L2156 290.385C2134.37 260.95 2092.32 238.724 2046.06 238.724C1982.99 238.724 1937.93 278.971 1937.93 332.434C1937.93 438.759 2082.71 418.936 2082.71 471.798C2082.71 489.819 2070.09 504.236 2045.46 504.236C2016.63 504.236 1994.4 487.416 1975.78 463.989L1925.32 509.642Z"
+        fill="#2945C1"
+      />
+    </svg>
   );
 }
