@@ -2,11 +2,17 @@
 
 Dots transforme des documents La Suite Docs en PDF via des templates Typst.
 
-Le dépôt contient :
+## Ce que contient ce dépôt
 
-- Dots : frontend Vite + backend Node/Fastify, lancé hors Docker.
-- Une stack locale Docs + Keycloak, lancée avec `./setup.sh docs`.
-- Les sources La Suite nécessaires au développement local : `docs/`, `django-lasuite/`.
+Dots est l'application principale de ce dépôt. Elle est composée du frontend Vite dans `frontend/` et du backend Node/Fastify dans `backend/`.
+
+Le dépôt embarque aussi une stack locale La Suite Docs pour tester Dots de bout en bout sans compte externe :
+
+- `docs/` contient les sources La Suite Docs. Dans le code et les images Docker, Docs peut aussi apparaître sous son nom technique historique : `impress`.
+- `django-lasuite/` contient les dépendances Django La Suite utilisées par le backend Docs local.
+- `auth/` contient le Keycloak local partagé par Dots et Docs.
+
+Ces dossiers ne sont pas Dots : ils servent uniquement à fournir un environnement local réaliste pour l'authentification et l'API externe Docs.
 
 ## Démarrage rapide
 
