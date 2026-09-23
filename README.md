@@ -113,12 +113,13 @@ make test
 
 ## Comptes locaux
 
-Le realm Keycloak local `lasuite` contient :
+Par défaut, le realm Keycloak local `lasuite` contient ces comptes de démonstration.
+Ils sont configurés dans `.env` et peuvent être changés avant le premier import Keycloak.
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
-| `DEMO_USER_1_USERNAME` | `DEMO_USER_1_PASSWORD` | `DEMO_USER_1_EMAIL` |
-| `DEMO_USER_2_USERNAME` | `DEMO_USER_2_PASSWORD` | `DEMO_USER_2_EMAIL` |
+| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
+| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
 Vérifier les utilisateurs créés côté Docs :
 

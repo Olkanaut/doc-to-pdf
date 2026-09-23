@@ -49,12 +49,13 @@ docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery
 
 ## Users
 
-Users are imported from the root `.env` file:
+Default users are imported from the root `.env` file and can be changed before
+the first Keycloak import:
 
-| Username variable      | Password variable      | Email variable      |
-| ---------------------- | ---------------------- | ------------------- |
-| `DEMO_USER_1_USERNAME` | `DEMO_USER_1_PASSWORD` | `DEMO_USER_1_EMAIL` |
-| `DEMO_USER_2_USERNAME` | `DEMO_USER_2_PASSWORD` | `DEMO_USER_2_EMAIL` |
+| Username | Password | Email                  |
+| -------- | -------- | ---------------------- |
+| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
+| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
 ## Direct Scripts
 
