@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Response } from "@playwright/test";
 
 // Écran ⑤ — éditeur de mise en page (src/pages/LayoutEditorPage.tsx + components/layout/LayoutPanel.tsx).
-// Travaille sur le template « minimal ». La section « Tableaux » n'est volontairement pas touchée.
+// Travaille sur le gabarit « minimal ». La section « Tableaux » n'est volontairement pas touchée.
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
 const ID = "minimal";
@@ -10,13 +10,9 @@ const LAYOUT_URL = `/templates/${ID}/layout`;
 let original: { name: string; description: string; source: string };
 
 const isRender = (r: Response) =>
-  r.url().endsWith("/api/render") &&
-  r.request().method() === "POST" &&
-  r.status() === 200;
+  r.url().endsWith("/api/render") && r.request().method() === "POST" && r.status() === 200;
 const isCompose = (r: Response) =>
-  r.url().endsWith("/api/layout/compose") &&
-  r.request().method() === "POST" &&
-  r.status() === 200;
+  r.url().endsWith("/api/layout/compose") && r.request().method() === "POST" && r.status() === 200;
 
 /** Ouvre l'éditeur et attend le premier aperçu (POST /api/render 200). */
 async function openLayoutEditor(page: Page) {
@@ -26,14 +22,14 @@ async function openLayoutEditor(page: Page) {
 }
 
 test.beforeAll(async ({ request }) => {
-  const res = await requetemplate`${API}/templates/${ID}`);
+  const res = await request.get(`${API}/templates/${ID}`);
   expect(res.ok()).toBe(true);
   const t = await res.json();
-  origintemplatename: t.name, description: t.description, source: t.source };
-  // Le test ① attend un template sans bloc de mise en page : un run précédent interrompu l'aurait laissé géré.
+  original = { name: t.name, description: t.description, source: t.source };
+  // Le test ① attend un gabarit sans bloc de mise en page : un run précédent interrompu l'aurait laissé géré.
   expect(
     original.source,
-    "le template « minimal » contient déjà un bloc dots:layout : restaurer sa source avant de lancer ce spec",
+    "le gabarit « minimal » contient déjà un bloc dots:layout : restaurer sa source avant de lancer ce spec",
   ).not.toContain("// dots:layout begin");
 });
 
@@ -42,41 +38,25 @@ test.afterAll(async ({ request }) => {
   const res = await request.put(`${API}/templates/${ID}`, { data: original });
   expect(res.ok()).toBe(true);
 });
-template
-test("① en-tête, avis « pas encore de bloc », état Enregistré, aperçu rendu", async ({
-  page,
-}) => {
+
+test("① en-tête, avis « pas encore de bloc », état Enregistré, aperçu rendu", async ({ page }) => {
   await openLayoutEditor(page);
 
-  await expect(template
-    page.getByRole("textbox", { name: "Nom du template" }),
-  ).toHaveValue("Minimal");
+  await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue("Minimal");
 
   const nav = page.getByRole("navigation", { name: "Mode d'édition" });
-  await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute(
-    "href",
-    `/templates/${ID}`,
-  );
+  await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute("href", `/templates/${ID}`);
 
-  await expect(
-    page.getByText("Ce template n'a pas encore de bloc de mise en page"),
-  ).toBeVisible();
+  await expect(page.getByText("Ce gabarit n'a pas encore de bloc de mise en page")).toBeVisible();
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Enregistrer", exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toBeDisabled();
 
   await expect(page.getByTitle("Aperçu du PDF")).toBeVisible();
-  await expect(
-    page.getByText(/recompilé à chaque réglage \(\d+ ms\)/),
-  ).toBeVisible();
+  await expect(page.getByText(/recompilé à chaque réglage \(\d+ ms\)/)).toBeVisible();
 });
 
-test("② marge Haut = 30 → non enretemplate recompilé ; Enregistrer → source avec bloc dots:layout", async ({
+test("② marge Haut = 30 → non enregistré, recompilé ; Enregistrer → source avec bloc dots:layout", async ({
   page,
   request,
 }) => {
@@ -96,27 +76,18 @@ test("② marge Haut = 30 → non enretemplate recompilé ; Enregistrer → sour
 
   await expect(page.getByText("Modifications non enregistrées")).toBeVisible();
   // Le premier réglage ajoute le bloc : l'avis disparaît.
-  await expect(
-    page.getByText("Ce template n'a pas encore de bloc de mise en page"),
-  ).toBeHidden();
+  await expect(page.getByText("Ce gabarit n'a pas encore de bloc de mise en page")).toBeHidden();
 
   await rerendered;
-  await expect(
-    page.getByText(/recompilé à chaque réglage \(\d+ ms\)/),template
-  ).toBeVisible();
+  await expect(page.getByText(/recompilé à chaque réglage \(\d+ ms\)/)).toBeVisible();
 
   const saved = page.waitForResponse(
-    (r) =>
-      r.url().endsWith(`/api/templates/${ID}`) &&
-      r.request().method() === "PUT" &&
-      r.status() === 200,
+    (r) => r.url().endsWith(`/api/templates/${ID}`) && r.request().method() === "PUT" && r.status() === 200,
   );
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await saved;
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Enregistrer", exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toBeDisabled();
 
   const detail = await (await request.get(`${API}/templates/${ID}`)).json();
   expect(detail.source).toContain("// dots:layout begin");
@@ -125,44 +96,26 @@ test("② marge Haut = 30 → non enretemplate recompilé ; Enregistrer → sour
   expect(detail.source).toContain('#include "body.typ"');
 });
 
-test("③ « Code Typst » mène à /templates/minimal ; « Mise en page » ramène", async ({
-  page,
-}) => {
+test("③ « Code Typst » mène à /templates/minimal ; « Mise en page » ramène", async ({ page }) => {
   await openLayoutEditor(page);
 
   const nav = page.getByRole("navigation", { name: "Mode d'édition" });
   await nav.getByRole("link", { name: "Code Typst" }).click();
   await expect(page).toHaveURL(/\/templates\/minimal$/);
-  await expect(
-    page.getByRole("heading", { name: "Modifier le template", level: 1 }),
-  ).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expect(page.getByRole("heading", { name: "Modifier le gabarit", level: 1 })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Code Typst" })).toHaveAttribute("aria-current", "page");
 
   await nav.getByRole("link", { name: "Mise en page" }).click();
   await expect(page).toHaveURL(/\/templates\/minimal\/layout$/);
-  await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  await expect(
-    page.getByRole("textbox", { name: "Nom du template" }),
-  ).toHaveValue("Minimal");
+  await expect(nav.getByRole("link", { name: "Mise en page" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue("Minimal");
 });
 
-test("④ /template/editor?id=minimal redirige vers /templates/minimal/layout", async ({
-  page,
-}) => {
+test("④ /template/editor?id=minimal redirige vers /templates/minimal/layout", async ({ page }) => {
   await page.goto(`/template/editor?id=${ID}`);
   await expect(page).toHaveURL(/\/templates\/minimal\/layout$/);
+  await expect(page.getByRole("textbox", { name: "Nom du gabarit" })).toHaveValue("Minimal");
   await expect(
-    page.getByRole("textbox", { name: "Nom du template" }),
-  ).toHaveValue("Minimal");
-  await expect(
-    page
-      .getByRole("navigation", { name: "Mode d'édition" })
-      .getByRole("link", { name: "Mise en page" }),
+    page.getByRole("navigation", { name: "Mode d'édition" }).getByRole("link", { name: "Mise en page" }),
   ).toHaveAttribute("aria-current", "page");
 });
