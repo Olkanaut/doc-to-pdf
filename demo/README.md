@@ -5,6 +5,7 @@ This folder contains the local orchestration layer for the workspace.
 Use the single profile from the repository root:
 
 ```bash
+cp .env.example .env
 ./setup.sh docs bootstrap
 ```
 
@@ -48,10 +49,12 @@ docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery
 
 ## Users
 
-| Username | Password | Email                  |
-| -------- | -------- | ---------------------- |
-| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
-| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
+Users are imported from the root `.env` file:
+
+| Username variable      | Password variable      | Email variable      |
+| ---------------------- | ---------------------- | ------------------- |
+| `DEMO_USER_1_USERNAME` | `DEMO_USER_1_PASSWORD` | `DEMO_USER_1_EMAIL` |
+| `DEMO_USER_2_USERNAME` | `DEMO_USER_2_PASSWORD` | `DEMO_USER_2_EMAIL` |
 
 ## Direct Scripts
 

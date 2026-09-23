@@ -114,7 +114,7 @@ describe("le prompt décrit le type réel", () => {
 });
 
 /**
- * `server.ts` charge `backend/.env` dans son corps, donc APRÈS l'évaluation de ses
+ * `server.ts` charge `.env` dans son corps, donc APRÈS l'évaluation de ses
  * imports. Tant que le contrat vivait dans une constante de module, `DOTS_AI_PATCH`
  * posé dans `.env` n'avait aucun effet — seule la ligne de commande marchait.
  */

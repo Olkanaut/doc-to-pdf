@@ -1,5 +1,10 @@
 FRONTEND_PORT ?= 3002
 BACKEND_PORT ?= 4000
+DOTS_ENV ?= .env
+
+define with_env
+set -a; [ ! -f "$(DOTS_ENV)" ] || . "$(DOTS_ENV)"; set +a;
+endef
 
 .PHONY: install install-ingest dev backend frontend build lint test
 
@@ -25,7 +30,8 @@ install-ingest:
 dev:
 	@printf "Starting backend:  http://localhost:%s\n" "$(BACKEND_PORT)"
 	@printf "Starting frontend: http://localhost:%s\n" "$(FRONTEND_PORT)"
-	@(cd backend && PORT=$(BACKEND_PORT) npm run dev) & \
+	@$(with_env) \
+	(cd backend && PORT=$(BACKEND_PORT) npm run dev) & \
 	backend_pid=$$!; \
 	(cd frontend && npm run dev -- --port $(FRONTEND_PORT) --strictPort) & \
 	frontend_pid=$$!; \
@@ -37,14 +43,14 @@ dev:
 	wait $$backend_pid $$frontend_pid
 
 backend:
-	cd backend && PORT=$(BACKEND_PORT) npm run dev
+	$(with_env) cd backend && PORT=$(BACKEND_PORT) npm run dev
 
 frontend:
-	cd frontend && npm run dev -- --port $(FRONTEND_PORT) --strictPort
+	$(with_env) cd frontend && npm run dev -- --port $(FRONTEND_PORT) --strictPort
 
 build:
-	npm --prefix backend run build
-	npm --prefix frontend run build
+	$(with_env) npm --prefix backend run build
+	$(with_env) npm --prefix frontend run build
 
 lint:
 	npm --prefix frontend run lint

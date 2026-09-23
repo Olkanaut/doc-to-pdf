@@ -11,11 +11,17 @@ import { documentRoutes } from "./routes/documents.js";
 import { aiRoutes } from "./routes/ai.js";
 import { ingestRoutes } from "./routes/ingest.js";
 
-// Clé de l'assistant IA (backend/.env, ignoré par git). Sans fichier : rien à charger, la route répond 503.
-try {
-  process.loadEnvFile(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.env"));
-} catch {
-  // pas de backend/.env
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+for (const envFile of [
+  path.resolve(__dirname, "../../.env"),
+  path.resolve(__dirname, "../.env"),
+]) {
+  try {
+    process.loadEnvFile(envFile);
+  } catch {
+    // Optional local env file.
+  }
 }
 
 const app = Fastify({ logger: true });

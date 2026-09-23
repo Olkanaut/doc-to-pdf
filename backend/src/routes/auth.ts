@@ -64,16 +64,20 @@ interface CallbackBody {
 const flows = new Map<string, OidcFlowCookie>();
 const sessions = new Map<string, AuthSession>();
 
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is missing from .env`);
+  return value;
+}
+
 function authConfig(): AuthConfig {
-  const appOrigin = process.env.APP_ORIGIN ?? "http://localhost:3002";
-  const issuerUrl = process.env.OIDC_ISSUER ?? "http://localhost:8083/realms/lasuite";
+  const appOrigin = requiredEnv("APP_ORIGIN");
 
   return {
-    issuerUrl,
-    clientId: process.env.OIDC_CLIENT_ID ?? "interop-app",
-    clientSecret:
-      process.env.OIDC_CLIENT_SECRET ?? "ThisIsAnExampleKeyForDevPurposeOnly",
-    redirectUri: process.env.OIDC_REDIRECT_URI ?? `${appOrigin}/auth/callback`,
+    issuerUrl: requiredEnv("OIDC_ISSUER"),
+    clientId: requiredEnv("OIDC_CLIENT_ID"),
+    clientSecret: requiredEnv("OIDC_CLIENT_SECRET"),
+    redirectUri: process.env.OIDC_REDIRECT_URI || `${appOrigin}/auth/callback`,
     postLogoutRedirectUri:
       process.env.OIDC_POST_LOGOUT_REDIRECT_URI ?? `${appOrigin}/login`,
     scope: process.env.OIDC_SCOPE ?? "openid email profile",

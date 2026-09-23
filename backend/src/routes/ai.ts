@@ -11,7 +11,7 @@ import { editUserText, fromPdfUserText, systemPrompt } from "../ai/prompt.js";
 /** Même forme qu'AiError dans frontend/src/api/client.ts ; `unavailable` fait cacher l'assistant. */
 const UNAVAILABLE = {
   ok: false,
-  error: "ANTHROPIC_API_KEY absente côté serveur (backend/.env)",
+  error: "ANTHROPIC_API_KEY absente côté serveur (.env)",
   unavailable: true,
 };
 

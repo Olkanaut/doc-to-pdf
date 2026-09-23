@@ -6,6 +6,8 @@ dist/
 .env.local
 .claude/
 backend/data/
+auth/.generated/
+demo/*.generated.local
 
 # Playwright
 frontend/test-results/

@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$DEMO_DIR/.." && pwd)"
+ROOT_ENV_FILE="$ROOT_DIR/.env"
+ROOT_ENV_EXAMPLE="$ROOT_DIR/.env.example"
 MANAGED_BEGIN="# >>> lasuite shared auth demo"
 MANAGED_END="# <<< lasuite shared auth demo"
 
@@ -14,6 +16,42 @@ info() { printf 'INFO %s\n' "$*"; }
 
 have() {
   command -v "$1" >/dev/null 2>&1
+}
+
+ensure_root_env() {
+  if [ -f "$ROOT_ENV_FILE" ]; then
+    return 0
+  fi
+  if [ ! -f "$ROOT_ENV_EXAMPLE" ]; then
+    fail ".env.example is missing"
+    return 1
+  fi
+
+  cp "$ROOT_ENV_EXAMPLE" "$ROOT_ENV_FILE"
+  ok "Created .env from .env.example"
+}
+
+load_root_env() {
+  ensure_root_env
+  set -a
+  . "$ROOT_ENV_FILE"
+  set +a
+}
+
+render_template() {
+  template="$1"
+  target="$2"
+  mkdir -p "$(dirname "$target")"
+  awk '
+    {
+      while (match($0, /\{\{[A-Z0-9_]+\}\}/)) {
+        key = substr($0, RSTART + 2, RLENGTH - 4)
+        value = ENVIRON[key]
+        $0 = substr($0, 1, RSTART - 1) value substr($0, RSTART + RLENGTH)
+      }
+      print
+    }
+  ' "$template" > "$target"
 }
 
 docker_daemon_available() {
@@ -107,7 +145,15 @@ prepare_docs_local_files() {
 }
 
 auth_compose() {
-  (cd "$ROOT_DIR/auth" && docker compose "$@")
+  load_root_env
+  render_auth_realm
+  (cd "$ROOT_DIR/auth" && docker compose --env-file "$ROOT_ENV_FILE" "$@")
+}
+
+render_auth_realm() {
+  render_template \
+    "$ROOT_DIR/auth/realm-lasuite.json.tpl" \
+    "$ROOT_DIR/auth/.generated/realm-lasuite.json"
 }
 
 auth_up() {
@@ -130,19 +176,16 @@ auth_status() {
 
 run_with_env() {
   project="$1"
-  env_file="$2"
-  shift 2
+  shift 1
   (
-    set -a
-    . "$env_file"
-    set +a
+    load_root_env
     cd "$ROOT_DIR/$project"
     "$@"
   )
 }
 
 run_docs() {
-  run_with_env docs "$DEMO_DIR/ports.docs.env" "$@"
+  run_with_env docs "$@"
 }
 
 write_managed_block() {
@@ -171,15 +214,19 @@ write_managed_block() {
 
 apply_docs_shared_auth_env() {
   bold "Applying Docs shared OIDC env overrides"
+  load_root_env
   ensure_docs_local_files
+  rendered="$DEMO_DIR/env.docs.common.generated.local"
+  render_template "$DEMO_DIR/env.docs.common.local.tpl" "$rendered"
   write_managed_block \
     "$ROOT_DIR/docs/env.d/development/common.local" \
-    "$DEMO_DIR/env.docs.common.local"
+    "$rendered"
   ok "docs/env.d/development/common.local updated"
 }
 
 check_prerequisites() {
   bold "Prerequisites"
+  ensure_root_env
   if have docker; then
     ok "docker: $(docker --version)"
     if docker compose version >/dev/null 2>&1; then

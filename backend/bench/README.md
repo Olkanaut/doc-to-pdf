@@ -7,7 +7,7 @@ survit à la régénération du bloc `dots:layout`, et qu'est-ce que ça casse a
 ## Ce qu'il faut avant
 
 - le backend qui tourne (`npm run dev` dans `backend/`), avec `ANTHROPIC_API_KEY` dans
-  `backend/.env` — sinon le banc s'arrête en le disant ;
+  le `.env` racine — sinon le banc s'arrête en le disant ;
 - `typst`, `pdftoppm` et `pdftotext` sur le PATH (déjà nécessaires au projet) ;
 - `python3` avec Pillow, pour la mesure d'encre.
 

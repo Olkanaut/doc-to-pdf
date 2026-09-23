@@ -73,7 +73,7 @@ if (!sonde) {
   process.exit(1);
 }
 if (sonde.status === 503) {
-  console.error("ANTHROPIC_API_KEY absente de backend/.env : le banc ne peut pas appeler l'assistant.");
+  console.error("ANTHROPIC_API_KEY absente de .env : le banc ne peut pas appeler l'assistant.");
   process.exit(1);
 }
 

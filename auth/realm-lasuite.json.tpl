@@ -1,5 +1,5 @@
 {
-  "realm": "lasuite",
+  "realm": "{{KEYCLOAK_REALM}}",
   "enabled": true,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
@@ -17,32 +17,32 @@
   },
   "users": [
     {
-      "username": "demo1",
-      "email": "demo1@lasuite.local",
-      "firstName": "Demo",
-      "lastName": "Demo",
+      "username": "{{DEMO_USER_1_USERNAME}}",
+      "email": "{{DEMO_USER_1_EMAIL}}",
+      "firstName": "{{DEMO_USER_1_FIRST_NAME}}",
+      "lastName": "{{DEMO_USER_1_LAST_NAME}}",
       "enabled": true,
       "emailVerified": true,
       "credentials": [
         {
           "type": "password",
-          "value": "demo1",
+          "value": "{{DEMO_USER_1_PASSWORD}}",
           "temporary": false
         }
       ],
       "realmRoles": ["user"]
     },
     {
-      "username": "demo2",
-      "email": "demo2@lasuite.local",
-      "firstName": "Demo",
-      "lastName": "User",
+      "username": "{{DEMO_USER_2_USERNAME}}",
+      "email": "{{DEMO_USER_2_EMAIL}}",
+      "firstName": "{{DEMO_USER_2_FIRST_NAME}}",
+      "lastName": "{{DEMO_USER_2_LAST_NAME}}",
       "enabled": true,
       "emailVerified": true,
       "credentials": [
         {
           "type": "password",
-          "value": "demo2",
+          "value": "{{DEMO_USER_2_PASSWORD}}",
           "temporary": false
         }
       ],
@@ -51,48 +51,44 @@
   ],
   "clients": [
     {
-      "clientId": "impress",
+      "clientId": "{{DOCS_OIDC_CLIENT_ID}}",
       "name": "La Suite Docs local demo",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "ThisIsAnExampleKeyForDevPurposeOnly",
+      "secret": "{{DOCS_OIDC_CLIENT_SECRET}}",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "redirectUris": [
-        "http://localhost:3000/*",
-        "https://localhost:3000/*",
-        "http://localhost:8071/*"
+        "{{DOCS_FRONTEND_URL}}/*",
+        "https://localhost:{{DOCS_FRONTEND_PORT}}/*",
+        "{{DOCS_BACKEND_URL}}/*"
       ],
       "webOrigins": [
-        "http://localhost:3000",
-        "https://localhost:3000",
-        "http://localhost:8071"
+        "{{DOCS_FRONTEND_URL}}",
+        "https://localhost:{{DOCS_FRONTEND_PORT}}",
+        "{{DOCS_BACKEND_URL}}"
       ]
     },
     {
-      "clientId": "interop-app",
+      "clientId": "{{OIDC_CLIENT_ID}}",
       "name": "Interop local demo app",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "ThisIsAnExampleKeyForDevPurposeOnly",
+      "secret": "{{OIDC_CLIENT_SECRET}}",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "redirectUris": [
-        "http://localhost:3010/*",
-        "http://localhost:8010/*",
-        "http://localhost:3002/*"
+        "{{APP_ORIGIN}}/*"
       ],
       "webOrigins": [
-        "http://localhost:3010",
-        "http://localhost:8010",
-        "http://localhost:3002"
+        "{{APP_ORIGIN}}"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://localhost:3002/*"
+        "post.logout.redirect.uris": "{{APP_ORIGIN}}/*"
       }
     }
   ]

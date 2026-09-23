@@ -1,7 +1,7 @@
 /**
  * Appel direct de l'API Messages d'Anthropic. Pas de SDK : une seule requête
  * sans streaming, `fetch` suffit et n'ajoute aucune dépendance. La clé et le
- * modèle sont lus à chaque appel (server.ts a chargé backend/.env avant).
+ * modèle sont lus à chaque appel (server.ts a chargé .env avant).
  */
 
 export type ContentBlock =
@@ -29,7 +29,7 @@ export async function callMessages(input: {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey)
     throw new AiApiError(
-      "ANTHROPIC_API_KEY absente côté serveur (backend/.env)",
+      "ANTHROPIC_API_KEY absente côté serveur (.env)",
     );
 
   let res: Response;

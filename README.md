@@ -30,9 +30,15 @@ Optionnels :
 
 - Python 3, pour activer l'import PDF/DOCX via `backend/ingest`. Sans Python, `make install` continue et l'import répond avec une erreur explicite.
 - LibreOffice (`soffice` ou `libreoffice` dans le `PATH`), requis uniquement pour importer des fichiers DOCX.
-- Une clé `ANTHROPIC_API_KEY` dans `backend/.env`, uniquement pour utiliser l'assistant IA. Sans clé, l'application fonctionne et masque cette fonctionnalité.
+- Une clé `ANTHROPIC_API_KEY` dans `.env`, uniquement pour utiliser l'assistant IA. Sans clé, l'application fonctionne et masque cette fonctionnalité.
 
 ## Démarrage rapide
+
+Préparer la configuration locale :
+
+```bash
+cp .env.example .env
+```
 
 Préparer et lancer Docs + Keycloak :
 
@@ -111,8 +117,8 @@ Le realm Keycloak local `lasuite` contient :
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
-| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
-| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
+| `DEMO_USER_1_USERNAME` | `DEMO_USER_1_PASSWORD` | `DEMO_USER_1_EMAIL` |
+| `DEMO_USER_2_USERNAME` | `DEMO_USER_2_PASSWORD` | `DEMO_USER_2_EMAIL` |
 
 Vérifier les utilisateurs créés côté Docs :
 
@@ -155,13 +161,14 @@ Documentation API :
 
 ## Configuration
 
-Dots fonctionne avec les valeurs locales par défaut. Les variables suivantes peuvent être surchargées côté backend :
+Dots lit la configuration locale depuis `.env`, à créer depuis `.env.example`.
+Les principales variables sont :
 
 ```bash
 APP_ORIGIN=http://localhost:3002
 OIDC_ISSUER=http://localhost:8083/realms/lasuite
 OIDC_CLIENT_ID=interop-app
-OIDC_CLIENT_SECRET=ThisIsAnExampleKeyForDevPurposeOnly
+OIDC_CLIENT_SECRET=...
 OIDC_REDIRECT_URI=http://localhost:3002/auth/callback
 OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:3002/login
 DOCS_API_BASE_URL=http://localhost:8071/external_api/v1.0/
@@ -185,7 +192,7 @@ Par défaut, Dots affiche Dots et Docs dans le menu des services.
 ```text
 auth/
   compose.yml              Keycloak local
-  realm-lasuite.json       realm, users, clients OIDC
+  realm-lasuite.json.tpl   template du realm Keycloak local
 
 backend/                   backend Dots
   fixtures/templates/      fixtures Typst utilisées par les tests et previews locales
@@ -196,8 +203,7 @@ demo/
   docs.sh                  orchestration Docs + Keycloak
   lib.sh                   fonctions partagées
   users.sh                 inspection des users Docs
-  env.docs.common.local    overrides OIDC Docs
-  ports.docs.env           ports Docs locaux
+  env.docs.common.local.tpl overrides OIDC Docs générés depuis .env
 
 docs/                      sources La Suite Docs
 django-lasuite/            dépendances Django La Suite
