@@ -481,11 +481,12 @@ docs_status() {
 }
 
 docs_verify() {
+  load_root_env
   bold "HTTP checks"
-  http_check "Keycloak realm" "http://localhost:8083/realms/lasuite/.well-known/openid-configuration"
-  http_check "Docs frontend" "http://localhost:3000"
-  http_check "Docs backend" "http://localhost:8071/admin/"
-  http_status_check "Docs external API" "http://localhost:8071/external_api/v1.0/documents/" "200 401 403 405" || true
+  http_check "Keycloak realm" "${OIDC_ISSUER}/.well-known/openid-configuration"
+  http_check "Docs frontend" "${DOCS_FRONTEND_URL}"
+  http_check "Docs backend" "${DOCS_BACKEND_URL}/admin/"
+  http_status_check "Docs external API" "${DOCS_API_BASE_URL%/}/documents/" "200 401 403 405" || true
 
   docs_minimal_verify_exclusions
 }
