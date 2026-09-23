@@ -2,14 +2,13 @@
 
 Workspace local pour developper une app transverse autour de La Suite.
 
-Il y a deux profils a retenir :
+Il y a un seul profil a retenir :
 
 ```text
-docs-solo  Docs + Keycloak commun
-suite      Docs + Drive + Keycloak commun
+docs  Docs + Keycloak commun
 ```
 
-Le profil principal pour l'app PDF est `docs-solo` :
+Le profil principal pour l'app PDF est `docs` :
 
 ```text
 Docs -> Docs API -> app dots/pdf -> Typst -> PDF
@@ -26,8 +25,8 @@ Check general :
 Dev principal, Docs seul :
 
 ```bash
-./setup.sh docs-solo bootstrap
-./setup.sh docs-solo verify
+./setup.sh docs bootstrap
+./setup.sh docs verify
 ```
 
 `bootstrap` prepare les dossiers/fichiers locaux manquants avant de build :
@@ -42,22 +41,13 @@ OIDC_STORE_REFRESH_TOKEN_KEY si absente
 Relancer sans rebuild :
 
 ```bash
-./setup.sh docs-solo up
+./setup.sh docs up
 ```
 
 Stopper :
 
 ```bash
-./setup.sh docs-solo down
-```
-
-Demo Docs + Drive :
-
-```bash
-./setup.sh suite bootstrap
-./setup.sh suite verify
-./setup.sh suite users
-./setup.sh suite down
+./setup.sh docs down
 ```
 
 ## Commandes App PDF
@@ -96,8 +86,6 @@ continue de gerer la stack La Suite locale.
 | Docs external API | http://localhost:8071/external_api/v1.0/... |
 | App PDF locale    | http://localhost:3002                       |
 | App PDF backend   | http://localhost:4000                       |
-| Drive frontend    | http://localhost:3001                       |
-| Drive backend/API | http://localhost:8072                       |
 
 ## Users
 
@@ -108,41 +96,25 @@ Le realm Keycloak commun `lasuite` contient :
 | `ismael` | `ismael` | `ismael@lasuite.local` |
 | `demo`   | `demo`   | `demo@lasuite.local`   |
 
-Docs et Drive ne partagent pas leur table `user`. Ils creent chacun un user
-local, mais avec le meme `sub` OIDC emis par Keycloak.
-
 Pour verifier les users locaux :
 
 ```bash
-./setup.sh docs-solo users
-./setup.sh suite users
+./setup.sh docs users
 ```
 
-## Profils
+## Profil
 
-`docs-solo` lance uniquement :
+`docs` lance uniquement :
 
 ```text
 auth: Keycloak commun + base Keycloak
 docs: postgres, redis, minio, createbuckets, backend, frontend, nginx media, y-provider
 ```
 
-`suite` lance :
-
-```text
-auth:  Keycloak commun + base Keycloak
-docs:  postgres, redis, minio, createbuckets, backend, frontend, nginx media, y-provider
-drive: postgres, redis, minio, createbuckets, backend, frontend, nginx media
-```
-
-`suite bootstrap` applique la meme preparation cote Docs et prepare aussi les
-dossiers locaux attendus par Drive.
-
 Services volontairement exclus :
 
 ```text
 docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery
-drive: keycloak local, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 
 ## Structure Locale
@@ -153,14 +125,11 @@ auth/
   realm-lasuite.json       realm, users, clients OIDC
 
 demo/
-  suite.sh                 profil Docs + Drive minimal
-  docs-solo.sh             profil Docs minimal
+  docs.sh                  profil Docs minimal
   lib.sh                   fonctions partagees
   users.sh                 inspection users locaux
   env.docs.common.local    overrides OIDC Docs
-  env.drive.common.local   overrides OIDC Drive
   ports.docs.env           ports Docs locaux
-  ports.drive.env          ports Drive locaux
 
 docs/
 drive/
@@ -190,8 +159,8 @@ http://localhost:8071/external_api/v1.0/documents/
 
 Documentation API :
 
-- [Templates Typst](./README-EXTERNAL-API.md)
-- [Recuperation d'un document Docs depuis Dots](./README-DOCS-FETCH.md)
+- [Templates Typst](./documentation/EXTERNAL-API.md)
+- [Recuperation d'un document Docs depuis Dots](./documentation/DOCS-FETCH.md)
 
 ## App PDF Locale
 
@@ -215,7 +184,7 @@ Le secret reste cote backend.
 Avant de lancer l'app, demarrer la stack Docs locale :
 
 ```bash
-./setup.sh docs-solo up
+./setup.sh docs up
 ```
 
 Puis :
@@ -253,15 +222,14 @@ VITE_DRIVE_URL=http://localhost:3001
 
 Par defaut, Dots affiche seulement Dots et Docs dans le menu apps. Drive
 n'apparait que si `VITE_DRIVE_URL` est defini, pour garder le mode
-`docs-solo` independant de Drive.
+`docs` independant de Drive.
 
 ## Nettoyage
 
 Nettoyer les caches frontend locaux :
 
 ```bash
-./setup.sh docs-solo clean
-./setup.sh suite clean
+./setup.sh docs clean
 ```
 
 Voir l'espace Docker :

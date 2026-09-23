@@ -46,7 +46,7 @@ assert_port_free() {
 
       fail "$label port $port is already allocated by Docker container(s):"
       printf '%s\n' "$docker_holders"
-      info "Run ./setup.sh suite down, or stop the older Docs/Drive stack using that port."
+      info "Run ./setup.sh docs down, or stop the older Docs/Drive stack using that port."
       exit 1
     fi
   fi
@@ -54,7 +54,7 @@ assert_port_free() {
   owner="$(port_listener "$port" || true)"
   if [ -n "$owner" ]; then
     fail "$label port $port is already allocated by $owner"
-    info "Run ./setup.sh suite down, or stop the older Docs/Drive stack using that port."
+    info "Run ./setup.sh docs down, or stop the older Docs/Drive stack using that port."
     exit 1
   fi
 }
@@ -321,8 +321,8 @@ check_compose_config() {
   check_drive_compose_config
 }
 
-check_docs_solo_compose_config() {
-  bold "Docs solo compose config"
+check_docs_compose_config_only() {
+  bold "Docs compose config"
   ensure_docs_local_files
   check_auth_compose_config
   check_docs_compose_config
@@ -605,28 +605,28 @@ drive_minimal_verify_exclusions() {
     keycloak kc_postgresql mailcatcher ds-proxy celery-dev collabora onlyoffice
 }
 
-docs_solo_bootstrap() {
+docs_bootstrap() {
   auth_up
   docs_minimal_bootstrap
 }
 
-docs_solo_up() {
+docs_up() {
   auth_up
   docs_minimal_up
 }
 
-docs_solo_down() {
+docs_down() {
   docs_minimal_down
   auth_down || true
 }
 
-docs_solo_status() {
+docs_status() {
   auth_status || true
   docs_minimal_status
 }
 
-docs_solo_verify_drive_idle() {
-  bold "Drive docs-solo exclusion"
+docs_verify_drive_idle() {
+  bold "Drive exclusion"
   if ! docker_daemon_available; then
     warn "Docker daemon is not reachable; skipping Drive exclusion check"
     return 0
@@ -634,14 +634,14 @@ docs_solo_verify_drive_idle() {
 
   running="$(docker ps --format '{{.Names}}' | awk '/^drive-/ {print}')"
   if [ -n "$running" ]; then
-    warn "Drive containers are running; docs-solo does not need them:"
+    warn "Drive containers are running; docs mode does not need them:"
     printf '%s\n' "$running"
   else
     ok "Drive containers stopped"
   fi
 }
 
-docs_solo_verify() {
+docs_verify() {
   bold "HTTP checks"
   http_check "Keycloak realm" "http://localhost:8083/realms/lasuite/.well-known/openid-configuration"
   http_check "Docs frontend" "http://localhost:3000"
@@ -650,5 +650,5 @@ docs_solo_verify() {
 
   docs_minimal_verify_exclusions
 
-  docs_solo_verify_drive_idle
+  docs_verify_drive_idle
 }

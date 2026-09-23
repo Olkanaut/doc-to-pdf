@@ -18,7 +18,7 @@ A public servant finishes a note in **Docs** (La Suite's collaborative editor). 
 
 3. **Fixtures still exist, but they are now a local/demo path, not the main integration path.** `backend/fixtures/*.json` keeps BlockNote-shaped examples useful for tests, demos, and template iteration through `POST /api/render`. The real Docs path now goes through `/api/documents/:documentId/content` and `/api/documents/:documentId/render`, which call Docs' external API with the user's Keycloak access token.
 
-4. **The integration targets the local self-hosted La Suite stack** (`docs-solo`: Docs + shared Keycloak), not the real `docs.numerique.gouv.fr` + ProConnect. Research found no realistic path to real ProConnect OAuth-client approval for an outside team within a 48h hackathon (no self-serve registration found; partner onboarding is a multi-day approval process). Self-hosting exercises the same Resource Server API contract while keeping the demo fully within our control.
+4. **The integration targets the local self-hosted La Suite stack** (`docs`: Docs + shared Keycloak), not the real `docs.numerique.gouv.fr` + ProConnect. Research found no realistic path to real ProConnect OAuth-client approval for an outside team within a 48h hackathon (no self-serve registration found; partner onboarding is a multi-day approval process). Self-hosting exercises the same Resource Server API contract while keeping the demo fully within our control.
 
 5. **The app is multiple pages, not one screen.** Current primary routes are `/` (template library), `/docs` (paste/open a Docs URL or ID), `/docs/:id` (fetch a Docs document, choose a template, preview/download the PDF), `/t/:id` (template source editor), and `/t/:id/layout` (visual layout editor). `/d/:id` is the short URL-swap route and redirects to `/docs/:id`. Older planned routes (`/templates/*`, `/documents/new`) still exist as redirects for compatibility.
 
@@ -135,7 +135,7 @@ AI assistant:
 ## How to run it right now
 
 ```bash
-./setup.sh docs-solo up  # start local Docs + Keycloak stack first
+./setup.sh docs up  # start local Docs + Keycloak stack first
 make install             # install backend + frontend dependencies
 make dev                 # Dots backend on :4000, frontend on :3002
 ```

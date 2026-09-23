@@ -14,10 +14,8 @@ frontend/playwright-report/
 # Extraction PDF/DOCX
 backend/ingest/.venv/
 backend/ingest/__pycache__/
-# Fragments découpés à l'import (nommés par le serveur), à côté des logos livrés
-backend/templates/assets/en-tete-*
-backend/templates/assets/pied-de-page-*
-backend/templates/assets/fragment-*
+# Assets générés/importés localement pour les templates
+backend/templates/assets/*
 
 # Sorties du banc d'essai de l'assistant (appels API enregistrés, PDF et PNG de mesure)
 backend/bench/runs*/

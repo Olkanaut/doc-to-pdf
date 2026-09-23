@@ -2,11 +2,10 @@
 
 This folder contains the local orchestration layer for the workspace.
 
-Use only two profiles from the repository root:
+Use the single profile from the repository root:
 
 ```bash
-./setup.sh docs-solo bootstrap
-./setup.sh suite bootstrap
+./setup.sh docs bootstrap
 ```
 
 The root `setup.sh` script manages the La Suite services only. The local PDF
@@ -17,9 +16,9 @@ make install
 make dev
 ```
 
-## Profiles
+## Profile
 
-`docs-solo` is the main development profile for the PDF app:
+`docs` is the development profile for the PDF app:
 
 ```text
 auth: shared Keycloak
@@ -30,19 +29,10 @@ Its bootstrap prepares the local Docs directories/env files expected by the
 upstream Makefile, and generates `OIDC_STORE_REFRESH_TOKEN_KEY` only when it is
 missing.
 
-`suite` is the minimal Docs + Drive profile:
-
-```text
-auth:  shared Keycloak
-docs:  postgresql, redis, minio, createbuckets, app-dev, frontend-development, nginx, y-provider
-drive: postgresql, redis, minio, createbuckets, app-dev, frontend-dev, nginx
-```
-
 Skipped services:
 
 ```text
 docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery
-drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, onlyoffice
 ```
 
 ## URLs
@@ -55,8 +45,6 @@ drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, 
 | Docs external API | http://localhost:8071/external_api/v1.0/... |
 | PDF app frontend  | http://localhost:3002                       |
 | PDF app backend   | http://localhost:4000                       |
-| Drive frontend    | http://localhost:3001                       |
-| Drive backend     | http://localhost:8072                       |
 
 ## Users
 
@@ -70,7 +58,6 @@ drive: local keycloak, kc_postgresql, mailcatcher, ds-proxy, celery, collabora, 
 The root wrapper is preferred, but direct scripts are available:
 
 ```bash
-./demo/docs-solo.sh <check|bootstrap|up|down|status|verify|users|clean>
-./demo/suite.sh <check|bootstrap|up|down|status|verify|users|clean>
-./demo/users.sh <docs|drive|all>
+./demo/docs.sh <check|bootstrap|up|down|status|verify|users|clean>
+./demo/users.sh docs
 ```

@@ -6,14 +6,14 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  ./setup.sh docs-solo <check|bootstrap|up|down|status|verify|users|clean>
-  ./demo/docs-solo.sh <check|bootstrap|up|down|status|verify|users|clean>
+  ./setup.sh docs <check|bootstrap|up|down|status|verify|users|clean>
+  ./demo/docs.sh <check|bootstrap|up|down|status|verify|users|clean>
 
 Examples:
-  ./setup.sh docs-solo bootstrap
-  ./setup.sh docs-solo up
-  ./setup.sh docs-solo verify
-  ./setup.sh docs-solo down
+  ./setup.sh docs bootstrap
+  ./setup.sh docs up
+  ./setup.sh docs verify
+  ./setup.sh docs down
 EOF
 }
 
@@ -25,22 +25,22 @@ case "$action" in
     printf '\n'
     check_docker_disk
     printf '\n'
-    check_docs_solo_compose_config
+    check_docs_compose_config_only
     ;;
   bootstrap)
-    docs_solo_bootstrap
+    docs_bootstrap
     ;;
   up)
-    docs_solo_up
+    docs_up
     ;;
   down)
-    docs_solo_down
+    docs_down
     ;;
   status)
-    docs_solo_status
+    docs_status
     ;;
   verify)
-    docs_solo_verify
+    docs_verify
     ;;
   users)
     "$DEMO_DIR/users.sh" docs
@@ -52,7 +52,7 @@ case "$action" in
     usage
     ;;
   *)
-    fail "Unknown docs-solo action: $action"
+    fail "Unknown docs action: $action"
     usage
     exit 2
     ;;
