@@ -17,24 +17,24 @@
   },
   "users": [
     {
-      "username": "ismael",
-      "email": "ismael@lasuite.local",
-      "firstName": "Ismael",
+      "username": "demo1",
+      "email": "demo1@lasuite.local",
+      "firstName": "Demo",
       "lastName": "Demo",
       "enabled": true,
       "emailVerified": true,
       "credentials": [
         {
           "type": "password",
-          "value": "ismael",
+          "value": "demo1",
           "temporary": false
         }
       ],
       "realmRoles": ["user"]
     },
     {
-      "username": "demo",
-      "email": "demo@lasuite.local",
+      "username": "demo2",
+      "email": "demo2@lasuite.local",
       "firstName": "Demo",
       "lastName": "User",
       "enabled": true,
@@ -42,7 +42,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "demo",
+          "value": "demo2",
           "temporary": false
         }
       ],

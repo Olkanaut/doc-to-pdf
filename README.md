@@ -93,8 +93,8 @@ Le realm Keycloak commun `lasuite` contient :
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
-| `ismael` | `ismael` | `ismael@lasuite.local` |
-| `demo`   | `demo`   | `demo@lasuite.local`   |
+| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
+| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
 Pour verifier les users locaux :
 

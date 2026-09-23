@@ -50,8 +50,8 @@ docs:  local keycloak, kc_postgresql, mailcatcher, docspec, celery
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
-| `ismael` | `ismael` | `ismael@lasuite.local` |
-| `demo`   | `demo`   | `demo@lasuite.local`   |
+| `demo1`  | `demo1`  | `demo1@lasuite.local`  |
+| `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
 ## Direct Scripts
 
