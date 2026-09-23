@@ -1,6 +1,6 @@
 import { LaGaufreV2 } from "@gouvfr-lasuite/ui-components";
 import { useEffect, useState } from "react";
-import { DOCS_ORIGIN, DOTS_ORIGIN, DRIVE_ORIGIN, LASUITE_SERVICES_API_URL } from "../../config";
+import { DOCS_ORIGIN, DOTS_ORIGIN, LASUITE_SERVICES_API_URL } from "../../config";
 
 const LASUITE_INTEGRATION_ORIGIN = "https://integration.lasuite.numerique.gouv.fr";
 const LASUITE_GAUFRE_HTML_URL = `${LASUITE_INTEGRATION_ORIGIN}/api/v1/gaufre`;
@@ -34,16 +34,10 @@ function isRemoteService(value: unknown): value is RemoteService {
 }
 
 function fallbackServices(): GaufreService[] {
-  const services = [
+  return [
     withLogo({ id: "docs", name: "Docs", url: DOCS_ORIGIN }),
     withLogo({ id: "dots", name: "Dots", url: DOTS_ORIGIN }),
   ];
-
-  if (DRIVE_ORIGIN) {
-    services.push(withLogo({ id: "drive", name: "Drive", url: DRIVE_ORIGIN }));
-  }
-
-  return services;
 }
 
 function serviceLogo(name: string): string {
@@ -86,6 +80,12 @@ function normalizeService(service: RemoteService, assets: Map<string, ServiceAss
   }
 
   return withLogo(normalized);
+}
+
+function isDotsOrDocs(service: GaufreService): boolean {
+  const id = service.id?.toLowerCase();
+  const name = service.name.toLowerCase();
+  return id === "dots" || id === "docs" || name === "dots" || name === "docs";
 }
 
 function withDotsService(services: GaufreService[]): GaufreService[] {
@@ -142,7 +142,10 @@ async function fetchOfficialServices(signal: AbortSignal): Promise<GaufreService
     throw new Error("La Suite services response is not an array");
   }
 
-  const services = data.filter(isRemoteService).map((service) => normalizeService(service, assets));
+  const services = data
+    .filter(isRemoteService)
+    .map((service) => normalizeService(service, assets))
+    .filter(isDotsOrDocs);
   return withDotsService(services.length > 0 ? services : fallbackServices());
 }
 

@@ -6,7 +6,7 @@ Le dépôt contient :
 
 - Dots : frontend Vite + backend Node/Fastify, lancé hors Docker.
 - Une stack locale Docs + Keycloak, lancée avec `./setup.sh docs`.
-- Les sources La Suite nécessaires au développement local : `docs/`, `drive/`, `django-lasuite/`.
+- Les sources La Suite nécessaires au développement local : `docs/`, `django-lasuite/`.
 
 ## Démarrage rapide
 
@@ -152,10 +152,9 @@ Variables frontend optionnelles pour le menu des services :
 
 ```bash
 VITE_DOCS_URL=http://localhost:3000
-VITE_DRIVE_URL=http://localhost:3001
 ```
 
-Par défaut, Dots affiche seulement Dots et Docs dans le menu des services. Drive n'apparaît que si `VITE_DRIVE_URL` est défini.
+Par défaut, Dots affiche Dots et Docs dans le menu des services.
 
 ## Structure
 
@@ -175,7 +174,6 @@ demo/
   ports.docs.env           ports Docs locaux
 
 docs/                      sources La Suite Docs
-drive/                     sources La Suite Drive
 django-lasuite/            dépendances Django La Suite
 ```
 

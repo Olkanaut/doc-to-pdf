@@ -8,7 +8,6 @@ function cleanOrigin(value: string | undefined, fallback?: string): string {
 }
 
 const rawDocsUrl = import.meta.env.VITE_DOCS_URL as string | undefined;
-const rawDriveUrl = import.meta.env.VITE_DRIVE_URL as string | undefined;
 const rawDotsUrl = import.meta.env.VITE_DOTS_URL as string | undefined;
 const rawLasuiteServicesApiUrl = import.meta.env.VITE_LASUITE_SERVICES_API_URL as
   | string
@@ -17,7 +16,6 @@ const rawLasuiteServicesApiUrl = import.meta.env.VITE_LASUITE_SERVICES_API_URL a
 const browserOrigin = typeof window === "undefined" ? "http://localhost:3002" : window.location.origin;
 
 export const DOCS_ORIGIN = cleanOrigin(rawDocsUrl, "http://localhost:3000");
-export const DRIVE_ORIGIN = cleanOrigin(rawDriveUrl);
 export const DOTS_ORIGIN = cleanOrigin(rawDotsUrl, browserOrigin);
 export const LASUITE_SERVICES_API_URL = cleanOrigin(
   rawLasuiteServicesApiUrl,

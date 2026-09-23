@@ -11,22 +11,15 @@ print_users() {
     'from core.models import User; [print(f"{u.email}\t{u.sub}") for u in User.objects.order_by("email")]' || true
 }
 
-target="${1:-all}"
+target="${1:-docs}"
 
 case "$target" in
   docs)
     print_users docs run_docs
     ;;
-  drive)
-    print_users drive run_drive
-    ;;
-  all)
-    print_users docs run_docs
-    print_users drive run_drive
-    ;;
   *)
     fail "Unknown target: $target"
-    printf 'Usage: %s <docs|drive|all>\n' "$0"
+    printf 'Usage: %s docs\n' "$0"
     exit 2
     ;;
 esac

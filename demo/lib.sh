@@ -46,7 +46,7 @@ assert_port_free() {
 
       fail "$label port $port is already allocated by Docker container(s):"
       printf '%s\n' "$docker_holders"
-      info "Run ./setup.sh docs down, or stop the older Docs/Drive stack using that port."
+      info "Run ./setup.sh docs down, or stop the process using that port."
       exit 1
     fi
   fi
@@ -54,7 +54,7 @@ assert_port_free() {
   owner="$(port_listener "$port" || true)"
   if [ -n "$owner" ]; then
     fail "$label port $port is already allocated by $owner"
-    info "Run ./setup.sh docs down, or stop the older Docs/Drive stack using that port."
+    info "Run ./setup.sh docs down, or stop the process using that port."
     exit 1
   fi
 }
@@ -64,9 +64,8 @@ stop_legacy_local_apps() {
     return 0
   fi
 
-  bold "Stopping older local Docs/Drive stacks"
+  bold "Stopping older local Docs stack"
   (cd "$ROOT_DIR/docs" && docker compose stop >/dev/null 2>&1) || true
-  (cd "$ROOT_DIR/drive" && docker compose stop >/dev/null 2>&1) || true
 }
 
 ensure_docs_local_files() {
@@ -77,28 +76,6 @@ ensure_docs_local_files() {
   touch "$ROOT_DIR/docs/env.d/development/kc_postgresql.local"
   touch "$ROOT_DIR/docs/env.d/development/crowdin.local"
   mkdir -p "$ROOT_DIR/docs/src/frontend/.yarn-cache"
-}
-
-ensure_drive_local_files() {
-  mkdir -p "$ROOT_DIR/drive/data/media"
-  mkdir -p "$ROOT_DIR/drive/data/static"
-  mkdir -p "$ROOT_DIR/drive/data/postgresql.local"
-  mkdir -p "$ROOT_DIR/drive/data/postgresql.e2e"
-  mkdir -p "$ROOT_DIR/drive/env.d/development"
-  touch "$ROOT_DIR/drive/env.d/development/common.local"
-  touch "$ROOT_DIR/drive/env.d/development/postgresql.local"
-  touch "$ROOT_DIR/drive/env.d/development/kc_postgresql.local"
-  touch "$ROOT_DIR/drive/env.d/development/crowdin.local"
-  mkdir -p "$ROOT_DIR/drive/src/frontend/.yarn-cache"
-  mkdir -p "$ROOT_DIR/drive/src/frontend/node_modules"
-  mkdir -p "$ROOT_DIR/drive/src/frontend/apps/drive/node_modules"
-  mkdir -p "$ROOT_DIR/drive/src/frontend/apps/drive/out"
-  touch "$ROOT_DIR/drive/src/frontend/apps/drive/out/index.html"
-}
-
-ensure_project_local_files() {
-  ensure_docs_local_files
-  ensure_drive_local_files
 }
 
 ensure_docs_oidc_refresh_token_key() {
@@ -127,12 +104,6 @@ prepare_docs_local_files() {
   mkdir -p "$ROOT_DIR/docs/data/static"
   ensure_docs_local_files
   ensure_docs_oidc_refresh_token_key
-}
-
-prepare_drive_local_files() {
-  bold "Preparing Drive local files"
-  ensure_drive_local_files
-  ok "Drive local files ready"
 }
 
 auth_compose() {
@@ -174,10 +145,6 @@ run_docs() {
   run_with_env docs "$DEMO_DIR/ports.docs.env" "$@"
 }
 
-run_drive() {
-  run_with_env drive "$DEMO_DIR/ports.drive.env" "$@"
-}
-
 write_managed_block() {
   target="$1"
   source="$2"
@@ -209,20 +176,6 @@ apply_docs_shared_auth_env() {
     "$ROOT_DIR/docs/env.d/development/common.local" \
     "$DEMO_DIR/env.docs.common.local"
   ok "docs/env.d/development/common.local updated"
-}
-
-apply_drive_shared_auth_env() {
-  bold "Applying Drive shared OIDC env overrides"
-  ensure_drive_local_files
-  write_managed_block \
-    "$ROOT_DIR/drive/env.d/development/common.local" \
-    "$DEMO_DIR/env.drive.common.local"
-  ok "drive/env.d/development/common.local updated"
-}
-
-apply_shared_auth_env() {
-  apply_docs_shared_auth_env
-  apply_drive_shared_auth_env
 }
 
 check_prerequisites() {
@@ -274,19 +227,6 @@ clean_docs_yarn_cache() {
   ok "Docs local frontend cache cleaned"
 }
 
-clean_drive_yarn_cache() {
-  bold "Cleaning Drive local Yarn cache"
-  rm -rf "$ROOT_DIR/drive/src/frontend/.yarn-cache"
-  rm -rf "$ROOT_DIR/drive/src/frontend/apps/drive/.next"
-  ensure_drive_local_files
-  ok "Drive local frontend cache cleaned"
-}
-
-clean_yarn_cache() {
-  clean_docs_yarn_cache
-  clean_drive_yarn_cache
-}
-
 check_auth_compose_config() {
   if auth_compose config --quiet; then
     ok "auth compose config"
@@ -302,23 +242,6 @@ check_docs_compose_config() {
   else
     fail "docs compose config with demo ports"
   fi
-}
-
-check_drive_compose_config() {
-  ensure_drive_local_files
-  if run_drive docker compose config --quiet; then
-    ok "drive compose config with demo ports"
-  else
-    fail "drive compose config with demo ports"
-  fi
-}
-
-check_compose_config() {
-  bold "Compose config"
-  ensure_project_local_files
-  check_auth_compose_config
-  check_docs_compose_config
-  check_drive_compose_config
 }
 
 check_docs_compose_config_only() {
@@ -408,31 +331,12 @@ stop_docs_excluded() {
     celery-dev >/dev/null 2>&1 || true
 }
 
-stop_drive_excluded() {
-  run_drive docker compose stop \
-    keycloak \
-    kc_postgresql \
-    mailcatcher \
-    ds-proxy \
-    celery-dev \
-    collabora \
-    onlyoffice >/dev/null 2>&1 || true
-}
-
 docs_infra_up() {
   bold "Starting Docs dependencies"
   run_docs docker compose up -d postgresql redis minio
   wait_compose_service_healthy run_docs postgresql "Docs PostgreSQL"
   wait_compose_service_healthy run_docs minio "Docs MinIO"
   run_docs docker compose up -d createbuckets
-}
-
-drive_infra_up() {
-  bold "Starting Drive dependencies"
-  run_drive docker compose up -d postgresql redis minio
-  wait_compose_service_healthy run_drive postgresql "Drive PostgreSQL"
-  wait_compose_service_healthy run_drive minio "Drive MinIO"
-  run_drive docker compose up -d createbuckets
 }
 
 docs_minimal_up() {
@@ -445,16 +349,6 @@ docs_minimal_up() {
     app-dev frontend-development nginx \
     y-provider-development y-provider-development-converter
   stop_docs_excluded
-}
-
-drive_minimal_up() {
-  prepare_drive_local_files
-  apply_drive_shared_auth_env
-  stop_drive_excluded
-  drive_infra_up
-  bold "Starting Drive app"
-  run_drive docker compose up -d --no-deps app-dev frontend-dev nginx
-  stop_drive_excluded
 }
 
 docs_minimal_bootstrap() {
@@ -471,60 +365,6 @@ docs_minimal_bootstrap() {
     app-dev frontend-development nginx \
     y-provider-development y-provider-development-converter
   stop_docs_excluded
-}
-
-drive_minimal_bootstrap() {
-  prepare_drive_local_files
-  apply_drive_shared_auth_env
-  stop_drive_excluded
-  bold "Building Drive images"
-  run_drive docker compose build app-dev frontend-dev
-  drive_infra_up
-  bold "Migrating Drive database"
-  run_drive docker compose run --rm --no-deps app-dev python manage.py migrate
-  bold "Starting Drive app"
-  run_drive docker compose up -d --no-deps app-dev frontend-dev nginx
-  stop_drive_excluded
-}
-
-suite_bootstrap() {
-  auth_up
-  docs_minimal_bootstrap
-  drive_minimal_bootstrap
-}
-
-suite_up() {
-  auth_up
-  docs_minimal_up
-  drive_minimal_up
-}
-
-suite_down() {
-  docs_minimal_down
-  drive_minimal_down
-  auth_down || true
-}
-
-suite_status() {
-  auth_status || true
-  docs_minimal_status
-  drive_minimal_status
-}
-
-suite_verify() {
-  bold "HTTP checks"
-  http_check "Keycloak realm" "http://localhost:8083/realms/lasuite/.well-known/openid-configuration"
-  http_check "Docs frontend" "http://localhost:3000"
-  http_check "Docs backend" "http://localhost:8071/admin/"
-  http_check "Drive frontend" "http://localhost:3001"
-  http_check "Drive backend" "http://localhost:8072/admin/"
-
-  docs_minimal_verify_exclusions
-  drive_minimal_verify_exclusions
-}
-
-suite_clean() {
-  clean_yarn_cache
 }
 
 docs_minimal_down() {
@@ -546,38 +386,12 @@ docs_minimal_down() {
     y-provider-development-converter || true
 }
 
-drive_minimal_down() {
-  bold "Stopping Drive"
-  run_drive docker compose stop \
-    frontend-dev \
-    nginx \
-    app-dev \
-    createbuckets \
-    minio \
-    redis \
-    postgresql \
-    keycloak \
-    kc_postgresql \
-    mailcatcher \
-    ds-proxy \
-    celery-dev \
-    collabora \
-    onlyoffice || true
-}
-
 docs_minimal_status() {
   bold "Docs status"
   run_docs docker compose ps \
     postgresql redis minio createbuckets app-dev frontend-development nginx \
     keycloak kc_postgresql mailcatcher docspec celery-dev y-provider-development \
     y-provider-development-converter || true
-}
-
-drive_minimal_status() {
-  bold "Drive status"
-  run_drive docker compose ps \
-    postgresql redis minio createbuckets app-dev frontend-dev nginx \
-    keycloak kc_postgresql mailcatcher ds-proxy celery-dev collabora onlyoffice || true
 }
 
 verify_excluded_services() {
@@ -597,12 +411,6 @@ docs_minimal_verify_exclusions() {
   bold "Docs exclusions"
   verify_excluded_services run_docs Docs \
     keycloak kc_postgresql mailcatcher docspec celery-dev
-}
-
-drive_minimal_verify_exclusions() {
-  bold "Drive exclusions"
-  verify_excluded_services run_drive Drive \
-    keycloak kc_postgresql mailcatcher ds-proxy celery-dev collabora onlyoffice
 }
 
 docs_bootstrap() {
@@ -625,22 +433,6 @@ docs_status() {
   docs_minimal_status
 }
 
-docs_verify_drive_idle() {
-  bold "Drive exclusion"
-  if ! docker_daemon_available; then
-    warn "Docker daemon is not reachable; skipping Drive exclusion check"
-    return 0
-  fi
-
-  running="$(docker ps --format '{{.Names}}' | awk '/^drive-/ {print}')"
-  if [ -n "$running" ]; then
-    warn "Drive containers are running; docs mode does not need them:"
-    printf '%s\n' "$running"
-  else
-    ok "Drive containers stopped"
-  fi
-}
-
 docs_verify() {
   bold "HTTP checks"
   http_check "Keycloak realm" "http://localhost:8083/realms/lasuite/.well-known/openid-configuration"
@@ -649,6 +441,4 @@ docs_verify() {
   http_status_check "Docs external API" "http://localhost:8071/external_api/v1.0/documents/" "200 401 403 405" || true
 
   docs_minimal_verify_exclusions
-
-  docs_verify_drive_idle
 }
