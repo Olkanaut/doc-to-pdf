@@ -1,6 +1,6 @@
 import path from "node:path";
 import { getFixture, FIXTURES_DIR } from "../registry/fixtures.js";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import { blocksToTypst } from "../convert/blocksToTypst.js";
 import {
   compileToPdfDetailed,

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { readdir } from "node:fs/promises";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import { checkTemplateSource, type CheckFailure, type CheckResult } from "../layout/check.js";
 import { AiApiError, callMessages, type ContentBlock } from "../ai/client.js";
 import { mergePatch, parseAiReply } from "../ai/parse.js";

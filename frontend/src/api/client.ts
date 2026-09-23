@@ -168,8 +168,7 @@ export async function searchDocsDocuments(
 
 export interface RenderRequest {
   fixtureId: string;
-  templateId?: string;
-  templateSource?: string;
+  templateSource: string;
 }
 
 export interface RenderResult {

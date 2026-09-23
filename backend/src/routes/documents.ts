@@ -6,7 +6,7 @@ import {
 } from "../clients/docsClient.js";
 import { getExternalTemplate, TemplatesApiError } from "../clients/templatesClient.js";
 import { TypstCompileError } from "../compile/typstCompile.js";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import {
   renderBlocksToPdf,
   UnsupportedBodyImagesError,

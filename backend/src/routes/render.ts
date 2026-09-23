@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { getFixture, FIXTURES_DIR } from "../registry/fixtures.js";
-import { getTemplateSource, TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import { TypstCompileError } from "../compile/typstCompile.js";
 import {
   renderBlocksToPdf,
@@ -9,19 +9,18 @@ import {
 
 interface RenderBody {
   fixtureId?: string;
-  templateId?: string;
   templateSource?: string;
 }
 
 export async function renderRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: RenderBody }>("/api/render", async (req, reply) => {
-    const { fixtureId, templateId, templateSource } = req.body ?? {};
+    const { fixtureId, templateSource } = req.body ?? {};
 
     if (!fixtureId) {
       return reply.code(400).send({ error: "fixtureId is required" });
     }
-    if (!templateId && !templateSource) {
-      return reply.code(400).send({ error: "templateId or templateSource is required" });
+    if (typeof templateSource !== "string" || !templateSource.trim()) {
+      return reply.code(400).send({ error: "templateSource is required" });
     }
 
     const fixture = await getFixture(fixtureId);
@@ -29,21 +28,10 @@ export async function renderRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(404).send({ error: `fixture "${fixtureId}" not found` });
     }
 
-    let resolvedTemplateSource: string;
-    if (templateSource) {
-      resolvedTemplateSource = templateSource;
-    } else {
-      const source = await getTemplateSource(templateId!);
-      if (!source) {
-        return reply.code(404).send({ error: `template "${templateId}" not found` });
-      }
-      resolvedTemplateSource = source;
-    }
-
     try {
       const result = await renderBlocksToPdf({
         blocks: fixture.blocks,
-        templateSource: resolvedTemplateSource,
+        templateSource,
         templateAssetsDir: TEMPLATES_ASSETS_DIR,
         bodyImagesDir: FIXTURES_DIR,
       });

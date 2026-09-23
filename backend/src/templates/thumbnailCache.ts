@@ -7,7 +7,7 @@ import {
   THUMBNAIL_PPI,
   TypstCompileError,
 } from "../compile/typstCompile.js";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "./assets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.resolve(__dirname, "../../data/template-thumbnails");

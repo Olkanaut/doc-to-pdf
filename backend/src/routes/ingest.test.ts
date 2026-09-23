@@ -15,7 +15,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { TemplateDetail } from "../clients/templatesClient.js";
 import { cacheAnalysis, createJob } from "../ingest/jobs.js";
 import type { Analysis } from "../ingest/sidecar.js";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import type { AuthSession } from "./auth.js";
 import { ingestRoutes } from "./ingest.js";
 

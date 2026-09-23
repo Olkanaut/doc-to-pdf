@@ -14,6 +14,8 @@ Le dépôt embarque aussi une stack locale La Suite Docs pour tester Dots de bou
 
 Ces dossiers ne sont pas Dots : ils servent uniquement à fournir un environnement local réaliste pour l'authentification et l'API externe Docs.
 
+Les templates utilisateur ne sont pas stockés dans Dots : ils passent par l'API externe Docs `typst-templates`. Les fichiers Typst versionnés dans `backend/fixtures/templates/` sont des fixtures de test et de prévisualisation locale.
+
 ## Démarrage rapide
 
 Préparer et lancer Docs + Keycloak :
@@ -170,6 +172,8 @@ auth/
   realm-lasuite.json       realm, users, clients OIDC
 
 backend/                   backend Dots
+  fixtures/templates/      fixtures Typst utilisées par les tests et previews locales
+  templates/assets/        logos et assets partagés pour la compilation Typst
 frontend/                  frontend Dots
 
 demo/

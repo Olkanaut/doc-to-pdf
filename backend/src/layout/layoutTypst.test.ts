@@ -10,10 +10,10 @@ import {
 } from "./layoutTypst.js";
 import { defaultLayout, newBlock, sanitizeLayout, type Block, type LayoutConfig } from "./layoutConfig.js";
 import { compileToPdf } from "../compile/typstCompile.js";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 
-const minimal = await readFile(new URL("../../templates/minimal.typ", import.meta.url), "utf8");
-const ministere = await readFile(new URL("../../templates/ministere.typ", import.meta.url), "utf8");
+const minimal = await readFile(new URL("../../fixtures/templates/minimal.typ", import.meta.url), "utf8");
+const ministere = await readFile(new URL("../../fixtures/templates/ministere.typ", import.meta.url), "utf8");
 
 function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;

@@ -1,12 +1,15 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // Écran ① — import d'un .typ (ImportTemplateModal, ouverte depuis le menu du
 // bouton scindé « Nouveau gabarit » du panneau gauche).
 // Tourne contre les serveurs déjà lancés : Vite :5173 (UI), Fastify :4000 (API).
 
 const API = process.env.E2E_API_URL ?? "http://localhost:4000/api";
-const TYP = "/Users/abel/Documents/doc-to-pdf/backend/templates/collectivite.typ";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TYP = path.resolve(__dirname, "../../backend/fixtures/templates/collectivite.typ");
 const IMPORTED_NAME = "collectivite"; // nom prérempli = nom du fichier sans .typ
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

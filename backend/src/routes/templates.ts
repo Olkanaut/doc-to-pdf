@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { TEMPLATES_ASSETS_DIR } from "../registry/templates.js";
+import { TEMPLATES_ASSETS_DIR } from "../templates/assets.js";
 import {
   createExternalTemplate,
   deleteExternalTemplate,
