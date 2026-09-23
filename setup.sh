@@ -13,7 +13,7 @@ Usage:
   ./setup.sh docs <check|bootstrap|up|down|status|verify|users|clean>
 
 Profil:
-  docs  Docs + Keycloak commun, pour developper l'app PDF.
+  docs  Docs + Keycloak commun, pour developper Dots.
 
 Commandes typiques:
   ./setup.sh docs bootstrap

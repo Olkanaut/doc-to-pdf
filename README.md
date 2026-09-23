@@ -1,199 +1,137 @@
-# La Suite Local Dev
+# Dots
 
-Workspace local pour developper une app transverse autour de La Suite.
+Dots transforme des documents La Suite Docs en PDF via des templates Typst.
 
-Il y a un seul profil a retenir :
+Le dépôt contient :
 
-```text
-docs  Docs + Keycloak commun
-```
+- Dots : frontend Vite + backend Node/Fastify, lancé hors Docker.
+- Une stack locale Docs + Keycloak, lancée avec `./setup.sh docs`.
+- Les sources La Suite nécessaires au développement local : `docs/`, `drive/`, `django-lasuite/`.
 
-Le profil principal pour l'app PDF est `docs` :
+## Démarrage rapide
 
-```text
-Docs -> Docs API -> app dots/pdf -> Typst -> PDF
-```
-
-## Commandes Stack
-
-Check general :
-
-```bash
-./setup.sh check
-```
-
-Dev principal, Docs seul :
+Préparer et lancer Docs + Keycloak :
 
 ```bash
 ./setup.sh docs bootstrap
-./setup.sh docs verify
 ```
 
-`bootstrap` prepare les dossiers/fichiers locaux manquants avant de build :
-
-```text
-docs/data/media
-docs/data/static
-docs/env.d/development/*.local
-OIDC_STORE_REFRESH_TOKEN_KEY si absente
-```
-
-Relancer sans rebuild :
-
-```bash
-./setup.sh docs up
-```
-
-Stopper :
-
-```bash
-./setup.sh docs down
-```
-
-## Commandes App PDF
-
-Installer les dependances de la mini-app :
+Installer les dépendances de Dots :
 
 ```bash
 make install
 ```
 
-Lancer backend et frontend ensemble :
+Lancer Dots :
 
 ```bash
 make dev
 ```
 
-Commandes separees si besoin :
+Ouvrir ensuite :
+
+```text
+http://localhost:3002
+```
+
+## Commandes
+
+Vérifier la configuration locale :
+
+```bash
+./setup.sh check
+```
+
+Relancer Docs + Keycloak sans rebuild :
+
+```bash
+./setup.sh docs up
+```
+
+Vérifier que la stack Docs répond :
+
+```bash
+./setup.sh docs verify
+```
+
+Arrêter Docs + Keycloak :
+
+```bash
+./setup.sh docs down
+```
+
+Commandes Dots :
 
 ```bash
 make backend
 make frontend
 make build
 make lint
+make test
 ```
 
-Le Makefile concerne uniquement l'app PDF locale. Le script `setup.sh`
-continue de gerer la stack La Suite locale.
-
-## URLs
+## URLs locales
 
 | Service           | URL                                         |
 | ----------------- | ------------------------------------------- |
-| Keycloak commun   | http://localhost:8083                       |
-| Docs frontend     | http://localhost:3000                       |
-| Docs backend/API  | http://localhost:8071                       |
-| Docs external API | http://localhost:8071/external_api/v1.0/... |
-| App PDF locale    | http://localhost:3002                       |
-| App PDF backend   | http://localhost:4000                       |
+| Dots              | http://localhost:3002                       |
+| Backend Dots      | http://localhost:4000                       |
+| Docs              | http://localhost:3000                       |
+| API Docs          | http://localhost:8071                       |
+| API externe Docs  | http://localhost:8071/external_api/v1.0/... |
+| Keycloak          | http://localhost:8083                       |
 
-## Users
+## Comptes locaux
 
-Le realm Keycloak commun `lasuite` contient :
+Le realm Keycloak local `lasuite` contient :
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
 | `demo1`  | `demo1`  | `demo1@lasuite.local`  |
 | `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
-Pour verifier les users locaux :
+Vérifier les utilisateurs créés côté Docs :
 
 ```bash
 ./setup.sh docs users
 ```
 
-## Profil
+## Fonctionnement local
 
-`docs` lance uniquement :
+Le profil `docs` lance uniquement les services nécessaires à Dots :
 
 ```text
 auth: Keycloak commun + base Keycloak
-docs: postgres, redis, minio, createbuckets, backend, frontend, nginx media, y-provider
+docs: PostgreSQL, Redis, MinIO, createbuckets, backend, frontend, nginx media, y-provider
 ```
 
-Services volontairement exclus :
+Services Docs volontairement exclus :
 
 ```text
-docs:  keycloak local, kc_postgresql, mailcatcher, docspec, celery
+keycloak local, kc_postgresql, mailcatcher, docspec, celery
 ```
 
-## Structure Locale
-
-```text
-auth/
-  compose.yml              Keycloak commun
-  realm-lasuite.json       realm, users, clients OIDC
-
-demo/
-  docs.sh                  profil Docs minimal
-  lib.sh                   fonctions partagees
-  users.sh                 inspection users locaux
-  env.docs.common.local    overrides OIDC Docs
-  ports.docs.env           ports Docs locaux
-
-docs/
-drive/
-django-lasuite/
-```
-
-## Auth Et API
-
-Keycloak expose un realm commun :
-
-```text
-realm: lasuite
-clients: impress, drive, interop-app
-```
-
-L'app transverse devra utiliser le client `interop-app`, puis appeler Docs avec :
+Dots utilise le client OIDC confidentiel `interop-app` du realm `lasuite`, puis appelle l'API externe Docs avec :
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-Endpoint principal pour le POC PDF :
+Endpoints Docs utilisés par Dots :
 
 ```text
 http://localhost:8071/external_api/v1.0/documents/
+http://localhost:8071/external_api/v1.0/typst-templates/
 ```
 
 Documentation API :
 
 - [Templates Typst](./documentation/EXTERNAL-API.md)
-- [Recuperation d'un document Docs depuis Dots](./documentation/DOCS-FETCH.md)
+- [Récupération d'un document Docs depuis Dots](./documentation/DOCS-FETCH.md)
 
-## App PDF Locale
+## Configuration
 
-La mini-app du repo tourne hors Docker :
-
-```bash
-make install
-make dev
-```
-
-Elle est servie sur :
-
-```text
-http://localhost:3002
-```
-
-Le frontend Vite proxifie `/api` vers le backend Node en `localhost:4000`.
-L'auth utilise le client Keycloak confidentiel `interop-app` du realm `lasuite`.
-Le secret reste cote backend.
-
-Avant de lancer l'app, demarrer la stack Docs locale :
-
-```bash
-./setup.sh docs up
-```
-
-Puis :
-
-```bash
-make dev
-```
-
-Variables override possibles :
+Dots fonctionne avec les valeurs locales par défaut. Les variables suivantes peuvent être surchargées côté backend :
 
 ```bash
 APP_ORIGIN=http://localhost:3002
@@ -210,29 +148,46 @@ TYPST_TEMPLATES_API_TIMEOUT_MS=10000
 TYPST_TEMPLATES_API_MAX_RESPONSE_BYTES=5242880
 ```
 
-Le backend expose `GET /api/documents/{id}/content`. Il transmet le token
-Keycloak de la session a Docs et renvoie le contenu structure dans `blocks`.
-
-Variables frontend optionnelles pour le menu apps :
+Variables frontend optionnelles pour le menu des services :
 
 ```bash
 VITE_DOCS_URL=http://localhost:3000
 VITE_DRIVE_URL=http://localhost:3001
 ```
 
-Par defaut, Dots affiche seulement Dots et Docs dans le menu apps. Drive
-n'apparait que si `VITE_DRIVE_URL` est defini, pour garder le mode
-`docs` independant de Drive.
+Par défaut, Dots affiche seulement Dots et Docs dans le menu des services. Drive n'apparaît que si `VITE_DRIVE_URL` est défini.
+
+## Structure
+
+```text
+auth/
+  compose.yml              Keycloak local
+  realm-lasuite.json       realm, users, clients OIDC
+
+backend/                   backend Dots
+frontend/                  frontend Dots
+
+demo/
+  docs.sh                  orchestration Docs + Keycloak
+  lib.sh                   fonctions partagées
+  users.sh                 inspection des users Docs
+  env.docs.common.local    overrides OIDC Docs
+  ports.docs.env           ports Docs locaux
+
+docs/                      sources La Suite Docs
+drive/                     sources La Suite Drive
+django-lasuite/            dépendances Django La Suite
+```
 
 ## Nettoyage
 
-Nettoyer les caches frontend locaux :
+Nettoyer les caches frontend Docs :
 
 ```bash
 ./setup.sh docs clean
 ```
 
-Voir l'espace Docker :
+Voir l'espace Docker utilisé :
 
 ```bash
 docker system df
@@ -245,7 +200,7 @@ docker builder prune
 docker system prune
 ```
 
-Avec volumes inutilises, plus destructif :
+Nettoyage Docker avec volumes inutilisés :
 
 ```bash
 docker system prune --volumes
