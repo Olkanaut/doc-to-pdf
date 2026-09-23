@@ -16,6 +16,22 @@ Ces dossiers ne sont pas Dots : ils servent uniquement à fournir un environneme
 
 Les templates utilisateur ne sont pas stockés dans Dots : ils passent par l'API externe Docs `typst-templates`. Les fichiers Typst versionnés dans `backend/fixtures/templates/` sont des fixtures de test et de prévisualisation locale.
 
+## Prérequis
+
+Obligatoires :
+
+- Docker avec Docker Compose, pour lancer Docs, Keycloak, PostgreSQL, Redis et MinIO.
+- `make`, utilisé par les commandes racine du dépôt.
+- Node.js et npm, pour installer et lancer le backend Dots et le frontend Vite.
+- `typst`, utilisé par le backend pour compiler les templates en PDF.
+- `curl`, recommandé pour les commandes de vérification locale.
+
+Optionnels :
+
+- Python 3, pour activer l'import PDF/DOCX via `backend/ingest`. Sans Python, `make install` continue et l'import répond avec une erreur explicite.
+- LibreOffice (`soffice` ou `libreoffice` dans le `PATH`), requis uniquement pour importer des fichiers DOCX.
+- Une clé `ANTHROPIC_API_KEY` dans `backend/.env`, uniquement pour utiliser l'assistant IA. Sans clé, l'application fonctionne et masque cette fonctionnalité.
+
 ## Démarrage rapide
 
 Préparer et lancer Docs + Keycloak :
