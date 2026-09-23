@@ -6,9 +6,15 @@ define with_env
 set -a; [ ! -f "$(DOTS_ENV)" ] || . "$(DOTS_ENV)"; set +a;
 endef
 
-.PHONY: install install-ingest dev backend frontend build lint test
+.PHONY: ensure-env install install-ingest dev backend frontend build lint test
 
-install:
+ensure-env:
+	@if [ ! -f "$(DOTS_ENV)" ]; then \
+		cp .env.example "$(DOTS_ENV)"; \
+		echo "Created $(DOTS_ENV) from .env.example"; \
+	fi
+
+install: ensure-env
 	npm --prefix backend install
 	npm --prefix frontend install
 	$(MAKE) install-ingest
@@ -27,7 +33,7 @@ install-ingest:
 		echo "python3 not found: skipping backend/ingest/.venv (PDF/DOCX import disabled, see backend/ingest/README.md)."; \
 	 fi
 
-dev:
+dev: ensure-env
 	@printf "Starting backend:  http://localhost:%s\n" "$(BACKEND_PORT)"
 	@printf "Starting frontend: http://localhost:%s\n" "$(FRONTEND_PORT)"
 	@$(with_env) \
@@ -42,13 +48,13 @@ dev:
 	kill $$backend_pid $$frontend_pid 2>/dev/null; \
 	wait $$backend_pid $$frontend_pid
 
-backend:
+backend: ensure-env
 	$(with_env) cd backend && PORT=$(BACKEND_PORT) npm run dev
 
-frontend:
+frontend: ensure-env
 	$(with_env) cd frontend && npm run dev -- --port $(FRONTEND_PORT) --strictPort
 
-build:
+build: ensure-env
 	$(with_env) npm --prefix backend run build
 	$(with_env) npm --prefix frontend run build
 
