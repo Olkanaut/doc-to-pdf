@@ -1,96 +1,96 @@
 # Dots
 
-Dots transforme des documents La Suite Docs en PDF via des templates Typst.
+Dots turns La Suite Docs documents into PDFs using Typst templates.
 
-## Ce que contient ce dépôt
+## What this repository contains
 
-Dots est l'application principale de ce dépôt. Elle est composée du frontend Vite dans `frontend/` et du backend Node/Fastify dans `backend/`.
+Dots is the main application in this repository. It consists of the Vite frontend in `frontend/` and the Node/Fastify backend in `backend/`.
 
-Le dépôt embarque aussi une stack locale La Suite Docs pour tester Dots de bout en bout sans compte externe :
+The repository also ships a local La Suite Docs stack so Dots can be tested end to end without an external account:
 
-- `docs/` contient les sources La Suite Docs. Dans le code et les images Docker, Docs peut aussi apparaître sous son nom technique historique : `impress`.
-- `django-lasuite/` contient les dépendances Django La Suite utilisées par le backend Docs local.
-- `auth/` contient le Keycloak local partagé par Dots et Docs.
+- `docs/` contains the La Suite Docs sources. In the code and Docker images, Docs may also appear under its historical technical name: `impress`.
+- `django-lasuite/` contains the La Suite Django dependencies used by the local Docs backend.
+- `auth/` contains the local Keycloak shared by Dots and Docs.
 
-Ces dossiers ne sont pas Dots : ils servent uniquement à fournir un environnement local réaliste pour l'authentification et l'API externe Docs.
+These folders are not Dots: they only provide a realistic local environment for authentication and the Docs external API.
 
-Les templates utilisateur ne sont pas stockés dans Dots : ils passent par l'API externe Docs `typst-templates`. Les fichiers Typst versionnés dans `backend/fixtures/templates/` sont des fixtures de test et de prévisualisation locale.
+User templates are not stored in Dots: they go through the Docs external API `typst-templates`. The Typst files versioned in `backend/fixtures/templates/` are fixtures for tests and local previews.
 
-## Prérequis
+## Prerequisites
 
-Obligatoires :
+Required:
 
-- Docker avec Docker Compose, pour lancer Docs, Keycloak, PostgreSQL, Redis et MinIO.
-- `make`, utilisé par les commandes racine du dépôt.
-- Node.js et npm, pour installer et lancer le backend Dots et le frontend Vite.
-- `typst`, utilisé par le backend pour compiler les templates en PDF.
-- `curl`, recommandé pour les commandes de vérification locale.
+- Docker with Docker Compose, to run Docs, Keycloak, PostgreSQL, Redis and MinIO.
+- `make`, used by the repository's root commands.
+- Node.js and npm, to install and run the Dots backend and the Vite frontend.
+- `typst`, used by the backend to compile templates to PDF.
+- `curl`, recommended for the local check commands.
 
-Optionnels :
+Optional:
 
-- Python 3, pour activer l'import PDF/DOCX via `backend/ingest`. Sans Python, `make install` continue et l'import répond avec une erreur explicite.
-- LibreOffice (`soffice` ou `libreoffice` dans le `PATH`), requis uniquement pour importer des fichiers DOCX.
-- Une clé `ANTHROPIC_API_KEY` dans `.env`, uniquement pour utiliser l'assistant IA. Sans clé, l'application fonctionne et masque cette fonctionnalité.
+- Python 3, to enable PDF/DOCX import via `backend/ingest`. Without Python, `make install` continues and the import responds with an explicit error.
+- LibreOffice (`soffice` or `libreoffice` in the `PATH`), only required to import DOCX files.
+- An `ANTHROPIC_API_KEY` in `.env`, only to use the AI assistant. Without a key, the application works and hides this feature.
 
-## Démarrage rapide
+## Quick start
 
-Préparer la configuration locale :
+Prepare the local configuration:
 
 ```bash
 cp .env.example .env
 ```
 
-Préparer et lancer Docs + Keycloak :
+Prepare and start Docs + Keycloak:
 
 ```bash
 ./setup.sh docs bootstrap
 ```
 
-Installer les dépendances de Dots :
+Install the Dots dependencies:
 
 ```bash
 make install
 ```
 
-Lancer Dots :
+Start Dots:
 
 ```bash
 make dev
 ```
 
-Ouvrir ensuite :
+Then open:
 
 ```text
 http://localhost:3002
 ```
 
-## Commandes
+## Commands
 
-Vérifier la configuration locale :
+Check the local configuration:
 
 ```bash
 ./setup.sh check
 ```
 
-Relancer Docs + Keycloak sans rebuild :
+Restart Docs + Keycloak without rebuilding:
 
 ```bash
 ./setup.sh docs up
 ```
 
-Vérifier que la stack Docs répond :
+Check that the Docs stack responds:
 
 ```bash
 ./setup.sh docs verify
 ```
 
-Arrêter Docs + Keycloak :
+Stop Docs + Keycloak:
 
 ```bash
 ./setup.sh docs down
 ```
 
-Commandes Dots :
+Dots commands:
 
 ```bash
 make backend
@@ -100,70 +100,70 @@ make lint
 make test
 ```
 
-## URLs locales
+## Local URLs
 
 | Service           | URL                                         |
 | ----------------- | ------------------------------------------- |
 | Dots              | http://localhost:3002                       |
-| Backend Dots      | http://localhost:4000                       |
+| Dots backend      | http://localhost:4000                       |
 | Docs              | http://localhost:3000                       |
-| API Docs          | http://localhost:8071                       |
-| API externe Docs  | http://localhost:8071/external_api/v1.0/... |
+| Docs API          | http://localhost:8071                       |
+| Docs external API | http://localhost:8071/external_api/v1.0/... |
 | Keycloak          | http://localhost:8083                       |
 
-## Comptes locaux
+## Local accounts
 
-Par défaut, le realm Keycloak local `lasuite` contient ces comptes de démonstration.
-Ils sont configurés dans `.env` et peuvent être changés avant le premier import Keycloak.
+By default, the local Keycloak realm `lasuite` contains these demo accounts.
+They are configured in `.env` and can be changed before the first Keycloak import.
 
 | Username | Password | Email                  |
 | -------- | -------- | ---------------------- |
 | `demo1`  | `demo1`  | `demo1@lasuite.local`  |
 | `demo2`  | `demo2`  | `demo2@lasuite.local`  |
 
-Vérifier les utilisateurs créés côté Docs :
+Check the users created on the Docs side:
 
 ```bash
 ./setup.sh docs users
 ```
 
-## Fonctionnement local
+## How it works locally
 
-Le profil `docs` lance uniquement les services nécessaires à Dots :
+The `docs` profile only starts the services Dots needs:
 
 ```text
-auth: Keycloak commun + base Keycloak
+auth: shared Keycloak + Keycloak database
 docs: PostgreSQL, Redis, MinIO, createbuckets, backend, frontend, nginx media, y-provider
 ```
 
-Services Docs volontairement exclus :
+Docs services deliberately excluded:
 
 ```text
-keycloak local, kc_postgresql, mailcatcher, docspec, celery
+local keycloak, kc_postgresql, mailcatcher, docspec, celery
 ```
 
-Dots utilise le client OIDC confidentiel `interop-app` du realm `lasuite`, puis appelle l'API externe Docs avec :
+Dots uses the confidential OIDC client `interop-app` from the `lasuite` realm, then calls the Docs external API with:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-Endpoints Docs utilisés par Dots :
+Docs endpoints used by Dots:
 
 ```text
 http://localhost:8071/external_api/v1.0/documents/
 http://localhost:8071/external_api/v1.0/typst-templates/
 ```
 
-Documentation API :
+API documentation:
 
-- [Templates Typst](./documentation/EXTERNAL-API.md)
-- [Récupération d'un document Docs depuis Dots](./documentation/DOCS-FETCH.md)
+- [Typst templates](./documentation/EXTERNAL-API.md)
+- [Fetching a Docs document from Dots](./documentation/DOCS-FETCH.md)
 
 ## Configuration
 
-Dots lit la configuration locale depuis `.env`, à créer depuis `.env.example`.
-Les principales variables sont :
+Dots reads its local configuration from `.env`, to be created from `.env.example`.
+The main variables are:
 
 ```bash
 APP_ORIGIN=http://localhost:3002
@@ -180,58 +180,58 @@ TYPST_TEMPLATES_API_TIMEOUT_MS=10000
 TYPST_TEMPLATES_API_MAX_RESPONSE_BYTES=5242880
 ```
 
-Variables frontend optionnelles pour le menu des services :
+Optional frontend variables for the services menu:
 
 ```bash
 VITE_DOCS_URL=http://localhost:3000
 ```
 
-Par défaut, Dots affiche Dots et Docs dans le menu des services.
+By default, Dots shows Dots and Docs in the services menu.
 
 ## Structure
 
 ```text
 auth/
-  compose.yml              Keycloak local
-  realm-lasuite.json.tpl   template du realm Keycloak local
+  compose.yml              local Keycloak
+  realm-lasuite.json.tpl   local Keycloak realm template
 
-backend/                   backend Dots
-  fixtures/templates/      fixtures Typst utilisées par les tests et previews locales
-  templates/assets/        logos et assets partagés pour la compilation Typst
-frontend/                  frontend Dots
+backend/                   Dots backend
+  fixtures/templates/      Typst fixtures used by tests and local previews
+  templates/assets/        logos and shared assets for Typst compilation
+frontend/                  Dots frontend
 
 demo/
-  docs.sh                  orchestration Docs + Keycloak
-  lib.sh                   fonctions partagées
-  users.sh                 inspection des users Docs
-  env.docs.common.local.tpl overrides OIDC Docs générés depuis .env
+  docs.sh                  Docs + Keycloak orchestration
+  lib.sh                   shared functions
+  users.sh                 Docs user inspection
+  env.docs.common.local.tpl Docs OIDC overrides generated from .env
 
-docs/                      sources La Suite Docs
-django-lasuite/            dépendances Django La Suite
+docs/                      La Suite Docs sources
+django-lasuite/            La Suite Django dependencies
 ```
 
-## Nettoyage
+## Cleanup
 
-Nettoyer les caches frontend Docs :
+Clean the Docs frontend caches:
 
 ```bash
 ./setup.sh docs clean
 ```
 
-Voir l'espace Docker utilisé :
+See Docker disk usage:
 
 ```bash
 docker system df
 ```
 
-Nettoyage Docker classique :
+Standard Docker cleanup:
 
 ```bash
 docker builder prune
 docker system prune
 ```
 
-Nettoyage Docker avec volumes inutilisés :
+Docker cleanup including unused volumes:
 
 ```bash
 docker system prune --volumes

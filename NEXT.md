@@ -1,321 +1,307 @@
-## Contexte
+## Context
 
-Dots est un POC qui transforme des documents La Suite Docs en PDF a partir de
-templates Typst. Il s'appuie sur :
+Dots is a POC that turns La Suite Docs documents into PDFs from Typst
+templates. It relies on:
 
-- une application frontend Vite/React ;
-- un backend Node/Fastify ;
-- une stack locale Docs embarquee dans le depot pour le developpement ;
-- un Keycloak local ;
-- l'API externe Docs, notamment les documents et les templates Typst ;
-- Typst pour compiler le PDF.
+- a Vite/React frontend application;
+- a Node/Fastify backend;
+- a local Docs stack embedded in the repository for development;
+- a local Keycloak;
+- the Docs external API, in particular documents and Typst templates;
+- Typst to compile the PDF.
 
-Le POC a ete fait pour aller vite pendant un hackathon. Il reunit dans un meme
-workspace l'application, une copie locale de Docs, une configuration Keycloak et
-des scripts d'orchestration. Ce n'est pas la forme cible d'un service La Suite.
+The POC was built to move fast during a hackathon. It brings together in a
+single workspace the application, a local copy of Docs, a Keycloak
+configuration and orchestration scripts. This is not the target shape of a La
+Suite service.
 
-## Architecture cible recommandee
+## Recommended target architecture
 
-Il y a deux options serieuses.
+There are two serious options.
 
-### Option A : fonctionnalite integree a Docs
+### Option A: feature built into Docs
 
-C'est l'option la plus naturelle si l'export PDF template est considere comme
-une fonctionnalite native de Docs.
+This is the most natural option if templated PDF export is considered a native
+Docs feature.
 
-Dans ce modele :
+In this model:
 
-- les templates Typst sont un vrai domaine de Docs ;
-- l'UI d'export vit dans Docs ;
-- les permissions suivent directement les permissions Docs ;
-- le rendu PDF est effectue par un worker ou un service interne ;
-- les PDF generes peuvent etre stockes dans le S3 de Docs ou renvoyes en
-  streaming ;
-- il n'y a pas de nouvelle application a authentifier ni a operer.
+- Typst templates are a real Docs domain;
+- the export UI lives in Docs;
+- permissions follow Docs permissions directly;
+- PDF rendering is done by a worker or an internal service;
+- generated PDFs can be stored in the Docs S3 or streamed back;
+- there is no new application to authenticate or operate.
 
-Avantages :
+Advantages:
 
-- moins de surface d'integration ;
-- moins de duplication d'authentification ;
-- meilleure coherence produit ;
-- plus facile a homologuer si Docs est deja le produit porteur.
+- smaller integration surface;
+- less duplicated authentication;
+- better product consistency;
+- easier to get security-approved if Docs is already the host product.
 
-Inconvenients :
+Drawbacks:
 
-- il faut contribuer directement au depot Docs ;
-- le cycle de validation depend de l'equipe Docs ;
-- le domaine Typst devient une responsabilite du produit Docs.
+- requires contributing directly to the Docs repository;
+- the validation cycle depends on the Docs team;
+- the Typst domain becomes a responsibility of the Docs product.
 
-### Option B : service Dots separe, connecte a Docs
+### Option B: separate Dots service, connected to Docs
 
-C'est l'option a retenir si Dots doit rester un produit autonome ou servir
-plusieurs sources documentaires.
+This is the option to choose if Dots must remain a standalone product or serve
+several document sources.
 
-Dans ce modele :
+In this model:
 
-- Dots est deploye comme service La Suite dedie ;
-- Dots utilise OIDC pour authentifier l'utilisateur ;
-- Dots appelle Docs via l'API `resource server` ;
-- Docs reste source de verite pour les documents, medias, utilisateurs et
-  permissions ;
-- Dots possede uniquement son domaine propre : rendu, jobs, preferences
-  d'export, eventuellement bibliotheque de templates ;
-- Typst tourne dans un composant isole et limite en ressources.
+- Dots is deployed as a dedicated La Suite service;
+- Dots uses OIDC to authenticate the user;
+- Dots calls Docs via the `resource server` API;
+- Docs remains the source of truth for documents, media, users and
+  permissions;
+- Dots only owns its own domain: rendering, jobs, export preferences, possibly
+  a template library;
+- Typst runs in an isolated, resource-limited component.
 
-Avantages :
+Advantages:
 
-- autonomie produit ;
-- responsabilites plus nettes ;
-- possibilite de faire evoluer le rendu PDF independamment de Docs.
+- product autonomy;
+- clearer responsibilities;
+- ability to evolve PDF rendering independently of Docs.
 
-Inconvenients :
+Drawbacks:
 
-- plus de deploiement, secrets, monitoring et surface de securite ;
-- contrats API Docs a stabiliser ;
-- gestion plus complexe des droits et des medias.
+- more deployment, secrets, monitoring and security surface;
+- Docs API contracts to stabilize;
+- more complex handling of permissions and media.
 
-## Ce qu'il ne faut pas garder tel quel
+## What should not be kept as is
 
-Le POC actuel contient volontairement des compromis de hackathon. Pour une
-version production-grade, il faudrait retirer ou refaire :
+The current POC deliberately contains hackathon trade-offs. For a
+production-grade version, the following should be removed or redone:
 
-- la copie embarquee de Docs et `django-lasuite` comme dependances locales de
-  demo ;
-- les scripts qui lancent Keycloak, Docs, PostgreSQL, Redis et MinIO pour le
-  developpement local comme s'ils etaient l'environnement cible ;
-- les secrets de demo presents dans `.env.example`, meme s'ils sont acceptables
-  en local ;
-- les fallbacks silencieux vers `localhost` dans le code applicatif ;
-- les sessions serveur en memoire ;
-- le stockage local des jobs d'ingestion ;
-- les appels synchrones longs pour les rendus PDF couteux ;
-- tout rendu Typst non isole du processus backend principal ;
-- toute dependance a un fork local de Docs qui ne serait pas upstream ou versionne
-  proprement ;
-- les fixtures Typst utilisees comme quasi-donnees produit.
+- the embedded copy of Docs and `django-lasuite` as local demo dependencies;
+- the scripts that start Keycloak, Docs, PostgreSQL, Redis and MinIO for local
+  development as if they were the target environment;
+- the demo secrets in `.env.example`, even if they are acceptable locally;
+- the silent fallbacks to `localhost` in the application code;
+- in-memory server sessions;
+- local storage of ingestion jobs;
+- long synchronous calls for expensive PDF renders;
+- any Typst rendering not isolated from the main backend process;
+- any dependency on a local Docs fork that is not upstream or properly
+  versioned;
+- Typst fixtures used as quasi product data.
 
-## Chantiers metier a reprendre
+## Product workstreams to take over
 
-Les deux zones qui portent le plus de valeur produit sont l'extraction de
-gabarits depuis des documents existants et l'edition de templates. Ce sont aussi
-les deux zones ou le POC a fait les compromis les plus visibles : il donne une
-experience convaincante sur des cas simples, mais il ne modelise pas encore la
-richesse reelle des documents administratifs.
+The two areas that carry the most product value are extracting templates from
+existing documents and editing templates. They are also the two areas where the
+POC made the most visible trade-offs: it gives a convincing experience on
+simple cases, but it does not yet model the real richness of administrative
+documents.
 
-### Extracteur PDF/DOCX
+### PDF/DOCX extractor
 
-L'extracteur actuel n'est pas un gadget : il contient deja une vraie logique
-d'analyse.
+The current extractor is not a gimmick: it already contains real analysis
+logic.
 
-Ce qui existe dans le POC :
+What exists in the POC:
 
-- les fichiers PDF et DOCX sont acceptes via `/api/ingest` ;
-- le type est verifie sur les octets du fichier, pas seulement sur l'extension ;
-- l'analyse PDF utilise PyMuPDF pour lire les textes, formes, images et zones
-  visibles ;
-- les elements masques par une forme opaque posterieure sont ignores, ce qui
-  evite de reprendre du contenu cache ;
-- le script propose des regions : en-tete, pied de page, page entiere ;
-- les marges, le format de page, l'orientation, une police dominante,
-  l'interligne et une couleur de titre sont deduits ;
-- les fragments peuvent etre extraits en PNG ou en SVG quand la zone est
-  vectorielle ;
-- le DOCX est rendu par LibreOffice, puis analyse comme un PDF ;
-- pour le DOCX, une copie-sonde de trois pages est generee pour observer les
-  bandeaux sans corps de document ;
-- le POC distingue certains cas `premiere page` / `sauf premiere page` ;
-- une pagination Word simple peut etre retiree du rendu fige et reconstruite
-  comme pagination dynamique Typst ;
-- les erreurs previsibles sont remontees proprement : format non supporte,
-  LibreOffice absent, timeout, fichier trop gros.
+- PDF and DOCX files are accepted via `/api/ingest`;
+- the type is checked on the file bytes, not only on the extension;
+- PDF analysis uses PyMuPDF to read text, shapes, images and visible areas;
+- elements hidden by a later opaque shape are ignored, which avoids picking up
+  hidden content;
+- the script proposes regions: header, footer, full page;
+- margins, page size, orientation, a dominant font, line spacing and a heading
+  color are inferred;
+- fragments can be extracted as PNG, or as SVG when the area is vector-based;
+- DOCX is rendered by LibreOffice, then analyzed like a PDF;
+- for DOCX, a three-page probe copy is generated to observe the banners without
+  the document body;
+- the POC distinguishes some `first page` / `all but first page` cases;
+- simple Word page numbering can be removed from the frozen render and rebuilt
+  as dynamic Typst page numbering;
+- predictable errors are reported cleanly: unsupported format, LibreOffice
+  missing, timeout, file too large.
 
-Ce que cela permet de prouver :
+What this proves:
 
-- l'utilisateur peut partir d'un document reel et obtenir rapidement une base de
-  template ;
-- les en-tetes et pieds de page visuels peuvent etre recuperes sans demander a
-  l'utilisateur de refaire toute la charte a la main ;
-- le flux PDF/DOCX -> analyse -> recadrage -> asset -> template Typst fonctionne.
+- the user can start from a real document and quickly get a template base;
+- visual headers and footers can be recovered without asking the user to redo
+  the whole visual identity by hand;
+- the PDF/DOCX -> analysis -> cropping -> asset -> Typst template flow works.
 
-Mais l'extracteur reste tres partiel.
+But the extractor remains very partial.
 
-Limites actuelles :
+Current limitations:
 
-- le PDF est analyse uniquement sur la premiere page ;
-- le DOCX ne lit que la premiere section Word ;
-- les variantes pages paires / impaires sont detectees comme limite, mais pas
-  reconstruites fidelement ;
-- les bandeaux DOCX sont principalement recuperes comme images rasterisees, pas
-  comme structure editable ;
-- les styles ne sont pas reconstruits comme un systeme complet : seuls quelques
-  signaux globaux sont deduits ;
-- les differences de style selon les pages ne sont pas modelisees ;
-- la pagination gere seulement des formes simples ;
-- l'analyse ne comprend pas encore la semantique du document : logos, adresses,
-  emetteur, service, reference, date, mentions legales ;
-- il n'y a pas d'OCR pour les PDF scannes ;
-- il n'y a pas de comparaison multi-pages pour detecter les zones constantes et
-  variables ;
-- les tableaux, cadres, colonnes, filigranes, tampons, signatures ou fonds de
-  page ne sont pas transformes en composants reutilisables ;
-- l'import IA depuis PDF existe dans l'assistant, mais il est separe du pipeline
-  d'extraction structuree.
+- the PDF is analyzed on the first page only;
+- the DOCX only reads the first Word section;
+- even / odd page variants are detected as a limitation, but not faithfully
+  rebuilt;
+- DOCX banners are mostly recovered as rasterized images, not as an editable
+  structure;
+- styles are not rebuilt as a complete system: only a few global signals are
+  inferred;
+- style differences across pages are not modeled;
+- page numbering only handles simple forms;
+- the analysis does not yet understand document semantics: logos, addresses,
+  issuer, department, reference, date, legal notices;
+- there is no OCR for scanned PDFs;
+- there is no multi-page comparison to detect constant and variable areas;
+- tables, frames, columns, watermarks, stamps, signatures or page backgrounds
+  are not turned into reusable components;
+- AI import from PDF exists in the assistant, but it is separate from the
+  structured extraction pipeline.
 
-Pour une version production-grade, il faudrait refaire ce chantier comme un vrai
-moteur d'analyse documentaire.
+For a production-grade version, this workstream should be redone as a real
+document analysis engine.
 
-Objectif metier cible :
+Target product goal:
 
-- importer un PDF ou DOCX administratif existant ;
-- detecter automatiquement la structure de page ;
-- comprendre les styles recurrents ;
-- differencier premiere page, pages suivantes, pages paires, pages impaires et
-  sections ;
-- recuperer les elements visuels importants ;
-- proposer une template editable, pas seulement une image de bandeau ;
-- expliquer a l'utilisateur ce qui a ete reconnu, ce qui ne l'a pas ete, et ce
-  qui doit etre valide manuellement.
+- import an existing administrative PDF or DOCX;
+- automatically detect the page structure;
+- understand recurring styles;
+- distinguish first page, following pages, even pages, odd pages and sections;
+- recover the important visual elements;
+- propose an editable template, not just a banner image;
+- explain to the user what was recognized, what was not, and what must be
+  validated manually.
 
-Axes de reprise :
+Areas to take over:
 
-- analyse multi-pages : comparer les pages pour isoler les elements constants,
-  les variations de pagination et les elements propres a la premiere page ;
-- analyse DOCX approfondie : sections, styles Word, headers/footers par
-  variante, champs dynamiques, images ancrees, tableaux, marges, colonnes ;
-- analyse PDF avancee : detection de repetitivite, blocs textuels, formes,
-  images, calques, fonds, orientation par page ;
-- OCR optionnel pour les PDF scannes ;
-- extraction semantique aidee par IA : classifier les elements detectes en logo,
-  nom d'administration, direction, adresse, reference, date, pagination,
-  mentions, signature ;
-- reconstruction Typst editable : transformer ce qui peut l'etre en texte,
-  blocs, styles et variables, et ne garder en image que ce qui est vraiment
-  graphique ;
-- gestion des variantes : premiere page differente, pages suivantes, pages
-  paires/impaires, sections multiples ;
-- restitution UX : montrer les hypotheses, les scores de confiance, les zones
-  reconnues, les zones ignorees et les avertissements ;
-- apprentissage par correction : quand l'utilisateur corrige une zone ou un
-  style, reutiliser cette correction pour regenerer la template.
+- multi-page analysis: compare pages to isolate constant elements, page
+  numbering variations and first-page-specific elements;
+- in-depth DOCX analysis: sections, Word styles, headers/footers per variant,
+  dynamic fields, anchored images, tables, margins, columns;
+- advanced PDF analysis: repetition detection, text blocks, shapes, images,
+  layers, backgrounds, orientation per page;
+- optional OCR for scanned PDFs;
+- AI-assisted semantic extraction: classify detected elements as logo,
+  administration name, directorate, address, reference, date, page number,
+  notices, signature;
+- editable Typst reconstruction: turn whatever can be into text, blocks, styles
+  and variables, and keep as images only what is truly graphical;
+- variant handling: different first page, following pages, even/odd pages,
+  multiple sections;
+- UX feedback: show the assumptions, confidence scores, recognized areas,
+  ignored areas and warnings;
+- learning from corrections: when the user corrects an area or a style, reuse
+  that correction to regenerate the template.
 
-Definition of done specifique :
+Specific definition of done:
 
-- un document de plusieurs pages ne se reduit plus a sa premiere page ;
-- un DOCX avec plusieurs sections est au moins signale precisement, idealement
-  reconstruit section par section ;
-- une premiere page differente est geree sans rasteriser inutilement tout le
-  bandeau ;
-- une pagination Word simple et courante est convertie en pagination Typst ;
-- les elements textuels de charte restent editables quand ils peuvent l'etre ;
-- l'utilisateur voit clairement ce qui est automatique et ce qui reste a valider.
+- a multi-page document is no longer reduced to its first page;
+- a DOCX with several sections is at least reported precisely, ideally rebuilt
+  section by section;
+- a different first page is handled without needlessly rasterizing the whole
+  banner;
+- simple, common Word page numbering is converted to Typst page numbering;
+- textual visual-identity elements remain editable when they can be;
+- the user clearly sees what is automatic and what remains to be validated.
 
-### Editeur de templates
+### Template editor
 
-L'editeur actuel est une bonne base UX, mais son modele est volontairement
-contraint.
+The current editor is a good UX foundation, but its model is deliberately
+constrained.
 
-Ce qui existe dans le POC :
+What exists in the POC:
 
-- une page d'edition unifiee autour de trois zones : reglage, apercu PDF,
-  assistant IA ;
-- une synchronisation entre controles visuels, source Typst et rendu PDF ;
-- un mode `Mise en page` pour les utilisateurs non techniques ;
-- un mode `Code` pour modifier directement le Typst ;
-- un apercu compile sur une fixture dediee ;
-- des reglages de page : format, orientation, marges ;
-- des styles texte simples : police, taille, couleur, interligne ;
-- des reglages de tableaux ;
-- un constructeur d'en-tete et de pied de page ;
-- des blocs empilables dans un seul `header:` ou `footer:` Typst ;
-- des scopes par bloc : toutes les pages, premiere page, sauf premiere page ;
-- des dispositions predefinies : image + texte, texte + image, centre,
-  personnalise ;
-- l'import d'images ou l'extraction d'un visuel depuis PDF/DOCX ;
-- une pagination configurable dans le pied de page ;
-- un assistant IA capable de proposer une source ou un patch de mise en page.
+- a unified editing page built around three areas: settings, PDF preview, AI
+  assistant;
+- synchronization between visual controls, Typst source and PDF render;
+- a `Mise en page` (layout) mode for non-technical users;
+- a `Code` mode to edit the Typst directly;
+- a preview compiled on a dedicated fixture;
+- page settings: size, orientation, margins;
+- simple text styles: font, size, color, line spacing;
+- table settings;
+- a header and footer builder;
+- stackable blocks in a single Typst `header:` or `footer:`;
+- per-block scopes: all pages, first page, all but first page;
+- predefined layouts: image + text, text + image, centered, custom;
+- importing images or extracting a visual from PDF/DOCX;
+- configurable page numbering in the footer;
+- an AI assistant able to propose a source or a layout patch.
 
-Ce que cela permet de prouver :
+What this proves:
 
-- un utilisateur peut produire rapidement un gabarit administratif sans ecrire de
-  Typst ;
-- le feedback visuel est suffisamment court pour iterer ;
-- le mode code permet de depasser ponctuellement les limites du panneau.
+- a user can quickly produce an administrative template without writing Typst;
+- the visual feedback loop is short enough to iterate;
+- code mode makes it possible to occasionally go beyond the panel's limits.
 
-Mais l'editeur n'est pas encore un editeur de templates complet.
+But the editor is not yet a complete template editor.
 
-Limites actuelles :
+Current limitations:
 
-- l'utilisateur choisit parmi quelques sous-templates de blocs ;
-- le placement est essentiellement lineaire et empile, pas libre ;
-- il n'y a pas de canvas permettant de positionner precisement les elements sur
-  la page ;
-- les blocs sont limites en nombre et en structure ;
-- les variantes de page sont reduites a trois scopes ;
-- les styles conditionnels selon la page, la section ou le type de document ne
-  sont pas modelises ;
-- les variables metier ne sont pas explicites : emetteur, service, reference,
-  date, signataire, adresse, logo, sceau ;
-- les composants ne sont pas reutilisables comme une bibliotheque de morceaux de
-  gabarit ;
-- le mode code donne un controle total, mais seulement aux utilisateurs capables
-  d'ecrire du Typst ;
-- l'IA aide a franchir certaines limites, mais elle ne remplace pas un modele
-  produit comprehensible et stable.
+- the user chooses among a few block sub-templates;
+- placement is essentially linear and stacked, not free-form;
+- there is no canvas to position elements precisely on the page;
+- blocks are limited in number and structure;
+- page variants are reduced to three scopes;
+- conditional styles by page, section or document type are not modeled;
+- business variables are not explicit: issuer, department, reference, date,
+  signatory, address, logo, seal;
+- components are not reusable as a library of template pieces;
+- code mode gives full control, but only to users able to write Typst;
+- AI helps get past some limits, but it does not replace an understandable,
+  stable product model.
 
-Pour une version production-grade, il faudrait decider si l'editeur vise :
+For a production-grade version, a decision is needed on whether the editor
+targets:
 
-- un editeur simple de chartes standardisees ;
-- ou un vrai editeur de gabarits administratifs complet.
+- a simple editor for standardized visual identities;
+- or a real, complete administrative template editor.
 
-Si l'objectif est un editeur simple, le modele actuel peut etre durci :
+If the goal is a simple editor, the current model can be hardened:
 
-- garder des blocs predefinis ;
-- augmenter la qualite des presets ;
-- ajouter une bibliotheque de composants officiels ;
-- mieux gerer les variantes premiere page / suivantes ;
-- rendre les styles plus explicites ;
-- documenter clairement les limites.
+- keep predefined blocks;
+- raise the quality of presets;
+- add a library of official components;
+- better handle first page / following pages variants;
+- make styles more explicit;
+- clearly document the limits.
 
-Si l'objectif est un editeur complet, il faut changer de niveau d'abstraction.
+If the goal is a complete editor, the level of abstraction has to change.
 
-Objectif metier cible pour un editeur complet :
+Target product goal for a complete editor:
 
-- donner un controle total sur la page sans obliger l'utilisateur a ecrire du
-  Typst ;
-- permettre de creer librement des zones ;
-- gerer les variantes de pages ;
-- manipuler des variables metier ;
-- reutiliser des composants ;
-- produire un Typst maintenable, lisible et stable.
+- give full control over the page without forcing the user to write Typst;
+- allow creating areas freely;
+- handle page variants;
+- manipulate business variables;
+- reuse components;
+- produce maintainable, readable and stable Typst.
 
-Axes de reprise :
+Areas to take over:
 
-- canvas WYSIWYG ou semi-WYSIWYG : placement libre, guides, alignements,
-  grilles, verrouillage, calques ;
-- composants de template : logo, bloc adresse, identite emetteur, reference,
-  date, objet, signature, pagination, mentions, filigrane ;
-- systeme de variables : champs utilisateur, champs document, champs
-  organisation, valeurs par defaut ;
-- styles globaux : tokens de couleur, typographies, espacements, styles de
-  titres, styles de tableaux ;
-- variantes : premiere page, pages suivantes, pages paires/impaires, derniere
-  page, section specifique ;
-- bibliotheque de sous-templates : en-tetes officiels, pieds de page,
-  couvertures, pages de garde, annexes ;
-- editeur hybride : panneau visuel pour le commun, mode avance pour le Typst,
-  avec synchronisation explicite et non magique ;
-- validation : avertir quand un element sort de page, se superpose, devient
-  illisible ou casse la compilation ;
-- historique et comparaison : voir ce qui change dans le PDF et dans le Typst ;
-- droits : templates personnels, partages, organisationnels, officiels.
+- WYSIWYG or semi-WYSIWYG canvas: free placement, guides, alignment, grids,
+  locking, layers;
+- template components: logo, address block, issuer identity, reference, date,
+  subject, signature, page number, notices, watermark;
+- variable system: user fields, document fields, organization fields, default
+  values;
+- global styles: color tokens, typography, spacing, heading styles, table
+  styles;
+- variants: first page, following pages, even/odd pages, last page, specific
+  section;
+- sub-template library: official headers, footers, covers, title pages,
+  appendices;
+- hybrid editor: visual panel for the common cases, advanced mode for Typst,
+  with explicit, non-magical synchronization;
+- validation: warn when an element goes off the page, overlaps, becomes
+  unreadable or breaks compilation;
+- history and comparison: see what changes in the PDF and in the Typst;
+- permissions: personal, shared, organizational and official templates.
 
-Definition of done specifique :
+Specific definition of done:
 
-- un utilisateur non technique peut reproduire une charte administrative reelle
-  sans passer par le code ;
-- un utilisateur avance peut reprendre le Typst sans perdre la compatibilite avec
-  l'editeur visuel ;
-- les variantes de page sont visibles et testables ;
-- les composants sont reutilisables entre templates ;
-- l'apercu signale les erreurs de rendu, les debordements et les incoherences ;
-- les templates produits restent maintenables apres plusieurs iterations.
+- a non-technical user can reproduce a real administrative visual identity
+  without touching code;
+- an advanced user can take over the Typst without losing compatibility with
+  the visual editor;
+- page variants are visible and testable;
+- components are reusable across templates;
+- the preview reports rendering errors, overflows and inconsistencies;
+- the resulting templates remain maintainable after several iterations.
