@@ -8,10 +8,16 @@ ROOT_ENV_EXAMPLE="$ROOT_DIR/.env.example"
 MANAGED_BEGIN="# >>> lasuite shared auth demo"
 MANAGED_END="# <<< lasuite shared auth demo"
 
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_GREEN=$'\033[32m' C_YELLOW=$'\033[33m' C_RED=$'\033[31m' C_RESET=$'\033[0m'
+else
+  C_GREEN='' C_YELLOW='' C_RED='' C_RESET=''
+fi
+
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
-ok() { printf 'OK   %s\n' "$*"; }
-warn() { printf 'WARN %s\n' "$*"; }
-fail() { printf 'FAIL %s\n' "$*"; }
+ok() { printf '%sOK%s   %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn() { printf '%sWARN%s %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
+fail() { printf '%sFAIL%s %s\n' "$C_RED" "$C_RESET" "$*"; }
 info() { printf 'INFO %s\n' "$*"; }
 
 have() {

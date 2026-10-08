@@ -4,7 +4,13 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
-fail() { printf 'FAIL %s\n' "$*"; }
+fail() {
+  if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    printf '\033[31mFAIL\033[0m %s\n' "$*"
+  else
+    printf 'FAIL %s\n' "$*"
+  fi
+}
 
 usage() {
   cat <<'EOF'
