@@ -19,6 +19,8 @@ interface Props {
    * `page` : la page entière tient dans le cadre, en largeur comme en hauteur.
    */
   fit?: "width" | "page";
+  /** PDF en cours de génération : une feuille blanche tient sa place. */
+  loading?: boolean;
 }
 
 /** En dessous, une page « entière » devient illisible : on préfère faire défiler. */
@@ -32,12 +34,19 @@ const MIN_FIT_PAGE_WIDTH = 480;
  *
  * react-pdf arrive déjà par le kit La Suite, qui s'en sert pour son FilePreview.
  */
-export function PdfPreview({ pdfUrl, fileName, fit = "width" }: Props) {
+export function PdfPreview({
+  pdfUrl,
+  fileName,
+  fit = "width",
+  loading = false,
+}: Props) {
   const [pageCount, setPageCount] = useState(0);
   const [frame, setFrame] = useState({ width: 0, height: 0 });
   // Largeur / hauteur de la première page ; A4 portrait tant qu'elle n'est pas chargée.
   const [pageRatio, setPageRatio] = useState(1 / Math.SQRT2);
   const scroller = useRef<HTMLDivElement>(null);
+
+  const hasFrame = pdfUrl !== null || loading;
 
   // react-pdf rend un canvas de taille fixe : il faut lui donner une largeur,
   // et la recalculer quand le cadre change (panneau replié, fenêtre redimensionnée).
@@ -45,11 +54,14 @@ export function PdfPreview({ pdfUrl, fileName, fit = "width" }: Props) {
     const el = scroller.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) =>
-      setFrame({ width: entry.contentRect.width, height: entry.contentRect.height }),
+      setFrame({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      }),
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [pdfUrl]);
+  }, [hasFrame]);
 
   const pageWidth =
     fit === "page"
@@ -59,55 +71,76 @@ export function PdfPreview({ pdfUrl, fileName, fit = "width" }: Props) {
         )
       : frame.width;
 
-  if (!pdfUrl) {
-    return <div className="pdf-placeholder">Le PDF généré s'affichera ici.</div>;
+  // Même taille et même ombre que la page à venir : le PDF prend sa place sans saut.
+  const sheet = pageWidth > 0 && (
+    <div
+      className="pdf-page pdf-page--pending"
+      style={{ width: pageWidth, aspectRatio: pageRatio }}
+      role="status"
+      aria-label="Génération de l'aperçu…"
+    />
+  );
+
+  if (!hasFrame) {
+    return (
+      <div className="pdf-placeholder">Le PDF généré s'affichera ici.</div>
+    );
   }
 
   return (
     <div className="pdf-preview">
-      <div className="pdf-preview-toolbar">
-        <a href={pdfUrl} download={fileName}>
-          Télécharger le PDF
-        </a>
-      </div>
+      {pdfUrl && (
+        <div className="pdf-preview-toolbar">
+          <a href={pdfUrl} download={fileName}>
+            Télécharger le PDF
+          </a>
+        </div>
+      )}
       {/* `aria-label` et non `title` : ce dernier fait flotter une infobulle
           au-dessus des pages dès qu'on survole l'aperçu. */}
-      <div className="pdf-scroll" ref={scroller} role="group" aria-label="Aperçu du PDF">
-        <Document
-          file={pdfUrl}
-          onLoadSuccess={({ numPages }) => setPageCount(numPages)}
-          loading={
-            <p className="pdf-scroll__message" role="status">
-              Chargement de l'aperçu…
-            </p>
-          }
-          error={
-            <p className="pdf-scroll__message" role="alert">
-              L'aperçu n'a pas pu être affiché.
-            </p>
-          }
-          noData={null}
-        >
-          {/* ponytail: toutes les pages sont montées d'un coup. Au-delà d'une
+      <div
+        className="pdf-scroll"
+        ref={scroller}
+        role="group"
+        aria-label="Aperçu du PDF"
+      >
+        {!pdfUrl && sheet}
+        {pdfUrl && (
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={({ numPages }) => setPageCount(numPages)}
+            loading={sheet || null}
+            error={
+              <p className="pdf-scroll__message" role="alert">
+                L'aperçu n'a pas pu être affiché.
+              </p>
+            }
+            noData={null}
+          >
+            {/* ponytail: toutes les pages sont montées d'un coup. Au-delà d'une
               trentaine, ne monter que les pages visibles. */}
-          {pageWidth > 0 &&
-            Array.from({ length: pageCount }, (_, i) => (
-              <Page
-                key={i}
-                pageNumber={i + 1}
-                width={pageWidth}
-                className="pdf-page"
-                onLoadSuccess={
-                  i === 0
-                    ? (page) => {
-                        const { width, height } = page.getViewport({ scale: 1 });
-                        if (width > 0 && height > 0) setPageRatio(width / height);
-                      }
-                    : undefined
-                }
-              />
-            ))}
-        </Document>
+            {pageWidth > 0 &&
+              Array.from({ length: pageCount }, (_, i) => (
+                <Page
+                  key={i}
+                  pageNumber={i + 1}
+                  width={pageWidth}
+                  className="pdf-page"
+                  onLoadSuccess={
+                    i === 0
+                      ? (page) => {
+                          const { width, height } = page.getViewport({
+                            scale: 1,
+                          });
+                          if (width > 0 && height > 0)
+                            setPageRatio(width / height);
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+          </Document>
+        )}
       </div>
     </div>
   );

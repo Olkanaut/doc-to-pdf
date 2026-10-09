@@ -378,6 +378,7 @@ function DocumentView({ documentId }: { documentId: string }) {
             }
             fileName={fileName}
             fit="page"
+            loading={activePdfState.status === "loading"}
           />
         </div>
 
