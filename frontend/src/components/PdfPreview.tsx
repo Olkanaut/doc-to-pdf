@@ -14,7 +14,15 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 interface Props {
   pdfUrl: string | null;
   fileName: string;
+  /**
+   * `width` : la page occupe toute la largeur du cadre (défaut).
+   * `page` : la page entière tient dans le cadre, en largeur comme en hauteur.
+   */
+  fit?: "width" | "page";
 }
+
+/** En dessous, une page « entière » devient illisible : on préfère faire défiler. */
+const MIN_FIT_PAGE_WIDTH = 480;
 
 /**
  * Aperçu du PDF rendu par react-pdf, et non par la visionneuse du navigateur :
@@ -24,9 +32,11 @@ interface Props {
  *
  * react-pdf arrive déjà par le kit La Suite, qui s'en sert pour son FilePreview.
  */
-export function PdfPreview({ pdfUrl, fileName }: Props) {
+export function PdfPreview({ pdfUrl, fileName, fit = "width" }: Props) {
   const [pageCount, setPageCount] = useState(0);
-  const [pageWidth, setPageWidth] = useState(0);
+  const [frame, setFrame] = useState({ width: 0, height: 0 });
+  // Largeur / hauteur de la première page ; A4 portrait tant qu'elle n'est pas chargée.
+  const [pageRatio, setPageRatio] = useState(1 / Math.SQRT2);
   const scroller = useRef<HTMLDivElement>(null);
 
   // react-pdf rend un canvas de taille fixe : il faut lui donner une largeur,
@@ -34,10 +44,20 @@ export function PdfPreview({ pdfUrl, fileName }: Props) {
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => setPageWidth(entry.contentRect.width));
+    const observer = new ResizeObserver(([entry]) =>
+      setFrame({ width: entry.contentRect.width, height: entry.contentRect.height }),
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, [pdfUrl]);
+
+  const pageWidth =
+    fit === "page"
+      ? Math.min(
+          frame.width,
+          Math.max(frame.height * pageRatio, MIN_FIT_PAGE_WIDTH),
+        )
+      : frame.width;
 
   if (!pdfUrl) {
     return <div className="pdf-placeholder">Le PDF généré s'affichera ici.</div>;
@@ -72,7 +92,20 @@ export function PdfPreview({ pdfUrl, fileName }: Props) {
               trentaine, ne monter que les pages visibles. */}
           {pageWidth > 0 &&
             Array.from({ length: pageCount }, (_, i) => (
-              <Page key={i} pageNumber={i + 1} width={pageWidth} className="pdf-page" />
+              <Page
+                key={i}
+                pageNumber={i + 1}
+                width={pageWidth}
+                className="pdf-page"
+                onLoadSuccess={
+                  i === 0
+                    ? (page) => {
+                        const { width, height } = page.getViewport({ scale: 1 });
+                        if (width > 0 && height > 0) setPageRatio(width / height);
+                      }
+                    : undefined
+                }
+              />
             ))}
         </Document>
       </div>

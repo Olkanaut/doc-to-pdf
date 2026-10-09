@@ -31,13 +31,28 @@ PT_PER_MM = 72.0 / 25.4
 # Page sizes we can name, in points, portrait.
 PAPERS = {"a4": (595.28, 841.89), "a5": (419.53, 595.28), "us-letter": (612.0, 792.0)}
 # Fonts the layout panel offers; anything else is reported as a substitution.
+# Keys are normalised by `font_key`: PDFs often drop the spaces from names.
 KNOWN_FONTS = {
     "marianne": "Marianne",
     "arial": "Arial",
+    "arialmt": "Arial",
     "helvetica": "Helvetica",
-    "libertinus serif": "Libertinus Serif",
-    "new computer modern": "New Computer Modern",
-    "dejavu sans mono": "DejaVu Sans Mono",
+    "libertinusserif": "Libertinus Serif",
+    "newcomputermodern": "New Computer Modern",
+    "dejavusansmono": "DejaVu Sans Mono",
+}
+# Metric-compatible stand-ins LibreOffice uses for Microsoft fonts it lacks.
+# A rendered DOCX names the stand-in; the author chose the original.
+LIBREOFFICE_STAND_INS = {
+    "carlito": "Calibri",
+    "caladea": "Cambria",
+    "liberationsans": "Arial",
+    "liberationsansnarrow": "Arial Narrow",
+    "liberationserif": "Times New Roman",
+    "liberationmono": "Courier New",
+    "arimo": "Arial",
+    "tinos": "Times New Roman",
+    "cousine": "Courier New",
 }
 PREVIEW_SCALE = 2.0
 CROP_SCALE = 4.0
@@ -228,10 +243,15 @@ def dominant_font(spans: list[dict]) -> tuple[str, float, float]:
     return font, size, chars
 
 
+def font_key(name: str) -> str:
+    return name.replace(" ", "").lower()
+
+
 def map_font(raw: str) -> tuple[str, str | None]:
     """(font to use, font that was replaced or None)."""
     name = raw.split("+")[-1].split("-")[0].split(",")[0].strip()
-    hit = KNOWN_FONTS.get(name.lower())
+    name = LIBREOFFICE_STAND_INS.get(font_key(name), name)
+    hit = KNOWN_FONTS.get(font_key(name))
     if hit:
         return hit, None
     return "Marianne", name or None

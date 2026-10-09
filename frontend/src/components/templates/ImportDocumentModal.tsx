@@ -33,6 +33,16 @@ type Stage = "drop" | "loading" | "crop" | "docx" | "typ" | "error";
 /** Ce à quoi sert la zone choisie : une template entière, ou le seul visuel d'une section. */
 export type ImportTarget = "template" | "header" | "footer";
 
+/** La police d'origine hors de la liste proposée : comportement normal, pas une erreur. */
+function FontNotice({ font }: { font: string }) {
+  return (
+    <Alert type={VariantType.INFO}>
+      Police d'origine : {font}. Le modèle utilise Marianne, la police par
+      défaut ; vous pourrez en choisir une autre dans la mise en page.
+    </Alert>
+  );
+}
+
 const REGION_LABEL: Record<IngestRegion["kind"], string> = {
   header: "En-tête détecté",
   footer: "Pied de page détecté",
@@ -443,10 +453,7 @@ export function ImportDocumentModal({
                 </Alert>
               ))}
               {analysis.fontSubstitution && (
-                <Alert type={VariantType.WARNING}>
-                  {analysis.fontSubstitution} n'est pas installée sur le serveur :
-                  Marianne la remplace.
-                </Alert>
+                <FontNotice font={analysis.fontSubstitution} />
               )}
               {error && (
                 <div role="alert">
@@ -509,10 +516,7 @@ export function ImportDocumentModal({
                 </Alert>
               )}
               {analysis.fontSubstitution && (
-                <Alert type={VariantType.WARNING}>
-                  {analysis.fontSubstitution} n'est pas installée sur le serveur
-                  : Marianne la remplace.
-                </Alert>
+                <FontNotice font={analysis.fontSubstitution} />
               )}
               {error && (
                 <div role="alert">

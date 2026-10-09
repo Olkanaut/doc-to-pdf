@@ -377,6 +377,7 @@ function DocumentView({ documentId }: { documentId: string }) {
               activePdfState.status === "ready" ? activePdfState.url : null
             }
             fileName={fileName}
+            fit="page"
           />
         </div>
 
