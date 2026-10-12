@@ -518,6 +518,8 @@ export function LayoutEditorPage() {
               <PdfPreview
                 pdfUrl={pdfUrl}
                 fileName={`${name || "template"}.pdf`}
+                fit="page"
+                loading={!pdfUrl && !renderError}
               />
             </div>
           </section>
