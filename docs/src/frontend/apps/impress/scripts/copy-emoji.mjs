@@ -3,7 +3,7 @@
  * Used as a pre-step for both `dev` (Turbopack) and `build` (webpack) so that
  * neither pipeline needs a webpack CopyPlugin for this purpose.
  */
-import { cpSync } from 'fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -15,6 +15,14 @@ const src = resolve(
 );
 const dest = resolve(__dirname, '../public/assets/fonts/emoji');
 
-cpSync(src, dest, { recursive: true, force: true });
+// Plain read/write instead of cpSync: since Node 24's native cpSync, files are
+// created write-only (0200) then fail with EACCES on Docker Desktop bind mounts.
+// Removing first also replaces any unreadable leftover from an interrupted copy.
+mkdirSync(dest, { recursive: true });
+for (const name of readdirSync(src)) {
+  const target = resolve(dest, name);
+  rmSync(target, { force: true });
+  writeFileSync(target, readFileSync(resolve(src, name)));
+}
 
 console.log('✔ Emoji assets copied to public/assets/fonts/emoji');

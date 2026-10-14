@@ -218,6 +218,12 @@ function DocumentView({ documentId }: { documentId: string }) {
       : renderRequestKey
         ? { status: "loading" }
         : { status: "idle" };
+  // Tant que le document ou les templates arrivent, le PDF est déjà en route :
+  // l'aperçu montre la feuille d'attente, pas le cadre vide.
+  const pdfPending =
+    activePdfState.status === "loading" ||
+    state.status === "loading" ||
+    (templatesLoading && state.status !== "error");
 
   const blockCount =
     activePdfState.status === "ready"
@@ -377,6 +383,8 @@ function DocumentView({ documentId }: { documentId: string }) {
               activePdfState.status === "ready" ? activePdfState.url : null
             }
             fileName={fileName}
+            fit="page"
+            loading={pdfPending}
           />
         </div>
 
