@@ -15,15 +15,15 @@ interface Props {
   pdfUrl: string | null;
   fileName: string;
   /**
-   * `width` : la page occupe toute la largeur du cadre (défaut).
-   * `page` : la page entière tient dans le cadre, en largeur comme en hauteur.
+   * `width`: the page fills the frame's width (default).
+   * `page`: the whole page fits in the frame, in both width and height.
    */
   fit?: "width" | "page";
-  /** PDF en cours de génération : une feuille blanche tient sa place. */
+  /** PDF still being generated: a blank sheet holds its place. */
   loading?: boolean;
 }
 
-/** En dessous, une page « entière » devient illisible : on préfère faire défiler. */
+/** Below this, a "whole" page becomes unreadable: scrolling is better. */
 const MIN_FIT_PAGE_WIDTH = 480;
 
 /**
@@ -42,7 +42,7 @@ export function PdfPreview({
 }: Props) {
   const [pageCount, setPageCount] = useState(0);
   const [frame, setFrame] = useState({ width: 0, height: 0 });
-  // Largeur / hauteur de la première page ; A4 portrait tant qu'elle n'est pas chargée.
+  // Width / height of the first page; A4 portrait until it has loaded.
   const [pageRatio, setPageRatio] = useState(1 / Math.SQRT2);
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -71,7 +71,7 @@ export function PdfPreview({
         )
       : frame.width;
 
-  // Même taille et même ombre que la page à venir : le PDF prend sa place sans saut.
+  // Same size and shadow as the page to come: the PDF takes its place without a jump.
   const sheet = pageWidth > 0 && (
     <div
       className="pdf-page pdf-page--pending"

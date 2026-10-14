@@ -10,7 +10,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Head"
+          "text": "Heading 1"
         }
       ]
     },
@@ -31,7 +31,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Head2"
+          "text": "Heading 2"
         }
       ]
     },
@@ -52,7 +52,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Head3"
+          "text": "Heading 3"
         }
       ]
     },

@@ -51,7 +51,7 @@ export function LayoutEditorShell({
     >
       <Panel
         id="left"
-        defaultSize="320px"
+        defaultSize="380px"
         minSize="260px"
         maxSize={LAYOUT_PANEL_MAX_SIZE}
         className="le-shell__panel le-shell__panel--left"

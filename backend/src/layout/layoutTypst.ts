@@ -341,6 +341,24 @@ function bandHeightMm(
   cfg: LayoutConfig,
   extra: { heightMm: number; scope: BlockScope }[] = [],
 ): number {
+  const content = bandContentMm(band, cfg, extra);
+  if (!content) return 0;
+  // "Haut" (spacing.gap): the room content actually needs, plus its own
+  // breathing room toward the body — always added, never optional.
+  const needed = content + band.spacing.gap;
+  // "Bas" (spacing.top): a floor on the band's distance from the *page* edge,
+  // the same relationship margins.top/bottom already have with this same
+  // number — asking for more than the content needs pushes it further from
+  // the edge; asking for less never clips it, `needed` still wins.
+  return Math.max(band.spacing.top, needed);
+}
+
+/** Height of what the band draws, without any spacing around it. */
+function bandContentMm(
+  band: Band,
+  cfg: LayoutConfig,
+  extra: { heightMm: number; scope: BlockScope }[] = [],
+): number {
   const blockItems = band.blocks
     .filter((b) => !isBlockEmpty(b))
     .map((b) => ({ heightMm: blockHeightMm(b, cfg), scope: b.scope }));
@@ -356,14 +374,29 @@ function bandHeightMm(
     else if (it.scope === "except-first") rest += it.heightMm;
     else always += it.heightMm;
   }
-  // "Haut" (spacing.gap): the room content actually needs, plus its own
-  // breathing room toward the body — always added, never optional.
-  const needed = always + Math.max(first, rest) + gapBeforeExtra + band.spacing.gap;
-  // "Bas" (spacing.top): a floor on the band's distance from the *page* edge,
-  // the same relationship margins.top/bottom already have with this same
-  // number — asking for more than the content needs pushes it further from
-  // the edge; asking for less never clips it, `needed` still wins.
-  return Math.max(band.spacing.top, needed);
+  return always + Math.max(first, rest) + gapBeforeExtra;
+}
+
+/**
+ * Distance kept between the footer and the paper edge when the bottom margin
+ * has room to spare.
+ */
+const FOOTER_EDGE_MM = 10;
+
+/**
+ * Typst hangs the footer from the top of the bottom margin, `footer-descent`
+ * below the body. With a tall margin (room left for a removed visual, say) a
+ * lone page number then sits right under the text instead of at the foot of
+ * the page: the descent grows to take up the slack, never below "Haut".
+ */
+function footerDescentMm(
+  cfg: LayoutConfig,
+  marginBottom: number,
+  extra: { heightMm: number; scope: BlockScope }[],
+): number {
+  const gap = cfg.footer.spacing.gap;
+  const content = bandContentMm(cfg.footer, cfg, extra);
+  return Math.round(Math.max(gap, marginBottom - content - FOOTER_EDGE_MM) * 10) / 10;
 }
 
 /**
@@ -450,7 +483,7 @@ export function layoutToTypst(cfg: LayoutConfig): string {
     // 0 %, le bandeau dispose de toute la hauteur que templateFromAnalysis.ts
     // lui a réservée, sans quoi son bas se fait rogner.
     `  header-ascent: ${hasFullWidthImage(cfg.header) ? "0%" : `${cfg.header.spacing.gap}mm`},`,
-    `  footer-descent: ${hasFullWidthImage(cfg.footer) ? "0%" : `${cfg.footer.spacing.gap}mm`},`,
+    `  footer-descent: ${hasFullWidthImage(cfg.footer) ? "0%" : `${footerDescentMm(cfg, marginBottom, numberingExtra)}mm`},`,
     ")",
     `#${textSet(cfg.textStyles.body)}`,
     `#set par(leading: ${leading}em)`,

@@ -442,6 +442,18 @@ describe("image pleine largeur", () => {
     expect(inline).toContain(`header-ascent: ${d.header.spacing.gap}mm,`);
   });
 
+  it("descend le pied vers le bas de page quand la marge basse a du jeu", () => {
+    const d = defaultLayout();
+    // Default margin: no slack, the footer stays "Haut" below the body.
+    expect(layoutToTypst(d)).toContain(`footer-descent: ${d.footer.spacing.gap}mm,`);
+
+    // 55 mm margin, page number only: it drops to 10 mm from the edge, away from the body.
+    const tall = layoutToTypst({ ...d, margins: { ...d.margins, bottom: 55 } });
+    const descent = Number(/footer-descent: ([\d.]+)mm,/.exec(tall)?.[1]);
+    expect(descent).toBeGreaterThan(d.footer.spacing.gap);
+    expect(descent).toBeLessThan(55 - 10);
+  });
+
   it("empile plusieurs blocs dans un seul argument header", () => {
     const cfg = sanitizeLayout({
       ...defaultLayout(),

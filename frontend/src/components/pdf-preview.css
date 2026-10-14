@@ -51,7 +51,7 @@
   z-index: 0;
 }
 
-/* Feuille blanche affichée pendant la génération, à la place de la page à venir. */
+/* Blank sheet shown during generation, in place of the page to come. */
 .pdf-page--pending {
   flex: 0 0 auto;
   animation: pdf-page-pending 1.4s ease-in-out infinite alternate;
