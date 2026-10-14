@@ -260,14 +260,6 @@ export function LayoutPanel({
             </span>
           </Alert>
         )}
-        {disabled && (
-          <Alert type={VariantType.WARNING} className="le-panel__notice">
-            <span>
-              Une proposition de l'assistant est en attente : appliquez-la ou
-              ignorez-la pour reprendre les réglages.
-            </span>
-          </Alert>
-        )}
         <fieldset className="le-panel__fields" disabled={disabled}>
           <TabPanel uid={uid} tab="format" activeTab={activeTab}>
             <Section title="Page">

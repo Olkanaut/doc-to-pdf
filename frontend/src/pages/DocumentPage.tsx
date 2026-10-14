@@ -76,8 +76,9 @@ function LinkButton({ to, onClick, ...props }: ButtonProps & { to: string }) {
 }
 
 function DocumentView({ documentId }: { documentId: string }) {
-  const [searchParams] = useSearchParams();
-  const requestedTemplateId = searchParams.get("template");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Read once: choosing a template rewrites this parameter afterwards.
+  const [requestedTemplateId] = useState(() => searchParams.get("template"));
   const documentUrl = docsUrl(documentId);
   const [state, setState] = useState<DocumentState>({ status: "loading" });
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
@@ -218,8 +219,8 @@ function DocumentView({ documentId }: { documentId: string }) {
       : renderRequestKey
         ? { status: "loading" }
         : { status: "idle" };
-  // Tant que le document ou les templates arrivent, le PDF est déjà en route :
-  // l'aperçu montre la feuille d'attente, pas le cadre vide.
+  // While the document or the templates are still loading, the PDF is on its way:
+  // the preview shows the waiting sheet, not the empty frame.
   const pdfPending =
     activePdfState.status === "loading" ||
     state.status === "loading" ||
@@ -249,6 +250,18 @@ function DocumentView({ documentId }: { documentId: string }) {
     (total, [, count]) => total + count,
     0,
   );
+
+  /** The choice also goes into the URL, so a reload or a shared link finds it again. */
+  function selectTemplate(id: string) {
+    setTemplateId(id);
+    setSearchParams(
+      (params) => {
+        params.set("template", id);
+        return params;
+      },
+      { replace: true },
+    );
+  }
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -335,7 +348,7 @@ function DocumentView({ documentId }: { documentId: string }) {
                 templates={shown}
                 selectedId={templateId}
                 defaultId={defaultId}
-                onSelect={setTemplateId}
+                onSelect={selectTemplate}
               />
             ))}
         </div>

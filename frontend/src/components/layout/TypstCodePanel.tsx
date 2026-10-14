@@ -1,5 +1,4 @@
 import { useMemo, useRef, type ReactNode, type UIEvent } from "react";
-import { Alert, VariantType } from "@gouvfr-lasuite/ui-components";
 import { TemplateNameField } from "./TemplateNameField";
 
 interface TypstCodePanelProps {
@@ -46,15 +45,6 @@ export function TypstCodePanel({
         />
         {modeMenu}
       </div>
-
-      {disabled && (
-        <Alert type={VariantType.WARNING} className="le-panel__notice">
-          <span>
-            Une proposition de l'assistant est en attente : appliquez-la ou
-            ignorez-la avant de modifier le code.
-          </span>
-        </Alert>
-      )}
 
       <div className="le-code-panel__editor" aria-label="Source Typst">
         <pre

@@ -238,8 +238,14 @@
   border: 0;
   min-width: 0;
 }
+/* Locked panel (AI suggestion pending): simply faded. No hover, and not the
+   grey background App.css gives every disabled button. */
 .le-panel__fields:disabled {
   opacity: 0.55;
+  pointer-events: none;
+}
+.le-panel__fields:disabled button {
+  background: transparent;
 }
 .le-section {
   border-bottom: 1px solid var(--c--globals--colors--gray-100);
@@ -750,7 +756,7 @@
 /* ── Galerie de visuels (en-tête, pied de page) ───────────────────────────── */
 
 /* Les logos livrés et les fragments découpés dans un document importé, en
-   vignettes : le panneau fait 320 px, deux colonnes y tiennent. */
+   vignettes : le panneau fait 380 px, deux colonnes y tiennent. */
 .le-gallery {
   display: flex;
   flex-direction: column;
@@ -902,7 +908,7 @@
   background: var(--c--globals--colors--gray-050);
   color: var(--c--globals--colors--gray-950);
 }
-/* Tuiles pleine largeur : à 320 px, une vignette ne montre plus la disposition. */
+/* Tuiles pleine largeur : à 380 px, une vignette ne montre plus la disposition. */
 .sb__gallery {
   display: flex;
   flex-direction: column;
