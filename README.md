@@ -1,6 +1,51 @@
 # Dots
 
-Dots turns La Suite Docs documents into PDFs using Typst templates.
+Dots turns La Suite Docs documents into print-ready PDFs using Typst templates.
+
+Write in Docs, pick a template in Dots, and get a PDF with your header, footer,
+fonts and colours applied. Edit the document in Docs, reload Dots, and the PDF
+shows the latest version.
+
+![Paste a Docs link into Dots, switch templates, edit the document in Docs and reload Dots to update the PDF](https://github.com/user-attachments/assets/9aeeacec-185d-4ef6-a6c1-af2fe2ac3c2f)
+
+Dots is a prototype built during the 42 x DINUM hackathon in September 2026.
+It is a proof of concept, not production code: see [NEXT.md](NEXT.md) for how
+it could fit into La Suite. The interface is in French.
+
+## Features
+
+### From Docs to PDF
+
+Paste the link of a Docs document into Dots and choose a template. Dots reads
+the document through the Docs external API and compiles it to PDF with
+[Typst](https://typst.app/). Templates are stored in Docs as well, through a
+new `typst-templates` endpoint of the external API.
+
+### Template editor
+
+Set fonts, sizes and colours for each heading level, body text and tables.
+
+![Template editor: body text size, heading colour and table style](documentation/media/text-styles.gif)
+
+### Header and footer
+
+Add a header image, cut a header zone straight from an existing PDF, and add
+page numbers to the footer.
+
+![Header extracted from a PDF, then page numbers added to the footer](https://github.com/user-attachments/assets/e3539703-05e9-41fd-abfe-ae0708c253c1)
+
+### Typst code and AI assistant
+
+Every template is Typst code that can be edited directly. An optional AI
+assistant proposes changes in plain language, for example "Make all headings
+cobalt blue", and shows them before they are applied.
+
+![AI assistant recolouring all headings in the Typst code](https://github.com/user-attachments/assets/73aaa029-7eb5-4f68-afe1-1551154a0fe5)
+
+### Import (experimental)
+
+Upload an existing PDF or DOCX, such as a letterhead, and Dots deduces a first
+template from its layout.
 
 ## What this repository contains
 
@@ -236,3 +281,14 @@ Docker cleanup including unused volumes:
 ```bash
 docker system prune --volumes
 ```
+
+## Team
+
+Built by [@amelman](https://github.com/amelman), [@icaharel](https://github.com/icaharel) and [@Olkanaut](https://github.com/Olkanaut).
+
+## License
+
+Dots is released under the [MIT License](LICENSE). The `docs/` and
+`django-lasuite/` folders contain La Suite sources under their own licenses.
+The optional PDF/DOCX import relies on PyMuPDF, which is AGPL-licensed: see
+[backend/ingest/README.md](backend/ingest/README.md).
