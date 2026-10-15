@@ -25,7 +25,7 @@ new `typst-templates` endpoint of the external API.
 
 Set fonts, sizes and colours for each heading level, body text and tables.
 
-![Template editor: body text size, heading colour and table style](documentation/media/text-styles.gif)
+![Template editor: body text size, heading colour and table style](https://github.com/user-attachments/assets/c0a35c43-608c-4b1b-85c3-0b06714d8364)
 
 ### Header and footer
 
