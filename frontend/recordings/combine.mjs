@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { chromium } from "@playwright/test";
+import { CLIP_CARDS, INTRO, renderCards } from "./cards.mjs";
 
 const OUT = path.join(import.meta.dirname, "out");
 const WIDTH = 1920;
@@ -13,17 +13,11 @@ const HEIGHT = 1200;
 const FPS = 30;
 const CARD_S = 2.2;
 const FADE_S = 0.4;
-const BLUE = "#3E5DE7";
-
-const INTRO = {
-  title: "Dots",
-  text: "From a La Suite Docs document to an official PDF, through reusable Typst templates.",
-};
 const CLIPS = {
-  1: { file: "1-text-setup.mp4", title: "Layout editor", text: "Text sizes, colours and tables, previewed live." },
-  2: { file: "2-header-setup.mp4", title: "Header & footer", text: "Reuse a header from an existing PDF, add page numbers." },
-  3: { file: "3-typst-ai.mp4", title: "Typst + AI", text: "Ask the assistant to change the template." },
-  4: { file: "4-docs-to-dots.mp4", title: "Docs → PDF", text: "Paste a Docs link, pick a template: edits in Docs flow into the PDF." },
+  1: { file: "1-text-setup.mp4", ...CLIP_CARDS[1] },
+  2: { file: "2-header-setup.mp4", ...CLIP_CARDS[2] },
+  3: { file: "3-typst-ai.mp4", ...CLIP_CARDS[3] },
+  4: { file: "4-docs-to-dots.mp4", ...CLIP_CARDS[4] },
 };
 
 const order = process.argv.length > 2 ? process.argv.slice(2) : ["4", "1", "2", "3"];
@@ -33,28 +27,13 @@ const work = path.join(OUT, "combine");
 fs.rmSync(work, { recursive: true, force: true });
 fs.mkdirSync(work, { recursive: true });
 
-// ── Title cards, rendered as images (this ffmpeg build has no drawtext) ─────
-const card = ({ title, text }, label) => `<!doctype html>
-<html><body style="margin:0;width:${WIDTH}px;height:${HEIGHT}px;display:flex;flex-direction:column;
-  justify-content:center;padding:0 200px;box-sizing:border-box;background:#fff;
-  font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;color:#161616">
-  ${label ? `<div style="font-size:44px;font-weight:600;color:${BLUE};margin-bottom:28px">${label}</div>` : ""}
-  <div style="font-size:${label ? 124 : 180}px;font-weight:700;line-height:1.05;color:${label ? "#161616" : BLUE}">${title}</div>
-  <div style="font-size:58px;line-height:1.3;margin-top:40px;color:#3a3a3a;max-width:1400px">${text}</div>
-</body></html>`;
-
-const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT } });
-const segments = [];
-const renderCard = async (content, label, name) => {
-  await page.setContent(card(content, label));
-  const file = path.join(work, `${name}.png`);
-  await page.screenshot({ path: file });
-  segments.push({ file, still: true, duration: CARD_S });
-};
-await renderCard(INTRO, null, "intro");
+// ── Title cards, then the clips they introduce ──────────────────────────────
+const cards = [{ content: INTRO, label: null, file: path.join(work, "intro.png") }];
+const segments = [{ file: cards[0].file, still: true, duration: CARD_S }];
 for (const [i, n] of order.entries()) {
-  await renderCard(CLIPS[n], `${i + 1} / ${order.length}`, `card-${n}`);
+  const card = { content: CLIPS[n], label: `${i + 1} / ${order.length}`, file: path.join(work, `card-${n}.png`) };
+  cards.push(card);
+  segments.push({ file: card.file, still: true, duration: CARD_S });
   const file = path.join(OUT, CLIPS[n].file);
   if (!fs.existsSync(file)) throw new Error(`${file} is missing: record the clips first`);
   const duration = Number(
@@ -62,7 +41,7 @@ for (const [i, n] of order.entries()) {
   );
   segments.push({ file, still: false, duration });
 }
-await browser.close();
+await renderCards(cards);
 
 // ── One pass: normalise every segment, chain them with xfade, add silent audio ─
 const inputs = segments.flatMap((s) =>

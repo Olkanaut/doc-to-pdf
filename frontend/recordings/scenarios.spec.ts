@@ -206,19 +206,27 @@ async function dragTo(page: Page, handle: Locator, to: { x: number; y: number })
 }
 
 test("3 typst + ai — titres en bleu", async ({ page }) => {
-  await recordTypstAi(page, "3-typst-ai", false);
+  await recordTypstAi(page, "3-typst-ai");
 });
 
 test("6 typst wide — panneau élargi, couleurs dans le code", async ({ page }) => {
-  await recordTypstAi(page, "6-typst-ai-wide", true);
+  await recordTypstAi(page, "6-typst-ai-wide", { widen: true });
+});
+
+test("7 typst select — ligne de couleur sélectionnée", async ({ page }) => {
+  await recordTypstAi(page, "7-typst-ai-select", { highlight: true });
 });
 
 /**
- * Clip 3, and its variant 6 (`wide`): the code panel is dragged wider when the
- * Typst view opens, and once the change is applied the code scrolls sideways to
- * the new heading colour.
+ * Clip 3 and its variants. Before asking the AI, once the Typst view is open:
+ * - `widen` (clip 6): drag the code panel wider, then scroll to the heading colours;
+ * - `highlight` (clip 7): scroll to the heading colours and select the level-1 rule.
  */
-async function recordTypstAi(page: Page, name: string, wide: boolean) {
+async function recordTypstAi(
+  page: Page,
+  name: string,
+  { widen = false, highlight = false }: { widen?: boolean; highlight?: boolean } = {},
+) {
   const settle = await openEditor(page, AI_TEMPLATE);
 
   const rec = new Recorder(name);
@@ -227,17 +235,23 @@ async function recordTypstAi(page: Page, name: string, wide: boolean) {
 
   await click(page, page.getByRole("link", { name: "Mode code Typst" }));
   await rec.cut(page, () => settle(), 0.3);
-  await page.waitForTimeout(wide ? 800 : 1500);
+  await page.waitForTimeout(widen || highlight ? 800 : 1500);
 
-  if (wide) {
+  if (widen) {
     const divider = page.getByRole("separator", { name: "Redimensionner le panneau d'édition" });
     const box = (await divider.boundingBox())!;
     await dragTo(page, divider, { x: box.x + box.width / 2 + CODE_PANEL_EXTRA_PX, y: box.y + box.height / 2 });
     await rec.cut(page, () => settle(), 0.3);
     await page.waitForTimeout(800);
+  }
+  if (widen || highlight) {
     // Show the headings' current colour before asking for a new one.
     await scrollCodeToColour(page);
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(highlight ? 600 : 1500);
+  }
+  if (highlight) {
+    await selectHeadingRule(page);
+    await page.waitForTimeout(2000);
   }
 
   await click(page, page.getByRole("button", { name: "Assistant IA" }));
@@ -262,12 +276,25 @@ async function recordTypstAi(page: Page, name: string, wide: boolean) {
 
   await click(page, apply);
   await rec.cut(page, () => settle(), 0.3);
-  if (wide) {
-    await page.waitForTimeout(1200);
-    await scrollCodeToColour(page);
-  }
   await page.waitForTimeout(3000);
   await rec.finish();
+}
+
+/** Triple-clicks the level-1 heading rule in the Typst source: the whole line gets selected. */
+async function selectHeadingRule(page: Page) {
+  const code = page.getByRole("textbox", { name: "Source Typst" });
+  const box = (await code.boundingBox())!;
+  const y = await code.evaluate((ta: HTMLTextAreaElement) => {
+    const index = ta.value.split("\n").findIndex((l) => l.trimStart().startsWith("#show heading.where(level: 1)"));
+    if (index < 0) return null;
+    const style = getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight);
+    return parseFloat(style.paddingTop) + (index + 0.5) * lineHeight - ta.scrollTop;
+  });
+  if (y === null) return;
+  const point = { x: box.x + box.width * 0.55, y: box.y + y };
+  await moveTo(page, point);
+  await page.mouse.click(point.x, point.y, { clickCount: 3 });
 }
 
 /**
