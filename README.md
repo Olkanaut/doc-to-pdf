@@ -2,14 +2,16 @@
 
 Dots turns La Suite Docs documents into print-ready PDFs using Typst templates.
 
+Built during the 42 x DINUM hackathon in September 2026
+([submission](https://github.com/suitenumerique/hackathon42/issues/10)).
+
 Write in Docs, pick a template in Dots, and get a PDF with your header, footer,
 fonts and colours applied. Edit the document in Docs, reload Dots, and the PDF
 shows the latest version.
 
 ![Paste a Docs link into Dots, switch templates, edit the document in Docs and reload Dots to update the PDF](https://github.com/user-attachments/assets/9aeeacec-185d-4ef6-a6c1-af2fe2ac3c2f)
 
-Dots is a prototype built during the 42 x DINUM hackathon in September 2026.
-It is a proof of concept, not production code: see [NEXT.md](NEXT.md) for how
+Dots is a proof of concept rather than production code: see [NEXT.md](NEXT.md) for how
 it could fit into La Suite. The interface is in French.
 
 ## Features
